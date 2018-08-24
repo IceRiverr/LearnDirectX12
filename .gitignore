@@ -26,7 +26,14 @@
 *.a
 *.lib
 
+*.db
+*.pdb
+
 # Executables
 *.exe
 *.out
 *.app
+D3D12Demo/D3D12Demo/x64/Debug/
+D3D12Demo/D3D12Demo/Debug/
+D3D12Demo/x64/
+*.ipch
