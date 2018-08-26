@@ -75,7 +75,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\libs;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\D3D12Demo;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Framework;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\libs;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -99,7 +99,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
@@ -148,6 +148,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Framework\DemoApp.h" />
+    <ClInclude Include="..\Framework\DrawBoxApp.h" />
     <ClInclude Include="..\libs\d3dx12.h" />
     <ClInclude Include="D3D12Demo.h" />
     <ClInclude Include="Resource.h" />
@@ -156,6 +158,8 @@
     <ClInclude Include="ultility.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Framework\DemoApp.cpp" />
+    <ClCompile Include="..\Framework\DrawBoxApp.cpp" />
     <ClCompile Include="D3D12Demo.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -171,6 +175,11 @@
   <ItemGroup>
     <Image Include="D3D12Demo.ico" />
     <Image Include="small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Framework\color.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

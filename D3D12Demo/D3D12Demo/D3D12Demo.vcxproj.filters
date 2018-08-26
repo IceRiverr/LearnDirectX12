@@ -16,6 +16,9 @@
     <Filter Include="libs">
       <UniqueIdentifier>{dd8249a1-ab26-4f38-af2d-54351be46da4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Framework">
+      <UniqueIdentifier>{d1d7acc8-f906-49d7-b743-180d04c3121b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -36,6 +39,12 @@
     <ClInclude Include="ultility.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\Framework\DemoApp.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Framework\DrawBoxApp.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -46,6 +55,12 @@
     </ClCompile>
     <ClCompile Include="ultility.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\DemoApp.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\DrawBoxApp.cpp">
+      <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -60,5 +75,10 @@
     <Image Include="D3D12Demo.ico">
       <Filter>资源文件</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Framework\color.hlsl">
+      <Filter>Framework</Filter>
+    </None>
   </ItemGroup>
 </Project>

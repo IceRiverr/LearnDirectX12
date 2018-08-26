@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "ultility.h"
+#include <iostream>
+#include <sstream>
 
 
 BOOL WStringToString(const std::wstring &wstr, std::string &str)
@@ -15,4 +17,11 @@ BOOL WStringToString(const std::wstring &wstr, std::string &str)
 	}
 
 	return TRUE;
+}
+
+std::wstring IntToWString(SIZE_T v)
+{
+	std::wostringstream stream;
+	stream << v;
+	return stream.str();
 }

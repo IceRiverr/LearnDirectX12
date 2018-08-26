@@ -140,6 +140,18 @@ d3dx12.h 微软提供的一个辅助类
 
 
 
+## Chapter 6 Draw Box
+
+先使用Dx的数学库，以后换掉，使用一个开源的库；
+
+Constant Buffers
+
+其最小大小为256bytes，随意一个ConstantBuffers可以包含多个Buffer，用来打包；在bind时按照SubArea来制定；
+
+
+
+
+
 
 
 
