@@ -4,6 +4,9 @@
 #include <dxgi1_6.h>
 #include <Windows.h>
 #include <DirectXMath.h>
+#include <d3dcompiler.h>
+#include <iostream>
+#include <string>
 
 using namespace DirectX;
 
@@ -16,12 +19,12 @@ public:
 	virtual void Init();
 	virtual void Update(double deltaTime);
 	virtual void Draw();
+	virtual void OnResize();
 
 	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	void InitConsoleWindow();
 	void InitD3D12();
-	void OnResize();
 	void LogAdapters(IDXGIFactory* pFactory);
 	ID3D12Resource* GetCurrentBackBuffer();
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferView();
@@ -30,7 +33,7 @@ public:
 	// Graphics API
 	void FlushCommandQueue();
 
-	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource* pUploadBuffer);
+	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer);
 
 public:
 	HWND m_hWindow = nullptr;

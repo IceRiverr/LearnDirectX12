@@ -148,9 +148,20 @@ Constant Buffers
 
 其最小大小为256bytes，随意一个ConstantBuffers可以包含多个Buffer，用来打包；在bind时按照SubArea来制定；
 
+CPU:  XMFloat4x4 row-major 行主序，其内存布局为 m00,m01...
 
+GPU:  float4x4 coloum-major 列主序，其内存布局为 m00, m10...
 
+所有在将g_WorldViewProjMatrix从cpu传递到gpu是，需要进行转置
 
+```c++
+XMStoreFloat4x4(&m_ConstantBufferData.WorldViewProj, 		XMMatrixTranspose(mWorldViewProj));
+memcpy(m_pCbvDataBegin, &m_ConstantBufferData, sizeof(m_ConstantBufferData));
+```
+
+[Why is this Transpose() required in my WorldViewProj matrix?](https://stackoverflow.com/questions/32037617/why-is-this-transpose-required-in-my-worldviewproj-matrix)
+
+[Per-Component Math Operations-Matrix Ording](https://docs.microsoft.com/zh-cn/windows/desktop/direct3dhlsl/dx-graphics-hlsl-per-component-math#Matrix_Ordering)
 
 
 

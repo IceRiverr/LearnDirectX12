@@ -1,7 +1,5 @@
 
 #include "DemoApp.h"
-#include <iostream>
-#include <string>
 #include "ultility.h"
 #include <Resource.h>
 
@@ -397,7 +395,7 @@ void DemoApp::FlushCommandQueue()
 	}
 }
 
-ID3D12Resource * DemoApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, const void * initData, UINT64 byteSize, ID3D12Resource * pUploadBuffer)
+ID3D12Resource * DemoApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, const void * initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer)
 {
 	ID3D12Resource * pDefaultBuffer = nullptr;
 	if (pDevice && cmdList)
@@ -416,7 +414,7 @@ ID3D12Resource * DemoApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12Grap
 			&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&pUploadBuffer));
+			IID_PPV_ARGS(ppUploadBuffer));
 
 		D3D12_SUBRESOURCE_DATA subResource = {};
 		subResource.pData = initData;
@@ -429,7 +427,7 @@ ID3D12Resource * DemoApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12Grap
 				D3D12_RESOURCE_STATE_COMMON,
 				D3D12_RESOURCE_STATE_COPY_DEST));
 
-		UpdateSubresources<1>(cmdList, pDefaultBuffer, pUploadBuffer, 0, 0, 1, &subResource);
+		UpdateSubresources<1>(cmdList, pDefaultBuffer, *ppUploadBuffer, 0, 0, 1, &subResource);
 
 		m_pCommandList->ResourceBarrier(
 			1, &CD3DX12_RESOURCE_BARRIER::Transition(
