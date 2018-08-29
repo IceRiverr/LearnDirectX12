@@ -12,11 +12,14 @@ DrawBoxApp::DrawBoxApp()
 	m_pVertexBufferUpload = nullptr;
 	m_pIndexBuferGPU = nullptr;
 	m_pIndexBufferUpload = nullptr;
+
+	m_nConstantBuferByteSize = 1024 * 64;// 64k
+	m_nBoxCount = 100;
 }
 
 DrawBoxApp::~DrawBoxApp()
 {
-
+	m_pUploadeConstBuffer->Unmap(0, nullptr);
 }
 
 void DrawBoxApp::Init()
@@ -37,7 +40,7 @@ void DrawBoxApp::Init()
 	m_pDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(1024 * 64),
+		&CD3DX12_RESOURCE_DESC::Buffer(m_nConstantBuferByteSize),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&m_pUploadeConstBuffer));
@@ -84,15 +87,16 @@ void DrawBoxApp::Init()
 	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
+
 	ID3DBlob* pErrorMsg = nullptr;
-	D3DCompileFromFile(L"D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Framework\\color.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &m_pVSShaderCode, &pErrorMsg);
+	D3DCompileFromFile(L"D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &m_pVSShaderCode, &pErrorMsg);
 	if (pErrorMsg)
 	{
 		std::cout << "ShaderCompileError: " << std::string((char*)pErrorMsg->GetBufferPointer()) << std::endl;
 		return;
 	}
 	
-	D3DCompileFromFile(L"D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Framework\\color.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &m_pPSShaderCode, &pErrorMsg);
+	D3DCompileFromFile(L"D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &m_pPSShaderCode, &pErrorMsg);
 	if (pErrorMsg)
 	{
 		std::cout << "ShaderCompileError: " << std::string((char*)pErrorMsg->GetBufferPointer()) << std::endl;
@@ -108,14 +112,14 @@ void DrawBoxApp::Init()
 	// Build Box
 	std::vector<Vertex> vertices =
 	{
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f),  XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f),  XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f),  XMFLOAT4(1.0f, 0.0f, 0.3f, 1.0f) }),
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(0.2f, 0.0f, 0.0f, 1.0f) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f),  XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f),  XMFLOAT4(1.0f, 0.5f, 0.0f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) })
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) })
 	};
 
 	std::vector<UINT16> indices =
@@ -190,14 +194,18 @@ void DrawBoxApp::Init()
 
 void DrawBoxApp::Update(double deltaTime)
 {
-	XMVECTOR eyePos = XMVectorSet(0.0, 10.0f, -10.0f, 1.0f);
+	XMVECTOR eyePos = XMVectorSet(0.0, 5.0f, -10.0f, 1.0f);
 	XMVECTOR target = XMVectorZero();
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	XMMATRIX mView = XMMatrixLookAtLH(eyePos, target, upDir);
 	XMMATRIX mProj = XMLoadFloat4x4(&m_ProjMat);
-	XMMATRIX mWorld = XMMatrixTranslation(10.0f, 0.0f, 0.0f);
 
+	// äÖÈ¾10x10 100¸ö·½¸ñ
+	
+
+
+	XMMATRIX mWorld = XMMatrixTranslation(0.0, 0.0f, 0.0f);
 	XMMATRIX mWorldViewProj = mWorld * mView * mProj;
 	
 	XMStoreFloat4x4(&m_ConstantBufferData.WorldViewProj, XMMatrixTranspose(mWorldViewProj));
@@ -220,7 +228,7 @@ void DrawBoxApp::Draw()
 
 	// Begin Draw
 
-	float clearColors[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	float clearColors[4] = { 80.0f/255.0f, 90.0f / 255.0f, 100.0f/255.0f, 1.0f };
 	m_pCommandList->ClearRenderTargetView(
 		GetCurrentBackBufferView(),
 		clearColors, 0, nullptr);

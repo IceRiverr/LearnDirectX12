@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="头文件">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
@@ -19,11 +15,18 @@
     <Filter Include="Framework">
       <UniqueIdentifier>{d1d7acc8-f906-49d7-b743-180d04c3121b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{6b99ad3c-3cdf-46f1-8861-52fafb48fbaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Apps">
+      <UniqueIdentifier>{6a2ace3f-361c-4a63-a3eb-d477334ceebf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -36,31 +39,46 @@
     <ClInclude Include="..\libs\d3dx12.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="ultility.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\Framework\DemoApp.h">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="..\Framework\DrawBoxApp.h">
+    <ClInclude Include="..\Framework\FrameBuffer.h">
       <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Framework\stdafx.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Framework\ultility.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Apps\DrawBoxApp.h">
+      <Filter>Apps</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Apps\DrawBoxArrayApp.h">
+      <Filter>Apps</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="D3D12Demo.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ultility.cpp">
-      <Filter>源文件</Filter>
+      <Filter>头文件\源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\Framework\DemoApp.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="..\Framework\DrawBoxApp.cpp">
+    <ClCompile Include="..\Framework\FrameBuffer.cpp">
       <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\stdafx.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\ultility.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Apps\DrawBoxApp.cpp">
+      <Filter>Apps</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Apps\DrawBoxArrayApp.cpp">
+      <Filter>Apps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -77,8 +95,11 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Framework\color.hlsl">
-      <Filter>Framework</Filter>
+    <None Include="..\Shaders\color_view_info.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\Shaders\color.hlsl">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

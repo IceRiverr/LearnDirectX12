@@ -2,8 +2,9 @@
 #include "DemoApp.h"
 #include <DirectXMath.h>
 #include <vector>
+#include "FrameBuffer.h"
 
-class DrawBoxApp :
+class DrawBoxArrayApp :
 	public DemoApp
 {
 public:
@@ -15,12 +16,12 @@ public:
 
 	struct ObjectConstants
 	{
-		XMFLOAT4X4 WorldViewProj;
+		XMFLOAT4X4 mWorldMat;
 
 	};
 
-	DrawBoxApp();
-	~DrawBoxApp();
+	DrawBoxArrayApp();
+	~DrawBoxArrayApp();
 
 	virtual void Init();
 	virtual void Update(double deltaTime);
@@ -31,9 +32,12 @@ private:
 	ID3D12DescriptorHeap * m_pCBVHeap;
 	ID3D12RootSignature* m_pRootSignature;
 
+	UINT m_nTotalConstantBuferByteSize;
+	UINT m_nConstantBufferSizeAligned;
 	ID3D12Resource* m_pUploadeConstBuffer;
-	ObjectConstants m_ConstantBufferData;
 	UINT8* m_pCbvDataBegin;
+
+	CFrameBuffer m_FrameBuffer;
 
 	ID3DBlob* m_pVSShaderCode;
 	ID3DBlob* m_pPSShaderCode;
@@ -50,7 +54,7 @@ private:
 	D3D12_INDEX_BUFFER_VIEW m_ibView;
 
 	UINT m_nBoxIndexCount;
-
 	XMFLOAT4X4A m_ProjMat;
+	int m_nBoxCount;
 };
 
