@@ -24,6 +24,8 @@ DrawBoxApp::~DrawBoxApp()
 
 void DrawBoxApp::Init()
 {
+	DemoApp::Init();
+
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 
 	// create cbv heap

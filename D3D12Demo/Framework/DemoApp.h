@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string>
 
+#include "ultility.h"
+
 using namespace DirectX;
 
 class DemoApp
@@ -23,7 +25,6 @@ public:
 
 	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	void InitConsoleWindow();
 	void InitD3D12();
 	void LogAdapters(IDXGIFactory* pFactory);
 	ID3D12Resource* GetCurrentBackBuffer();
@@ -31,18 +32,25 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView();
 
 	// Graphics API
+	void EnableDebugLayer();
 	void FlushCommandQueue();
 
 	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer);
 
-public:
-	HWND m_hWindow = nullptr;
-	HINSTANCE m_hInstance = nullptr;
+	void InitConsoleWindow();
+	void ParseCommandLineArguments();
 
-protected:
+	bool CheckTearingSupported();
+
+	void SetFullScreen(bool bFullScreen);
+
+public:
+	HWND m_hWnd = nullptr;
+	HINSTANCE m_hInstance = nullptr;
 	UINT m_nClientWindowWidth;
 	UINT m_nClientWindowHeight;
 
+protected:
 	IDXGIFactory1* m_pFactory;
 	ID3D12Device* m_pDevice;
 
@@ -70,5 +78,10 @@ protected:
 
 	UINT64 m_CurrentFence;
 	ID3D12Fence* m_pFence;
+
+	bool m_bVSync; // V-SYNC 垂直同步
+	bool m_bTearingSupported;
+	bool m_bFullScreen;
+	RECT m_WindowRect; //全屏之前的窗口
 };
 

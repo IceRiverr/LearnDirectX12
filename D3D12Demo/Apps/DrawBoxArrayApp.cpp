@@ -23,9 +23,9 @@ DrawBoxArrayApp::~DrawBoxArrayApp()
 
 void DrawBoxArrayApp::Init()
 {
-	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
+	DemoApp::Init();
 
-	
+	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 
 	// create cbv heap
 	D3D12_DESCRIPTOR_HEAP_DESC cbHeapDesc = {};

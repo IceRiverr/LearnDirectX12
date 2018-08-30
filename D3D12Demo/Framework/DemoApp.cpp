@@ -2,6 +2,7 @@
 #include "DemoApp.h"
 #include "ultility.h"
 #include <Resource.h>
+#include <dxgi1_5.h>
 
 // 处理链接错误的问题
 #pragma comment(lib, "d3dcompiler.lib")
@@ -33,13 +34,13 @@ DemoApp::DemoApp()
 
 	m_BackBufferFromat = DXGI_FORMAT_B8G8R8A8_UNORM;
 	m_DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	m_nClientWindowWidth = 800;
-	m_nClientWindowHeight = 600;
+	m_nClientWindowWidth = 1280;
+	m_nClientWindowHeight = 720;
 
 	m_CurrentFence = 0;
 	m_pFence = nullptr;
 
-	
+	m_bFullScreen = false;
 }
 DemoApp::~DemoApp()
 {
@@ -53,14 +54,91 @@ void DemoApp::InitConsoleWindow()
 	printf("hello world\n");
 }
 
+void DemoApp::ParseCommandLineArguments()
+{
+	int argc = 0;
+	wchar_t** argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	for (int i = 0; i < argc; ++i)
+	{
+		std::string argvName;
+		WStringToString(std::wstring(argv[i]), argvName);
+		std::cout << argvName << std::endl;
+
+		if (wcscmp(argv[i], L"-W") == 0)
+		{
+			int screenWidth = wcstol(argv[++i], nullptr, 10);
+		}
+	}
+	LocalFree(argv);
+}
+
+bool DemoApp::CheckTearingSupported()
+{
+	bool bAllowing = false;
+
+	IDXGIFactory5* pFactory = nullptr;
+	CreateDXGIFactory1(IID_PPV_ARGS(&pFactory));
+	if (pFactory)
+	{
+		if (FAILED(pFactory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &bAllowing, sizeof(bAllowing))))
+		{
+			bAllowing = false;
+		}
+		else
+		{
+			bAllowing = true;
+		}
+		pFactory->Release();
+	}
+	return bAllowing;
+}
+
+void DemoApp::SetFullScreen(bool bFullScreen)
+{
+	if (bFullScreen != m_bFullScreen)
+	{
+		m_bFullScreen = bFullScreen;
+		if (m_bFullScreen)
+		{
+			GetWindowRect(m_hWnd,&m_WindowRect);
+
+			UINT windowStyle = WS_OVERLAPPEDWINDOW & ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+			SetWindowLongW(m_hWnd, GWL_STYLE, windowStyle);
+
+			HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+			MONITORINFOEX monitorInfo = {};
+			monitorInfo.cbSize = sizeof(monitorInfo);
+			GetMonitorInfo(hMonitor, &monitorInfo);
+
+			SetWindowPos(m_hWnd, HWND_TOPMOST,
+				monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.top,
+				monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+				SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+			ShowWindow(m_hWnd, SW_MAXIMIZE);
+		}
+		else
+		{
+			SetWindowLongW(m_hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
+
+			SetWindowPos(m_hWnd, HWND_TOPMOST,
+				m_WindowRect.left,
+				m_WindowRect.top,
+				m_WindowRect.right - m_WindowRect.left,
+				m_WindowRect.bottom - m_WindowRect.top,
+				SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+			ShowWindow(m_hWnd, SW_NORMAL);
+		}
+	}
+}
+
 void DemoApp::InitD3D12()
 {
-#if defined(DEBUG) || defined(_DEBUG)
-	// 启动debug
-	ID3D12Debug* pDebugController = nullptr;
-	D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
-	pDebugController->EnableDebugLayer();
-#endif
+	// 一定要在任何D3Dx12 接口使用之间开启DebugLayer，
+	EnableDebugLayer();
 
 	CreateDXGIFactory1(IID_PPV_ARGS(&m_pFactory));
 	
@@ -104,16 +182,18 @@ void DemoApp::InitD3D12()
 	scDesc.BufferDesc.RefreshRate.Numerator = 60;
 	scDesc.BufferDesc.RefreshRate.Denominator = 1;
 	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
 	scDesc.SampleDesc.Count = 1;
 	scDesc.SampleDesc.Quality = 0;
 	scDesc.BufferCount = m_nSwapChainBufferCount;
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scDesc.OutputWindow = m_hWindow;
+	scDesc.OutputWindow = m_hWnd;
 	scDesc.Windowed = true;
 	scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	scDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	m_pFactory->CreateSwapChain(m_pCommandQueue, &scDesc, &m_pSwapChian);
+	ThrowIfFailed(m_pFactory->CreateSwapChain(m_pCommandQueue, &scDesc, &m_pSwapChian));
+
+	m_pFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
 
 	// create descriptors heap
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
@@ -275,7 +355,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE DemoApp::GetDepthStencilView()
 
 void DemoApp::Init()
 {
+	m_bTearingSupported = CheckTearingSupported();
 
+	InitD3D12();
+
+	GetWindowRect(m_hWnd, &m_WindowRect);
 }
 
 void DemoApp::Update(double dt)
@@ -355,14 +439,21 @@ LRESULT DemoApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		}
 		break;
 	case WM_SIZE:
-		m_nClientWindowWidth = LOWORD(lParam);
-		m_nClientWindowHeight = HIWORD(lParam);
-		
-		if (m_pDevice)
+	{
+		RECT clientWindow = {};
+		GetClientRect(m_hWnd, &clientWindow);
+
+		int windowWidth = (int)(clientWindow.right - clientWindow.left);
+		int windowHeight = (int)(clientWindow.bottom - clientWindow.top);
+
+		if (m_nClientWindowWidth != windowWidth || m_nClientWindowHeight != windowHeight)
 		{
+			m_nClientWindowWidth = windowWidth;
+			m_nClientWindowHeight = windowHeight;
 			OnResize();
 		}
 		break;
+	}
 	case WM_ENTERSIZEMOVE:
 		// 用户开始拖动resize bar
 		break;
@@ -370,11 +461,38 @@ LRESULT DemoApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		OnResize();
 		// 用户停止拖动
 		break;
-
+	case WM_SYSKEYDOWN:
+	case WM_KEYDOWN:
+	{
+		bool alt = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+		switch (wParam)
+		{
+		case VK_ESCAPE:
+			PostQuitMessage(0);
+			break;
+		case VK_F12: // 这个命令会导致断点，不知道什么原因
+			//SetFullScreen(!m_bFullScreen);
+			break;
+		case 'P':
+			SetFullScreen(!m_bFullScreen);
+			break;
+		}
+		break;
+	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
+}
+
+void DemoApp::EnableDebugLayer()
+{
+#if defined(DEBUG) || defined(_DEBUG)
+	// 启动debug
+	ID3D12Debug* pDebugController = nullptr;
+	D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
+	pDebugController->EnableDebugLayer();
+#endif
 }
 
 void DemoApp::FlushCommandQueue()
