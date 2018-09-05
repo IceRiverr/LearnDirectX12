@@ -39,13 +39,7 @@
     <ClInclude Include="..\libs\d3dx12.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="..\Framework\FrameBuffer.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
     <ClInclude Include="..\Framework\stdafx.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Framework\ultility.h">
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="..\Apps\DrawBoxApp.h">
@@ -57,18 +51,24 @@
     <ClInclude Include="..\Framework\WinApp.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\Framework\StaticMesh.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Framework\Utility.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Framework\GraphicsUtility.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Framework\BufferManager.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Demo.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\Framework\FrameBuffer.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
     <ClCompile Include="..\Framework\stdafx.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Framework\ultility.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="..\Apps\DrawBoxApp.cpp">
@@ -78,6 +78,18 @@
       <Filter>Apps</Filter>
     </ClCompile>
     <ClCompile Include="..\Framework\WinApp.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\StaticMesh.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\Utility.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\GraphicsUtility.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\BufferManager.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>

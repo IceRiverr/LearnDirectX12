@@ -152,7 +152,7 @@ void DrawBoxApp::Init()
 	};
 
 	const UINT nVBByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT nIBByteSize = (UINT)indices.size() * sizeof(indices);
+	const UINT nIBByteSize = (UINT)indices.size() * sizeof(UINT16);
 
 	m_nBoxIndexCount = (UINT)indices.size();
 	

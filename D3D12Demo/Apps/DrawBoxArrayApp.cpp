@@ -7,68 +7,46 @@ DrawBoxArrayApp::DrawBoxArrayApp()
 	m_pVSShaderCode = nullptr;
 	m_pPSShaderCode = nullptr;
 	m_pPSO = nullptr;
-
-	m_pVertexBufferGPU = nullptr;
-	m_pVertexBufferUpload = nullptr;
-	m_pIndexBuferGPU = nullptr;
-	m_pIndexBufferUpload = nullptr;
-
-	m_nBoxCount = 100;
 }
 
 DrawBoxArrayApp::~DrawBoxArrayApp()
 {
-	m_pUploadeConstBuffer->Unmap(0, nullptr);
+	
 }
 
 void DrawBoxArrayApp::Init()
 {
 	WinApp::Init();
-
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
+	// 所有初始化命令都放到该命令之后
+
+	BuildStaticMeshes();
+	BuildScene();
 
 	// create cbv heap
 	D3D12_DESCRIPTOR_HEAP_DESC cbHeapDesc = {};
-	cbHeapDesc.NumDescriptors = m_nBoxCount + 1;
+	cbHeapDesc.NumDescriptors = (UINT)m_RenderObjects.size() + 1;
 	cbHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbHeapDesc.NodeMask = 0;
-
 	m_pDevice->CreateDescriptorHeap(&cbHeapDesc, IID_PPV_ARGS(&m_pCBVHeap));
 
-	// create const buffer 必须256b对齐
-	m_nConstantBufferSizeAligned = (sizeof(ObjectConstants) + 255) & (~255);
-	m_nTotalConstantBuferByteSize = m_nConstantBufferSizeAligned * m_nBoxCount;
-	m_pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(m_nTotalConstantBuferByteSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&m_pUploadeConstBuffer));
-	
-	m_pUploadeConstBuffer->Map(0, nullptr, (void**)(&m_pCbvDataBegin));
-
-	for (int i = 0; i < m_nBoxCount; ++i)
+	UINT nDescriptorIndex = 0;
+	m_ConstBuffer.CreateBuffer(m_pDevice, (UINT)m_RenderObjects.size());
+	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
+		m_RenderObjects[i]->m_nConstantBufferIndex = nDescriptorIndex;
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(i, m_nSRVDescriptorSize);
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = m_pUploadeConstBuffer->GetGPUVirtualAddress() + i * m_nConstantBufferSizeAligned;
-		cbvDesc.SizeInBytes = m_nConstantBufferSizeAligned;
-		m_pDevice->CreateConstantBufferView(&cbvDesc, handle);
+		handle.Offset(m_RenderObjects[i]->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+		m_ConstBuffer.CreateBufferView(m_pDevice, handle, m_RenderObjects[i]->m_nConstantBufferIndex);
+		nDescriptorIndex++;
 	}
 
 	m_FrameBuffer.CreateBuffer(m_pDevice);
-	m_FrameBuffer.m_nDescriptorIndex = m_nBoxCount;
+	m_FrameBuffer.m_nDescriptorIndex = nDescriptorIndex;
 	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
 	handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-	cbvDesc.BufferLocation = m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress();
-	cbvDesc.SizeInBytes = m_FrameBuffer.m_nConstantBufferSizeAligned;
-	m_pDevice->CreateConstantBufferView(&cbvDesc, handle);
+	m_FrameBuffer.CreateBufferView(m_pDevice, handle);
 
 	// create root signature
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
@@ -125,62 +103,6 @@ void DrawBoxArrayApp::Init()
 		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	// Build Box
-	std::vector<Vertex> vertices =
-	{
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) })
-	};
-
-	std::vector<UINT16> indices =
-	{
-		// front face
-		0, 1, 2,
-		0, 2, 3,
-
-		// back face
-		4, 6, 5,
-		4, 7, 6,
-
-		// left face
-		4, 5, 1,
-		4, 1, 0,
-
-		// right face
-		3, 2, 6,
-		3, 6, 7,
-
-		// top face
-		1, 5, 6,
-		1, 6, 2,
-
-		// bottom face
-		4, 0, 3,
-		4, 3, 7
-	};
-
-	const UINT nVBByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT nIBByteSize = (UINT)indices.size() * sizeof(indices);
-
-	m_nBoxIndexCount = (UINT)indices.size();
-	
-	m_pVertexBufferGPU = CreateDefaultBuffer(m_pDevice, m_pCommandList, &vertices[0], nVBByteSize, &m_pVertexBufferUpload);
-	m_pIndexBuferGPU = CreateDefaultBuffer(m_pDevice, m_pCommandList, &indices[0], nIBByteSize, &m_pIndexBufferUpload);
-
-	m_vbView.BufferLocation = m_pVertexBufferGPU->GetGPUVirtualAddress();
-	m_vbView.SizeInBytes = nVBByteSize;
-	m_vbView.StrideInBytes = sizeof(Vertex);
-
-	m_ibView.BufferLocation = m_pIndexBuferGPU->GetGPUVirtualAddress();
-	m_ibView.SizeInBytes = nIBByteSize;
-	m_ibView.Format = DXGI_FORMAT_R16_UINT;
-
 	// PSO
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.InputLayout = { m_InputLayout.data(), (UINT)m_InputLayout.size() };
@@ -226,19 +148,15 @@ void DrawBoxArrayApp::Update(double deltaTime)
 	XMMATRIX mInvViewProj = XMMatrixInverse(&XMMatrixDeterminant(mViewProj), mViewProj);
 
 	// 渲染10x10 100个方格
-	for (int j = 0; j < 10; ++j)
+	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
-		for (int i = 0; i < 10; ++i)
-		{
-			XMMATRIX mWorldMat = XMMatrixTranslation((i - 5.0f) * 4.0f, (j -5.0f) * 4.0f, 0.0f);
-			XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
-			mWorldMat = mRotateMat * mWorldMat;
+		XMMATRIX mWorldMat = m_RenderObjects[i]->m_mWorldMatrix;
+		//XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
+		//mWorldMat = mRotateMat * mWorldMat;
 
-			ObjectConstants objConstant;
-			XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
-			UINT8* pObjConstBegin = m_pCbvDataBegin + m_nConstantBufferSizeAligned * (j * 10 + i);
-			memcpy(pObjConstBegin, &objConstant, sizeof(objConstant));
-		}
+		CRenderObject::ConstantElement objConstant;
+		XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
+		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_nConstantBufferIndex);
 	}
 
 	// Frame Buffer
@@ -289,23 +207,29 @@ void DrawBoxArrayApp::Draw()
 
 	ID3D12DescriptorHeap* pDescriptorHeap[] = { m_pCBVHeap };
 	m_pCommandList->SetDescriptorHeaps(1, pDescriptorHeap);
-
 	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature);
-
-	m_pCommandList->IASetVertexBuffers(0, 1, &m_vbView);
-	m_pCommandList->IASetIndexBuffer(&m_ibView);
-	m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 	handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
 	m_pCommandList->SetGraphicsRootDescriptorTable(1, handle);
 
-	for (int i = 0; i < m_nBoxCount; ++i)
+	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
-		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-		handle.Offset(i, m_nSRVDescriptorSize);
-		m_pCommandList->SetGraphicsRootDescriptorTable(0, handle);
-		m_pCommandList->DrawIndexedInstanced(m_nBoxIndexCount, 1, 0, 0, 0);
+		CRenderObject* pObj = m_RenderObjects[i];
+		m_pCommandList->IASetVertexBuffers(0, 1, &(pObj->m_pStaticMesh->GetVertexBufferView()));
+		m_pCommandList->IASetIndexBuffer(&(pObj->m_pStaticMesh->GetIndexBufferView()));
+		m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		
+		auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+		handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+		m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+
+		for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
+		{
+			SubMesh subMesh = it.second;
+			
+			m_pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+		}
 	}
 
 	// End Draw
@@ -335,4 +259,79 @@ void DrawBoxArrayApp::OnResize()
 	XMMATRIX p = XMMatrixPerspectiveFovLH(90.0f /180.0f * 3.14159f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
 
 	XMStoreFloat4x4(&m_ProjMat, p);
+}
+
+void DrawBoxArrayApp::BuildStaticMeshes()
+{
+	// Box
+	// Build Box
+	CStaticMesh* pBoxMesh = new CStaticMesh();
+	m_StaticMeshes.emplace("BoxMesh", pBoxMesh);
+	std::vector<Vertex> vertices =
+	{
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) }),
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f) })
+	};
+
+	std::vector<UINT16> indices =
+	{
+		// front face
+		0, 1, 2,
+		0, 2, 3,
+
+		// back face
+		4, 6, 5,
+		4, 7, 6,
+
+		// left face
+		4, 5, 1,
+		4, 1, 0,
+
+		// right face
+		3, 2, 6,
+		3, 6, 7,
+
+		// top face
+		1, 5, 6,
+		1, 6, 2,
+
+		// bottom face
+		4, 0, 3,
+		4, 3, 7
+	};
+
+	pBoxMesh->m_nVertexSizeInBytes = (UINT)vertices.size() * sizeof(Vertex);
+	pBoxMesh->m_nVertexStrideInBytes = sizeof(Vertex);
+	pBoxMesh->m_nIndexSizeInBytes = (UINT)indices.size() * sizeof(UINT16);
+	pBoxMesh->m_IndexFormat = DXGI_FORMAT_R16_UINT;
+
+	pBoxMesh->m_pVertexBufferGPU = CreateDefaultBuffer(m_pDevice, m_pCommandList, &vertices[0], pBoxMesh->m_nVertexSizeInBytes, &pBoxMesh->m_pVertexBufferUpload);
+	pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(m_pDevice, m_pCommandList, &indices[0], pBoxMesh->m_nIndexSizeInBytes, &pBoxMesh->m_pIndexBufferUpload);
+	pBoxMesh->AddSubMesh("Box1", (UINT)indices.size(), 0, 0);
+}
+
+void DrawBoxArrayApp::BuildScene()
+{
+	// Box Matrix
+	CStaticMesh* pBoxMesh = m_StaticMeshes["BoxMesh"];
+	if (pBoxMesh)
+	{
+		for (int j = 0; j < 10; ++j)
+		{
+			for (int i = 0; i < 10; ++i)
+			{
+				CRenderObject* pObj = new CRenderObject();
+				pObj->m_pStaticMesh = pBoxMesh;
+				pObj->m_WorldTransform.Position = XMFLOAT3((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
+				pObj->m_mWorldMatrix = XMMatrixTranslation((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
+				m_RenderObjects.push_back(pObj);
+			}
+		}
+	}
 }

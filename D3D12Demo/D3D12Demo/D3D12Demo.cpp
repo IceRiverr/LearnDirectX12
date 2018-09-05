@@ -1,15 +1,12 @@
 //D3D12Demo.cpp: 定义应用程序的入口点。
 //
 
-#include "stdafx.h"
-
 #include <iostream>
 #include <stdlib.h>
 #include <io.h>
 #include <fcntl.h>
 
 #include "D3D12Demo.h"
-#include "ultility.h"
 
 #include "WinApp.h"
 #include "DrawBoxApp.h"

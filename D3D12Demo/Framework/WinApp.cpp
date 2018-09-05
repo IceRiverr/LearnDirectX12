@@ -1,6 +1,6 @@
 
 #include "WinApp.h"
-#include "ultility.h"
+#include "Utility.h"
 #include <Resource.h>
 #include <dxgi1_5.h>
 
@@ -290,14 +290,7 @@ void WinApp::OnResize()
 			m_pDSVBuffer,
 			D3D12_RESOURCE_STATE_COMMON,
 			D3D12_RESOURCE_STATE_DEPTH_WRITE));
-
-	// Execute resize command
-	m_pCommandList->Close();
-	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
-	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
-
-	FlushCommandQueue();
-
+	
 	// Update Viewport 
 	// viewport 同一个RenderTarget上不能有多个VP
 	m_ScreenViewPort.TopLeftX = 0.0f;
@@ -308,6 +301,13 @@ void WinApp::OnResize()
 	m_ScreenViewPort.MaxDepth = 1.0f;
 
 	m_ScissorRect = {0, 0, static_cast<LONG>(m_nClientWindowWidth), static_cast<LONG>(m_nClientWindowHeight) };
+
+	// Execute resize command
+	m_pCommandList->Close();
+	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
+	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
+
+	FlushCommandQueue();
 }
 
 void WinApp::LogAdapters(IDXGIFactory * pFactory)
@@ -535,48 +535,4 @@ void WinApp::FlushCommandQueue()
 
 		CloseHandle(eventHandle);
 	}
-}
-
-ID3D12Resource * WinApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, const void * initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer)
-{
-	ID3D12Resource * pDefaultBuffer = nullptr;
-	if (pDevice && cmdList)
-	{
-		pDevice->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
-			D3D12_RESOURCE_STATE_COMMON,
-			nullptr, 
-			IID_PPV_ARGS(&pDefaultBuffer));
-
-		pDevice->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),// This heap type is best for CPU-write-once, GPU-read-once data
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(ppUploadBuffer));
-
-		D3D12_SUBRESOURCE_DATA subResource = {};
-		subResource.pData = initData;
-		subResource.RowPitch = byteSize;
-		subResource.SlicePitch = byteSize;
-
-		m_pCommandList->ResourceBarrier(
-			1, &CD3DX12_RESOURCE_BARRIER::Transition(
-				pDefaultBuffer,
-				D3D12_RESOURCE_STATE_COMMON,
-				D3D12_RESOURCE_STATE_COPY_DEST));
-
-		UpdateSubresources<1>(cmdList, pDefaultBuffer, *ppUploadBuffer, 0, 0, 1, &subResource);
-
-		m_pCommandList->ResourceBarrier(
-			1, &CD3DX12_RESOURCE_BARRIER::Transition(
-				pDefaultBuffer,
-				D3D12_RESOURCE_STATE_COPY_DEST,
-				D3D12_RESOURCE_STATE_GENERIC_READ));
-	}
-
-	return pDefaultBuffer;
 }

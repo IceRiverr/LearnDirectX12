@@ -1,6 +1,7 @@
 
 #pragma once
 #include "stdafx.h"
+#include "StaticMesh.h"
 
 class CFrameBuffer
 {
@@ -9,6 +10,7 @@ public:
 	~CFrameBuffer();
 
 	void CreateBuffer(ID3D12Device* pDevice);
+	void CreateBufferView(ID3D12Device * pDevice, CD3DX12_CPU_DESCRIPTOR_HANDLE handle);
 
 public:
 	struct _Buffer
@@ -28,7 +30,7 @@ public:
 		float g_fTotalTime;
 		float g_fDeltaTime;
 	};
-	
+
 	_Buffer m_FrameBufferData;
 
 	UINT m_nConstantBufferSizeAligned;
@@ -36,4 +38,21 @@ public:
 	UINT8* m_pCbvDataBegin;
 
 	UINT m_nDescriptorIndex;
+};
+
+class CConstantBuffer
+{
+public:
+	CConstantBuffer();
+	~CConstantBuffer();
+
+	void CreateBuffer(ID3D12Device* pDevice, UINT nObjectCount);
+	void CreateBufferView(ID3D12Device * pDevice, CD3DX12_CPU_DESCRIPTOR_HANDLE handle, UINT nConstntIndex);
+	void UpdateBuffer(UINT8 * pData, UINT nDataSize, UINT nConstntIndex);
+
+public:
+	UINT m_nTotalConstantBuferByteSize;
+	UINT m_nConstantBufferSizeAligned;
+	ID3D12Resource* m_pUploadeConstBuffer;
+	UINT8* m_pCbvDataBegin;
 };

@@ -2,7 +2,9 @@
 #include "WinApp.h"
 #include <DirectXMath.h>
 #include <vector>
-#include "FrameBuffer.h"
+#include <unordered_map>
+#include "BufferManager.h"
+#include "StaticMesh.h"
 
 class DrawBoxArrayApp :
 	public WinApp
@@ -13,13 +15,7 @@ public:
 		XMFLOAT3 position;
 		XMFLOAT4 color;
 	};
-
-	struct ObjectConstants
-	{
-		XMFLOAT4X4 mWorldMat;
-
-	};
-
+	
 	DrawBoxArrayApp();
 	~DrawBoxArrayApp();
 
@@ -29,14 +25,16 @@ public:
 	virtual void OnResize();
 
 private:
+	void BuildStaticMeshes();
+	void BuildScene();
+	void AllocateDescriptor(ID3D12DescriptorHeap* pHeap, UINT& nStartIndex, ID3D12Resource* pResource, UINT nSizeInBytes);
+
+private:
 	ID3D12DescriptorHeap * m_pCBVHeap;
+	UINT m_CBVHeapSize;
 	ID3D12RootSignature* m_pRootSignature;
 
-	UINT m_nTotalConstantBuferByteSize;
-	UINT m_nConstantBufferSizeAligned;
-	ID3D12Resource* m_pUploadeConstBuffer;
-	UINT8* m_pCbvDataBegin;
-
+	CConstantBuffer m_ConstBuffer;
 	CFrameBuffer m_FrameBuffer;
 
 	ID3DBlob* m_pVSShaderCode;
@@ -45,16 +43,8 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputLayout;
 	ID3D12PipelineState* m_pPSO;
 
-	ID3D12Resource* m_pVertexBufferGPU;
-	ID3D12Resource* m_pVertexBufferUpload;
-	ID3D12Resource* m_pIndexBuferGPU;
-	ID3D12Resource* m_pIndexBufferUpload;
+	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
+	std::vector<CRenderObject*> m_RenderObjects;
 
-	D3D12_VERTEX_BUFFER_VIEW m_vbView;
-	D3D12_INDEX_BUFFER_VIEW m_ibView;
-
-	UINT m_nBoxIndexCount;
 	XMFLOAT4X4A m_ProjMat;
-	int m_nBoxCount;
 };
-

@@ -8,9 +8,11 @@
 #include <iostream>
 #include <string>
 
-#include "ultility.h"
+#include "Utility.h"
+#include "GraphicsUtility.h"
 
 using namespace DirectX;
+using namespace Graphics;
 
 class WinApp
 {
@@ -33,8 +35,6 @@ public:
 	// Graphics API
 	void EnableDebugLayer();
 	void FlushCommandQueue();
-
-	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer);
 
 	void InitConsoleWindow();
 	void ParseCommandLineArguments();
