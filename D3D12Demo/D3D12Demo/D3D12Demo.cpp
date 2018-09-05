@@ -11,7 +11,7 @@
 #include "D3D12Demo.h"
 #include "ultility.h"
 
-#include "DemoApp.h"
+#include "WinApp.h"
 #include "DrawBoxApp.h"
 #include "DrawBoxArrayApp.h"
 
@@ -27,7 +27,7 @@ DrawBoxArrayApp app;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int, DemoApp& App);
+BOOL                InitInstance(HINSTANCE, int, WinApp& App);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -113,7 +113,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, DemoApp& App)
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, WinApp& App)
 {
 	App.m_hInstance = hInstance;// 将实例句柄存储在全局变量中
 

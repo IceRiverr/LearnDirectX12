@@ -12,11 +12,11 @@
 
 using namespace DirectX;
 
-class DemoApp
+class WinApp
 {
 public:
-	DemoApp();
-	~DemoApp();
+	WinApp();
+	~WinApp();
 
 	virtual void Init();
 	virtual void Update(double deltaTime);
@@ -26,7 +26,6 @@ public:
 	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	void InitD3D12();
-	void LogAdapters(IDXGIFactory* pFactory);
 	ID3D12Resource* GetCurrentBackBuffer();
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferView();
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView();
@@ -43,6 +42,10 @@ public:
 	bool CheckTearingSupported();
 
 	void SetFullScreen(bool bFullScreen);
+
+	void LogAdapters(IDXGIFactory* pFactory);
+
+	void QueryFeatureData(ID3D12Device* pDevice);
 
 public:
 	HWND m_hWnd = nullptr;

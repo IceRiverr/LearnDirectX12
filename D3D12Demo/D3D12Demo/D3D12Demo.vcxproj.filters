@@ -39,9 +39,6 @@
     <ClInclude Include="..\libs\d3dx12.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="..\Framework\DemoApp.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
     <ClInclude Include="..\Framework\FrameBuffer.h">
       <Filter>Framework</Filter>
     </ClInclude>
@@ -57,13 +54,13 @@
     <ClInclude Include="..\Apps\DrawBoxArrayApp.h">
       <Filter>Apps</Filter>
     </ClInclude>
+    <ClInclude Include="..\Framework\WinApp.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Demo.cpp">
       <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Framework\DemoApp.cpp">
-      <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="..\Framework\FrameBuffer.cpp">
       <Filter>Framework</Filter>
@@ -79,6 +76,9 @@
     </ClCompile>
     <ClCompile Include="..\Apps\DrawBoxArrayApp.cpp">
       <Filter>Apps</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\WinApp.cpp">
+      <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

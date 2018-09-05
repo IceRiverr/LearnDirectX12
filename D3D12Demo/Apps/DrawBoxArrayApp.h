@@ -1,11 +1,11 @@
 #pragma once
-#include "DemoApp.h"
+#include "WinApp.h"
 #include <DirectXMath.h>
 #include <vector>
 #include "FrameBuffer.h"
 
 class DrawBoxArrayApp :
-	public DemoApp
+	public WinApp
 {
 public:
 	struct Vertex

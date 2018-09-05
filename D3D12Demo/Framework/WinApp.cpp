@@ -1,5 +1,5 @@
 
-#include "DemoApp.h"
+#include "WinApp.h"
 #include "ultility.h"
 #include <Resource.h>
 #include <dxgi1_5.h>
@@ -9,7 +9,7 @@
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-DemoApp::DemoApp()
+WinApp::WinApp()
 {
 	m_pFactory = nullptr;
 	m_pDevice = nullptr;
@@ -42,19 +42,19 @@ DemoApp::DemoApp()
 
 	m_bFullScreen = false;
 }
-DemoApp::~DemoApp()
+WinApp::~WinApp()
 {
 	
 }
 
-void DemoApp::InitConsoleWindow()
+void WinApp::InitConsoleWindow()
 {
 	AllocConsole();
 	freopen("CONOUT$", "w+t", stdout);
 	printf("hello world\n");
 }
 
-void DemoApp::ParseCommandLineArguments()
+void WinApp::ParseCommandLineArguments()
 {
 	int argc = 0;
 	wchar_t** argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -72,7 +72,7 @@ void DemoApp::ParseCommandLineArguments()
 	LocalFree(argv);
 }
 
-bool DemoApp::CheckTearingSupported()
+bool WinApp::CheckTearingSupported()
 {
 	bool bAllowing = false;
 
@@ -93,7 +93,7 @@ bool DemoApp::CheckTearingSupported()
 	return bAllowing;
 }
 
-void DemoApp::SetFullScreen(bool bFullScreen)
+void WinApp::SetFullScreen(bool bFullScreen)
 {
 	if (bFullScreen != m_bFullScreen)
 	{
@@ -135,7 +135,7 @@ void DemoApp::SetFullScreen(bool bFullScreen)
 	}
 }
 
-void DemoApp::InitD3D12()
+void WinApp::InitD3D12()
 {
 	// 一定要在任何D3Dx12 接口使用之间开启DebugLayer，
 	EnableDebugLayer();
@@ -145,6 +145,8 @@ void DemoApp::InitD3D12()
 	LogAdapters(m_pFactory);
 
 	D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&m_pDevice));
+
+	QueryFeatureData(m_pDevice);
 	
 	m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFence));
 	
@@ -215,7 +217,7 @@ void DemoApp::InitD3D12()
 	OnResize();
 }
 
-void DemoApp::OnResize()
+void WinApp::OnResize()
 {
 	if (m_pDevice == nullptr || m_pSwapChian == nullptr || m_pCommandAllocator == nullptr)
 		return;
@@ -308,7 +310,7 @@ void DemoApp::OnResize()
 	m_ScissorRect = {0, 0, static_cast<LONG>(m_nClientWindowWidth), static_cast<LONG>(m_nClientWindowHeight) };
 }
 
-void DemoApp::LogAdapters(IDXGIFactory * pFactory)
+void WinApp::LogAdapters(IDXGIFactory * pFactory)
 {
 	std::wstring text;
 
@@ -335,12 +337,34 @@ void DemoApp::LogAdapters(IDXGIFactory * pFactory)
 	std::cout << newText << std::endl;
 }
 
-ID3D12Resource * DemoApp::GetCurrentBackBuffer()
+void WinApp::QueryFeatureData(ID3D12Device* pDevice)
+{
+	D3D12_FEATURE_DATA_D3D12_OPTIONS d3d12Options;
+
+	pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &d3d12Options, sizeof(d3d12Options));
+
+	switch (d3d12Options.ResourceBindingTier)
+	{
+	case D3D12_RESOURCE_BINDING_TIER_3:
+		std::cout << "GPU support: D3D12_RESOURCE_BINDING_TIER_3 " << std::endl;
+		break;
+	case D3D12_RESOURCE_BINDING_TIER_2:
+		std::cout << "GPU support: D3D12_RESOURCE_BINDING_TIER_2 " << std::endl;
+		break;
+	case D3D12_RESOURCE_BINDING_TIER_1:
+		std::cout << "GPU support: D3D12_RESOURCE_BINDING_TIER_1 " << std::endl;
+		break;
+	default:
+		break;
+	}
+}
+
+ID3D12Resource * WinApp::GetCurrentBackBuffer()
 {
 	return m_pSwapChainBuffers[m_nCurrentSwapChainIndex];
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE DemoApp::GetCurrentBackBufferView()
+D3D12_CPU_DESCRIPTOR_HANDLE WinApp::GetCurrentBackBufferView()
 {
 	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
 		m_pRTVHeap->GetCPUDescriptorHandleForHeapStart(), 
@@ -348,12 +372,12 @@ D3D12_CPU_DESCRIPTOR_HANDLE DemoApp::GetCurrentBackBufferView()
 		m_nRTVDescriptorSize);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE DemoApp::GetDepthStencilView()
+D3D12_CPU_DESCRIPTOR_HANDLE WinApp::GetDepthStencilView()
 {
 	return m_pDSVHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
-void DemoApp::Init()
+void WinApp::Init()
 {
 	m_bTearingSupported = CheckTearingSupported();
 
@@ -362,12 +386,12 @@ void DemoApp::Init()
 	GetWindowRect(m_hWnd, &m_WindowRect);
 }
 
-void DemoApp::Update(double dt)
+void WinApp::Update(double dt)
 {
 
 }
 
-void DemoApp::Draw()
+void WinApp::Draw()
 {
 	m_pCommandAllocator->Reset();
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
@@ -413,7 +437,7 @@ void DemoApp::Draw()
 	FlushCommandQueue();
 }
 
-LRESULT DemoApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT WinApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
@@ -485,7 +509,7 @@ LRESULT DemoApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	return 0;
 }
 
-void DemoApp::EnableDebugLayer()
+void WinApp::EnableDebugLayer()
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	// 启动debug
@@ -495,7 +519,7 @@ void DemoApp::EnableDebugLayer()
 #endif
 }
 
-void DemoApp::FlushCommandQueue()
+void WinApp::FlushCommandQueue()
 {
 	m_CurrentFence++;
 
@@ -513,7 +537,7 @@ void DemoApp::FlushCommandQueue()
 	}
 }
 
-ID3D12Resource * DemoApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, const void * initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer)
+ID3D12Resource * WinApp::CreateDefaultBuffer(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, const void * initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer)
 {
 	ID3D12Resource * pDefaultBuffer = nullptr;
 	if (pDevice && cmdList)

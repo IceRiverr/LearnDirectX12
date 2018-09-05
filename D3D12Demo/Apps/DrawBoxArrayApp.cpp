@@ -23,7 +23,7 @@ DrawBoxArrayApp::~DrawBoxArrayApp()
 
 void DrawBoxArrayApp::Init()
 {
-	DemoApp::Init();
+	WinApp::Init();
 
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 
@@ -330,7 +330,7 @@ void DrawBoxArrayApp::Draw()
 
 void DrawBoxArrayApp::OnResize()
 {
-	DemoApp::OnResize();
+	WinApp::OnResize();
 	
 	XMMATRIX p = XMMatrixPerspectiveFovLH(90.0f /180.0f * 3.14159f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
 

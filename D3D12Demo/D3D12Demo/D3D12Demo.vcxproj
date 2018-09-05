@@ -150,7 +150,7 @@
   <ItemGroup>
     <ClInclude Include="..\Apps\DrawBoxApp.h" />
     <ClInclude Include="..\Apps\DrawBoxArrayApp.h" />
-    <ClInclude Include="..\Framework\DemoApp.h" />
+    <ClInclude Include="..\Framework\WinApp.h" />
     <ClInclude Include="..\Framework\FrameBuffer.h" />
     <ClInclude Include="..\Framework\stdafx.h" />
     <ClInclude Include="..\Framework\ultility.h" />
@@ -162,7 +162,7 @@
   <ItemGroup>
     <ClCompile Include="..\Apps\DrawBoxApp.cpp" />
     <ClCompile Include="..\Apps\DrawBoxArrayApp.cpp" />
-    <ClCompile Include="..\Framework\DemoApp.cpp" />
+    <ClCompile Include="..\Framework\WinApp.cpp" />
     <ClCompile Include="..\Framework\FrameBuffer.cpp" />
     <ClCompile Include="..\Framework\stdafx.cpp" />
     <ClCompile Include="..\Framework\ultility.cpp" />
