@@ -14,3 +14,6 @@ inline void ThrowIfFailed(HRESULT hr)
 		throw std::exception();
 	}
 }
+
+#define PI		3.14159265f
+#define PI_2	6.28318531f

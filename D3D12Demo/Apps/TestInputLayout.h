@@ -6,18 +6,12 @@
 #include "BufferManager.h"
 #include "StaticMesh.h"
 
-class DrawBoxArrayApp :
+class TestInputLayoutApp :
 	public WinApp
 {
 public:
-	struct Vertex
-	{
-		XMFLOAT3 position;
-		XMFLOAT4 color;
-	};
-	
-	DrawBoxArrayApp();
-	~DrawBoxArrayApp();
+	TestInputLayoutApp();
+	~TestInputLayoutApp();
 
 	virtual void Init();
 	virtual void Update(double deltaTime);

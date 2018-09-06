@@ -1,6 +1,6 @@
-#include "DrawBoxArrayApp.h"
+#include "TestInputLayout.h"
 
-DrawBoxArrayApp::DrawBoxArrayApp()
+TestInputLayoutApp::TestInputLayoutApp()
 {
 	m_pCBVHeap = nullptr;
 	m_pRootSignature = nullptr;
@@ -8,12 +8,12 @@ DrawBoxArrayApp::DrawBoxArrayApp()
 	m_pPSShaderCode = nullptr;
 }
 
-DrawBoxArrayApp::~DrawBoxArrayApp()
+TestInputLayoutApp::~TestInputLayoutApp()
 {
 	
 }
 
-void DrawBoxArrayApp::Init()
+void TestInputLayoutApp::Init()
 {
 	WinApp::Init();
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
@@ -96,10 +96,10 @@ void DrawBoxArrayApp::Init()
 		return;
 	}
 
-	m_InputLayout =
+	m_InputLayout = 
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	BuildPSOs(m_pDevice);
@@ -112,17 +112,12 @@ void DrawBoxArrayApp::Init()
 	FlushCommandQueue();
 }
 
-void DrawBoxArrayApp::Update(double deltaTime)
+void TestInputLayoutApp::Update(double deltaTime)
 {
-	static double dTotalTime = 0.0f;
-	dTotalTime += deltaTime;
+	static double fTotalTime = 0.0f;
+	fTotalTime += deltaTime;
 
-	XMFLOAT3 f3EyePos;
-	f3EyePos.x = 20.0f * (float)std::cos(dTotalTime * PI * 0.4f);
-	f3EyePos.y = 5.0f;
-	f3EyePos.z = 20.0f * (float)std::sin(dTotalTime * PI * 0.4f);
-
-	XMVECTOR eyePos = XMVectorSet(f3EyePos.x, f3EyePos.y, f3EyePos.z, 1.0f);
+	XMVECTOR eyePos = XMVectorSet(0.0, 0.0f, -20.0f, 1.0f);
 	XMVECTOR target = XMVectorZero();
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -159,16 +154,15 @@ void DrawBoxArrayApp::Update(double deltaTime)
 	m_FrameBuffer.m_FrameBufferData.g_InvRenderTargetSize = { 1.0f / (float)m_nClientWindowWidth, 1.0f / (float)m_nClientWindowHeight };
 	m_FrameBuffer.m_FrameBufferData.g_fNearZ = 1.0f;
 	m_FrameBuffer.m_FrameBufferData.g_fFarZ = 1000.0f;
-	m_FrameBuffer.m_FrameBufferData.g_fTotalTime = (float)std::fmodf((float)dTotalTime, 1.0f);
+	m_FrameBuffer.m_FrameBufferData.g_fTotalTime = (float)std::fmodf((float)fTotalTime, 1.0f);
 	m_FrameBuffer.m_FrameBufferData.g_fDeltaTime = (float)deltaTime;
 	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameBufferData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
-void DrawBoxArrayApp::Draw()
+void TestInputLayoutApp::Draw()
 {
 	m_pCommandAllocator->Reset();
 
-	//m_pCommandList->Reset(m_pCommandAllocator, m_PSOs["OpaquePSO"]);
 	m_pCommandList->Reset(m_pCommandAllocator, m_PSOs["WireframePSO"]);
 
 	m_pCommandList->RSSetViewports(1, &m_ScreenViewPort);
@@ -206,16 +200,16 @@ void DrawBoxArrayApp::Draw()
 	{
 		CRenderObject* pObj = m_RenderObjects[i];
 
-		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[2] =
-		{
-			pObj->m_pStaticMesh->m_PositionBufferView,
-			pObj->m_pStaticMesh->m_VertexColorBufferView
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[2] = 
+		{	
+			pObj->m_pStaticMesh->m_PositionBufferView, 
+			pObj->m_pStaticMesh->m_VertexColorBufferView 
 		};
 
 		m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
 		m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
 		m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
+		
 		auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 		handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
 		m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
@@ -247,7 +241,7 @@ void DrawBoxArrayApp::Draw()
 	FlushCommandQueue();
 }
 
-void DrawBoxArrayApp::OnResize()
+void TestInputLayoutApp::OnResize()
 {
 	WinApp::OnResize();
 	
@@ -256,108 +250,77 @@ void DrawBoxArrayApp::OnResize()
 	XMStoreFloat4x4(&m_ProjMat, p);
 }
 
-void DrawBoxArrayApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
 	// Box
+	// Build Box
+	CStaticMesh* pBoxMesh = new CStaticMesh();
+	m_StaticMeshes.emplace("BoxMesh", pBoxMesh);
+	std::vector<XMFLOAT3> positions = 
 	{
-		
-		// Build Box
-		CStaticMesh* pBoxMesh = new CStaticMesh();
-		m_StaticMeshes.emplace("BoxMesh", pBoxMesh);
-		std::vector<XMFLOAT3> positions =
-		{
-			XMFLOAT3(-1.0f, -1.0f, -1.0f),
-			XMFLOAT3(-1.0f, +1.0f, -1.0f),
-			XMFLOAT3(+1.0f, +1.0f, -1.0f),
-			XMFLOAT3(+1.0f, -1.0f, -1.0f),
-			XMFLOAT3(-1.0f, -1.0f, +1.0f),
-			XMFLOAT3(-1.0f, +1.0f, +1.0f),
-			XMFLOAT3(+1.0f, +1.0f, +1.0f),
-			XMFLOAT3(+1.0f, -1.0f, +1.0f)
-		};
+		XMFLOAT3(-1.0f, -1.0f, -1.0f),
+		XMFLOAT3(-1.0f, +1.0f, -1.0f),
+		XMFLOAT3(+1.0f, +1.0f, -1.0f),
+		XMFLOAT3(+1.0f, -1.0f, -1.0f),
+		XMFLOAT3(-1.0f, -1.0f, +1.0f),
+		XMFLOAT3(-1.0f, +1.0f, +1.0f),
+		XMFLOAT3(+1.0f, +1.0f, +1.0f),
+		XMFLOAT3(+1.0f, -1.0f, +1.0f)
+	};
 
-		std::vector<XMFLOAT4> vtxColors =
-		{
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-			XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f)
-		};
+	std::vector<XMFLOAT4> vtxColors = 
+	{
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
+		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f)
+	};
 
-		std::vector<UINT16> indices =
-		{
-			// front face
-			0, 1, 2,
-			0, 2, 3,
+	std::vector<UINT16> indices =
+	{
+		// front face
+		0, 1, 2,
+		0, 2, 3,
 
-			// back face
-			4, 6, 5,
-			4, 7, 6,
+		// back face
+		4, 6, 5,
+		4, 7, 6,
 
-			// left face
-			4, 5, 1,
-			4, 1, 0,
+		// left face
+		4, 5, 1,
+		4, 1, 0,
 
-			// right face
-			3, 2, 6,
-			3, 6, 7,
+		// right face
+		3, 2, 6,
+		3, 6, 7,
 
-			// top face
-			1, 5, 6,
-			1, 6, 2,
+		// top face
+		1, 5, 6,
+		1, 6, 2,
 
-			// bottom face
-			4, 0, 3,
-			4, 3, 7
-		};
-		pBoxMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
-		pBoxMesh->m_pVertexColorBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4), &pBoxMesh->m_pVertexColorBufferUpload);
-		pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pBoxMesh->m_pIndexBufferUpload);
-
-		pBoxMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pBoxMesh->m_VertexColorBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
-		pBoxMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
-
-		pBoxMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
-
-	}
+		// bottom face
+		4, 0, 3,
+		4, 3, 7
+	};
+	pBoxMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
+	pBoxMesh->m_pVertexColorBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4), &pBoxMesh->m_pVertexColorBufferUpload);
+	pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pBoxMesh->m_pIndexBufferUpload);
 	
-	// sphere
-	{
-		CStaticMesh* pSphereMesh = new CStaticMesh();
-		m_StaticMeshes.emplace("SphereMesh", pSphereMesh);
-		std::vector<XMFLOAT3> positions;
-		std::vector<XMFLOAT4> vtxColors;
-		std::vector<UINT16> indices;
-
-		Graphics::CreateUVSphereMesh(32, 16, positions, indices);
-
-		for (int i = 0; i < positions.size(); ++i)
-		{
-			vtxColors.push_back(XMFLOAT4(0.0f, 0.0f, 0.8f, 1.0f));
-		}
-
-		pSphereMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pSphereMesh->m_pPositionBufferUpload);
-		pSphereMesh->m_pVertexColorBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4), &pSphereMesh->m_pVertexColorBufferUpload);
-		pSphereMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pSphereMesh->m_pIndexBufferUpload);
-
-		pSphereMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pSphereMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pSphereMesh->m_VertexColorBufferView = Graphics::CreateVertexBufferView(pSphereMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
-		pSphereMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pSphereMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
-
-		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
-	}
+	pBoxMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+	pBoxMesh->m_VertexColorBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
+	pBoxMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
+	
+	pBoxMesh->AddSubMesh("Box1", (UINT)indices.size(), 0, 0);
 }
 
-void DrawBoxArrayApp::BuildScene()
+void TestInputLayoutApp::BuildScene()
 {
 	// Box Matrix
 	CStaticMesh* pBoxMesh = m_StaticMeshes["BoxMesh"];
-	CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
 	if (pBoxMesh)
 	{
 		for (int j = 0; j < 10; ++j)
@@ -365,14 +328,7 @@ void DrawBoxArrayApp::BuildScene()
 			for (int i = 0; i < 10; ++i)
 			{
 				CRenderObject* pObj = new CRenderObject();
-				if (i == j)
-				{
-					pObj->m_pStaticMesh = pSphereMesh;
-				}
-				else
-				{
-					pObj->m_pStaticMesh = pBoxMesh;
-				}
+				pObj->m_pStaticMesh = pBoxMesh;
 				pObj->m_WorldTransform.Position = XMFLOAT3((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
 				pObj->m_mWorldMatrix = XMMatrixTranslation((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
 				m_RenderObjects.push_back(pObj);
@@ -381,7 +337,7 @@ void DrawBoxArrayApp::BuildScene()
 	}
 }
 
-void DrawBoxArrayApp::BuildPSOs(ID3D12Device* pDevice)
+void TestInputLayoutApp::BuildPSOs(ID3D12Device* pDevice)
 {
 	ID3D12PipelineState* pOpaquePSO = nullptr;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};

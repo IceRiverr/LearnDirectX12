@@ -1,12 +1,18 @@
 #pragma once
 #include "stdafx.h"
-
 #include "Utility.h"
-#include "GraphicsUtility.h"
 #include <unordered_map>
 
 using namespace DirectX;
-using namespace Graphics;
+
+struct MeshData
+{
+	std::vector<XMFLOAT3> Positions;
+	std::vector<XMFLOAT2> UVs;
+	std::vector<XMFLOAT3> Normals;
+	std::vector<XMFLOAT4> VtxColors;
+	std::vector<UINT> Indices;
+};
 
 struct SubMesh
 {
@@ -18,23 +24,20 @@ struct SubMesh
 class CStaticMesh
 {
 public:
-	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
-	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();
-
 	void AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc);
 
 public:
-	ID3D12Resource* m_pVertexBufferGPU = nullptr;
-	ID3D12Resource* m_pVertexBufferUpload = nullptr;
+	ID3D12Resource* m_pPositionBufferGPU = nullptr;
+	ID3D12Resource* m_pPositionBufferUpload = nullptr;
+	ID3D12Resource* m_pVertexColorBufferGPU = nullptr;
+	ID3D12Resource* m_pVertexColorBufferUpload = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW m_PositionBufferView;
+	D3D12_VERTEX_BUFFER_VIEW m_VertexColorBufferView;
+
 	ID3D12Resource* m_pIndexBuferGPU = nullptr;
 	ID3D12Resource* m_pIndexBufferUpload = nullptr;
+	D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 
-	UINT m_nVertexSizeInBytes = 0;
-	UINT m_nVertexStrideInBytes = 0;
-
-	UINT m_nIndexSizeInBytes = 0;
-	DXGI_FORMAT m_IndexFormat = DXGI_FORMAT_R16_UINT;
-	
 	std::unordered_map<std::string, SubMesh> m_SubMeshes;
 };
 

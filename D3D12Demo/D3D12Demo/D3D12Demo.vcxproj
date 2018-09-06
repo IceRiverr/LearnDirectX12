@@ -150,6 +150,7 @@
   <ItemGroup>
     <ClInclude Include="..\Apps\DrawBoxApp.h" />
     <ClInclude Include="..\Apps\DrawBoxArrayApp.h" />
+    <ClInclude Include="..\Apps\TestInputLayout.h" />
     <ClInclude Include="..\Framework\BufferManager.h" />
     <ClInclude Include="..\Framework\GraphicsUtility.h" />
     <ClInclude Include="..\Framework\StaticMesh.h" />
@@ -164,6 +165,7 @@
   <ItemGroup>
     <ClCompile Include="..\Apps\DrawBoxApp.cpp" />
     <ClCompile Include="..\Apps\DrawBoxArrayApp.cpp" />
+    <ClCompile Include="..\Apps\TestInputLayout.cpp" />
     <ClCompile Include="..\Framework\BufferManager.cpp" />
     <ClCompile Include="..\Framework\GraphicsUtility.cpp" />
     <ClCompile Include="..\Framework\StaticMesh.cpp" />

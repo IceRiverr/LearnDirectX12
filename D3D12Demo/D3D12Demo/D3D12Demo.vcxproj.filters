@@ -63,6 +63,9 @@
     <ClInclude Include="..\Framework\BufferManager.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\Apps\TestInputLayout.h">
+      <Filter>Apps</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Demo.cpp">
@@ -91,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="..\Framework\BufferManager.cpp">
       <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Apps\TestInputLayout.cpp">
+      <Filter>Apps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

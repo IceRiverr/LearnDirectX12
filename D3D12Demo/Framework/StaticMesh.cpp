@@ -1,24 +1,5 @@
 #include "StaticMesh.h"
 
-D3D12_VERTEX_BUFFER_VIEW CStaticMesh::GetVertexBufferView()
-{
-	D3D12_VERTEX_BUFFER_VIEW VBView;
-
-	VBView.BufferLocation = m_pVertexBufferGPU->GetGPUVirtualAddress();
-	VBView.SizeInBytes = m_nVertexSizeInBytes;
-	VBView.StrideInBytes = m_nVertexStrideInBytes;
-	return VBView;
-}
-
-D3D12_INDEX_BUFFER_VIEW CStaticMesh::GetIndexBufferView()
-{
-	D3D12_INDEX_BUFFER_VIEW IBView;
-	IBView.BufferLocation = m_pIndexBuferGPU->GetGPUVirtualAddress();
-	IBView.SizeInBytes = m_nIndexSizeInBytes;
-	IBView.Format = m_IndexFormat;
-	return IBView;
-}
-
 void CStaticMesh::AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc)
 {
 	SubMesh subMesh;
