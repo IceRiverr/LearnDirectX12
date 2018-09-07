@@ -132,8 +132,3 @@ void Graphics::CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>
 		}
 	}
 }
-
-bool Graphics::ImportObjMesh(std::string path, MeshData & meshData)
-{
-	return true;
-}

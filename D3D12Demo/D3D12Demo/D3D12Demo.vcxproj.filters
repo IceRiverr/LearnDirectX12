@@ -66,6 +66,9 @@
     <ClInclude Include="..\Apps\TestInputLayout.h">
       <Filter>Apps</Filter>
     </ClInclude>
+    <ClInclude Include="..\Framework\ImportObj.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Demo.cpp">
@@ -97,6 +100,9 @@
     </ClCompile>
     <ClCompile Include="..\Apps\TestInputLayout.cpp">
       <Filter>Apps</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Framework\ImportObj.cpp">
+      <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

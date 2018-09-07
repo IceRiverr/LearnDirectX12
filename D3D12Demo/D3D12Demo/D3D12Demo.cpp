@@ -12,6 +12,7 @@
 #include "DrawBoxApp.h"
 #include "DrawBoxArrayApp.h"
 #include "TestInputLayout.h"
+#include "ImportObj.h"
 
 #define MAX_LOADSTRING 100
 
@@ -62,7 +63,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	QueryPerformanceFrequency((LARGE_INTEGER*)&_countsPerSecend);
 	QueryPerformanceCounter((LARGE_INTEGER*)&_currentCounts);
 	double secendPerCount = 1.0 / _countsPerSecend;
-
+	
+	CImportor_Obj impoortor;
+	impoortor.ImportObjMesh("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\plane.obj"); // smooth_box plane  scene_simple
+	
 	MSG msg = {};
 
     // 主消息循环: 
@@ -79,7 +83,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			QueryPerformanceCounter((LARGE_INTEGER*)&_currentCounts);
 			double deltaTime = (_currentCounts - _oldCounts) * secendPerCount;
 			double fps = _countsPerSecend * 1.0f / (_currentCounts - _oldCounts);
-			//std::cout << "Delta Time: " <<  deltaTime << "Fps: " << fps << std::endl;
+			std::cout << "Delta Time: " <<  deltaTime << "Fps: " << fps << std::endl;
 
 			app.Update(deltaTime);
 			app.Draw();

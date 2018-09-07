@@ -12,6 +12,4 @@ namespace Graphics
 
 	// 分辨率需要小于 128 x 64
 	void CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indees);
-
-	bool ImportObjMesh(std::string path, MeshData& meshData);
 }

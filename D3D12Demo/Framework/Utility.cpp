@@ -21,7 +21,7 @@ BOOL WStringToString(const std::wstring &wstr, std::string &str)
 
 std::wstring IntToWString(SIZE_T v)
 {
-	std::wostringstream stream;
-	stream << v;
-	return stream.str();
+	std::wostringstream ss;
+	ss << v;
+	return ss.str();
 }
