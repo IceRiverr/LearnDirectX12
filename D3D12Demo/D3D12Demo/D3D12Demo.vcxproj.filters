@@ -69,6 +69,9 @@
     <ClInclude Include="..\Framework\ImportObj.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\Framework\Camera.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Demo.cpp">
@@ -104,6 +107,9 @@
     <ClCompile Include="..\Framework\ImportObj.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
+    <ClCompile Include="..\Framework\Camera.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="D3D12Demo.rc">
@@ -125,5 +131,7 @@
     <None Include="..\Shaders\color.hlsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="..\Shaders\position_color.hlsl" />
+    <None Include="..\Shaders\BufferDefine.hlsl" />
   </ItemGroup>
 </Project>

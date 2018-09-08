@@ -13,6 +13,7 @@
 #include "DrawBoxArrayApp.h"
 #include "TestInputLayout.h"
 #include "ImportObj.h"
+#include <map>
 
 #define MAX_LOADSTRING 100
 
@@ -22,8 +23,8 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 
 //DemoApp app;
 //DrawBoxApp app;
-DrawBoxArrayApp app;
-//TestInputLayoutApp app;
+//DrawBoxArrayApp app;
+TestInputLayoutApp app;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -64,8 +65,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	QueryPerformanceCounter((LARGE_INTEGER*)&_currentCounts);
 	double secendPerCount = 1.0 / _countsPerSecend;
 	
-	CImportor_Obj impoortor;
-	impoortor.ImportObjMesh("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\plane.obj"); // smooth_box plane  scene_simple
+	
 	
 	MSG msg = {};
 
@@ -83,7 +83,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			QueryPerformanceCounter((LARGE_INTEGER*)&_currentCounts);
 			double deltaTime = (_currentCounts - _oldCounts) * secendPerCount;
 			double fps = _countsPerSecend * 1.0f / (_currentCounts - _oldCounts);
-			std::cout << "Delta Time: " <<  deltaTime << "Fps: " << fps << std::endl;
+			//std::cout << "Delta Time: " <<  deltaTime << "Fps: " << fps << std::endl;
 
 			app.Update(deltaTime);
 			app.Draw();

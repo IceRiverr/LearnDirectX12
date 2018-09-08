@@ -1,4 +1,5 @@
 #include "TestInputLayout.h"
+#include "ImportObj.h"
 
 TestInputLayoutApp::TestInputLayoutApp()
 {
@@ -15,6 +16,9 @@ TestInputLayoutApp::~TestInputLayoutApp()
 
 void TestInputLayoutApp::Init()
 {
+	m_pCamera = new CCamera();
+	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
+
 	WinApp::Init();
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 	// 所有初始化命令都放到该命令之后
@@ -75,31 +79,21 @@ void TestInputLayoutApp::Init()
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
 
-	// Compile Shader
-	UINT compileFlags = 0;
-#if defined(DEBUG) || defined(_DEBUG)
-	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
+	m_pVSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "VSMain", "vs_5_0");
+	m_pPSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "PSMain", "ps_5_0");
 
-	ID3DBlob* pErrorMsg = nullptr;
-	D3DCompileFromFile(L"D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &m_pVSShaderCode, &pErrorMsg);
-	if (pErrorMsg)
-	{
-		std::cout << "ShaderCompileError: " << std::string((char*)pErrorMsg->GetBufferPointer()) << std::endl;
-		return;
-	}
-	
-	D3DCompileFromFile(L"D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &m_pPSShaderCode, &pErrorMsg);
-	if (pErrorMsg)
-	{
-		std::cout << "ShaderCompileError: " << std::string((char*)pErrorMsg->GetBufferPointer()) << std::endl;
-		return;
-	}
+	m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "PSMain", "ps_5_0");
 
 	m_InputLayout = 
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	m_SimplePositionInputLayout = 
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	BuildPSOs(m_pDevice);
@@ -114,20 +108,10 @@ void TestInputLayoutApp::Init()
 
 void TestInputLayoutApp::Update(double deltaTime)
 {
-	static double fTotalTime = 0.0f;
-	fTotalTime += deltaTime;
+	static double dTotalTime = 0.0f;
+	dTotalTime += deltaTime;
 
-	XMVECTOR eyePos = XMVectorSet(0.0, 0.0f, -20.0f, 1.0f);
-	XMVECTOR target = XMVectorZero();
-	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-	XMMATRIX mView = XMMatrixLookAtLH(eyePos, target, upDir);
-	XMMATRIX mProj = XMMatrixPerspectiveFovLH(90.0f / 180.0f * 3.14159f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
-	XMMATRIX mViewProj = XMMatrixMultiply(mView, mProj);
-
-	XMMATRIX mInvView = XMMatrixInverse(&XMMatrixDeterminant(mView), mView);
-	XMMATRIX mInvProj = XMMatrixInverse(&XMMatrixDeterminant(mProj), mProj);
-	XMMATRIX mInvViewProj = XMMatrixInverse(&XMMatrixDeterminant(mViewProj), mViewProj);
+	m_pCamera->Update(deltaTime);
 
 	// 渲染10x10 100个方格
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
@@ -141,22 +125,25 @@ void TestInputLayoutApp::Update(double deltaTime)
 		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_nConstantBufferIndex);
 	}
 
-	// Frame Buffer
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mView, XMMatrixTranspose(mView));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mInvView, XMMatrixTranspose(mInvView));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mProj, XMMatrixTranspose(mProj));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mInvProj, XMMatrixTranspose(mInvProj));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mViewProj, XMMatrixTranspose(mViewProj));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mInvViewProj, XMMatrixTranspose(mInvViewProj));
-	XMStoreFloat3(&m_FrameBuffer.m_FrameBufferData.g_vEyePosition, eyePos);
-	m_FrameBuffer.m_FrameBufferData.PAD_1 = 0.0f;
-	m_FrameBuffer.m_FrameBufferData.g_InvRenderTargetSize = { (float)m_nClientWindowWidth, (float)m_nClientWindowHeight};
-	m_FrameBuffer.m_FrameBufferData.g_InvRenderTargetSize = { 1.0f / (float)m_nClientWindowWidth, 1.0f / (float)m_nClientWindowHeight };
-	m_FrameBuffer.m_FrameBufferData.g_fNearZ = 1.0f;
-	m_FrameBuffer.m_FrameBufferData.g_fFarZ = 1000.0f;
-	m_FrameBuffer.m_FrameBufferData.g_fTotalTime = (float)std::fmodf((float)fTotalTime, 1.0f);
-	m_FrameBuffer.m_FrameBufferData.g_fDeltaTime = (float)deltaTime;
-	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameBufferData, m_FrameBuffer.m_nConstantBufferSizeAligned);
+	UpdateFrameBuffer((float)deltaTime, (float)dTotalTime);
+}
+
+void TestInputLayoutApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
+{
+	m_FrameBuffer.m_FrameData.g_mView = m_pCamera->m_CameraInfo.mViewMatrix;
+	m_FrameBuffer.m_FrameData.g_mInvView = m_pCamera->m_CameraInfo.mInvViewMatrix;
+	m_FrameBuffer.m_FrameData.g_mProj = m_pCamera->m_CameraInfo.mProjMatrix;
+	m_FrameBuffer.m_FrameData.g_mInvProj = m_pCamera->m_CameraInfo.mInvProjMatrix;
+	m_FrameBuffer.m_FrameData.g_mViewProj = m_pCamera->m_CameraInfo.mViewProjMatrix;
+	m_FrameBuffer.m_FrameData.g_mInvViewProj = m_pCamera->m_CameraInfo.mInvViewProjMatrix;
+	m_FrameBuffer.m_FrameData.g_vEyePosition = m_pCamera->m_CameraInfo.vEyePositon;
+	m_FrameBuffer.m_FrameData.g_RenderTargetSize = { (float)m_nClientWindowWidth, (float)m_nClientWindowHeight };
+	m_FrameBuffer.m_FrameData.g_InvRenderTargetSize = { 1.0f / (float)m_nClientWindowWidth, 1.0f / (float)m_nClientWindowHeight };
+	m_FrameBuffer.m_FrameData.g_fNearZ = m_pCamera->m_CameraInfo.fNearZ;
+	m_FrameBuffer.m_FrameData.g_fFarZ = m_pCamera->m_CameraInfo.fFarZ;
+	m_FrameBuffer.m_FrameData.g_fTotalTime = std::fmodf(fTotalTime, 1.0f);
+	m_FrameBuffer.m_FrameData.g_fDeltaTime = fDeltaTime;
+	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
 void TestInputLayoutApp::Draw()
@@ -199,25 +186,50 @@ void TestInputLayoutApp::Draw()
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
 		CRenderObject* pObj = m_RenderObjects[i];
-
-		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[2] = 
-		{	
-			pObj->m_pStaticMesh->m_PositionBufferView, 
-			pObj->m_pStaticMesh->m_VertexColorBufferView 
-		};
-
-		m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
-		m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
-		m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		
-		auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-		handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
-		m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
-
-		for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
+		if (pObj->m_pStaticMesh->m_pPositionBufferGPU && pObj->m_pStaticMesh->m_pVertexColorBufferGPU)
 		{
-			SubMesh subMesh = it.second;
-			m_pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+			m_pCommandList->SetPipelineState(m_PSOs["WireframePSO"]);
+			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[2] =
+			{
+				pObj->m_pStaticMesh->m_PositionBufferView,
+				pObj->m_pStaticMesh->m_VertexColorBufferView
+			};
+
+			m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+			m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
+			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+			handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+
+			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
+			{
+				SubMesh subMesh = it.second;
+				m_pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+			}
+		}
+		else if (pObj->m_pStaticMesh->m_pPositionBufferGPU)
+		{
+			m_pCommandList->SetPipelineState(m_PSOs["SimplePosition_PSO"]);
+			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+			{
+				pObj->m_pStaticMesh->m_PositionBufferView,
+			};
+
+			m_pCommandList->IASetVertexBuffers(0, 1, &VertexBufferViews[0]);
+			m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
+			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+			handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+
+			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
+			{
+				SubMesh subMesh = it.second;
+				m_pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+			}
 		}
 	}
 
@@ -244,95 +256,118 @@ void TestInputLayoutApp::Draw()
 void TestInputLayoutApp::OnResize()
 {
 	WinApp::OnResize();
-	
-	XMMATRIX p = XMMatrixPerspectiveFovLH(90.0f /180.0f * 3.14159f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
-
-	XMStoreFloat4x4(&m_ProjMat, p);
+	m_pCamera->SetAspectRatio(m_nClientWindowWidth * 1.0f / m_nClientWindowHeight);
 }
 
 void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
 	// Box
-	// Build Box
-	CStaticMesh* pBoxMesh = new CStaticMesh();
-	m_StaticMeshes.emplace("BoxMesh", pBoxMesh);
-	std::vector<XMFLOAT3> positions = 
 	{
-		XMFLOAT3(-1.0f, -1.0f, -1.0f),
-		XMFLOAT3(-1.0f, +1.0f, -1.0f),
-		XMFLOAT3(+1.0f, +1.0f, -1.0f),
-		XMFLOAT3(+1.0f, -1.0f, -1.0f),
-		XMFLOAT3(-1.0f, -1.0f, +1.0f),
-		XMFLOAT3(-1.0f, +1.0f, +1.0f),
-		XMFLOAT3(+1.0f, +1.0f, +1.0f),
-		XMFLOAT3(+1.0f, -1.0f, +1.0f)
-	};
+		// Build Box
+		CStaticMesh* pBoxMesh = new CStaticMesh();
+		m_StaticMeshes.emplace("BoxMesh", pBoxMesh);
+		std::vector<XMFLOAT3> positions;
+		std::vector<UINT16> indices;
+		std::vector<XMFLOAT4> vtxColors;
 
-	std::vector<XMFLOAT4> vtxColors = 
+		Graphics::CreateBox(positions, indices);
+
+		for (int i = 0; i < positions.size(); ++i)
+		{
+			float r = i * 1.0f / positions.size();
+			vtxColors.push_back(XMFLOAT4(r, 0.5f, 0.5f, 1.0f));
+		}
+
+		pBoxMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
+		pBoxMesh->m_pVertexColorBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4), &pBoxMesh->m_pVertexColorBufferUpload);
+		pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pBoxMesh->m_pIndexBufferUpload);
+
+		pBoxMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		pBoxMesh->m_VertexColorBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
+		pBoxMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
+
+		pBoxMesh->AddSubMesh("Box1", (UINT)indices.size(), 0, 0);
+	}
+
+	// Shpere
 	{
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f),
-		XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f)
-	};
+		CStaticMesh* pSphereMesh = new CStaticMesh();
+		m_StaticMeshes.emplace("SphereMesh", pSphereMesh);
+		std::vector<XMFLOAT3> positions;
+		std::vector<UINT16> indices;
 
-	std::vector<UINT16> indices =
+		Graphics::CreateUVSphereMesh(32, 16, positions, indices);
+
+		pSphereMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pSphereMesh->m_pPositionBufferUpload);
+		pSphereMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pSphereMesh->m_pIndexBufferUpload);
+
+		pSphereMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pSphereMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		pSphereMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pSphereMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
+
+		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
+	}
+
+	// Obj
 	{
-		// front face
-		0, 1, 2,
-		0, 2, 3,
+		CStaticMesh* pMesh = new CStaticMesh();
+		m_StaticMeshes.emplace("Plane_Obj", pMesh);
+		CImportor_Obj impoortor;
+		impoortor.SetPath("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\smooth_box.obj"); // smooth_box plane  scene_simple
+		impoortor.Import();
 
-		// back face
-		4, 6, 5,
-		4, 7, 6,
+		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
-		// left face
-		4, 5, 1,
-		4, 1, 0,
+		pMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3), &pMesh->m_pPositionBufferUpload);
+		pMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT), &pMesh->m_pIndexBufferUpload);
 
-		// right face
-		3, 2, 6,
-		3, 6, 7,
+		pMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pMesh->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		pMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pMesh->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
 
-		// top face
-		1, 5, 6,
-		1, 6, 2,
+		pMesh->AddSubMesh("Sub0", (UINT)pMeshData->Indices.size(), 0, 0);
 
-		// bottom face
-		4, 0, 3,
-		4, 3, 7
-	};
-	pBoxMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
-	pBoxMesh->m_pVertexColorBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4), &pBoxMesh->m_pVertexColorBufferUpload);
-	pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pBoxMesh->m_pIndexBufferUpload);
-	
-	pBoxMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-	pBoxMesh->m_VertexColorBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
-	pBoxMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
-	
-	pBoxMesh->AddSubMesh("Box1", (UINT)indices.size(), 0, 0);
+		impoortor.Clear();
+	}
 }
 
 void TestInputLayoutApp::BuildScene()
 {
-	// Box Matrix
-	CStaticMesh* pBoxMesh = m_StaticMeshes["BoxMesh"];
-	if (pBoxMesh)
 	{
-		for (int j = 0; j < 10; ++j)
+		// Box Matrix
+		CStaticMesh* pBoxMesh = m_StaticMeshes["BoxMesh"];
+		if (pBoxMesh)
 		{
-			for (int i = 0; i < 10; ++i)
+			for (int j = 0; j < 10; ++j)
 			{
 				CRenderObject* pObj = new CRenderObject();
 				pObj->m_pStaticMesh = pBoxMesh;
-				pObj->m_WorldTransform.Position = XMFLOAT3((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
-				pObj->m_mWorldMatrix = XMMatrixTranslation((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
+				pObj->m_WorldTransform.Position = XMFLOAT3(0.0f, (j - 5.0f) * 4.0f, 0.0f);
+				pObj->m_mWorldMatrix = XMMatrixTranslation(0.0f, (j - 5.0f) * 4.0f, 0.0f);
 				m_RenderObjects.push_back(pObj);
 			}
+		}
+	}
+	
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_WorldTransform.Position = XMFLOAT3(5.0f, 0.0f, 0.0f);
+			pObj->m_mWorldMatrix = XMMatrixTranslation(5.0f, 0.0f, 0.0f);
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["Plane_Obj"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
+			pObj->m_mWorldMatrix = XMMatrixTranslation(10.0f, 0.0f, 0.0f);
+			m_RenderObjects.push_back(pObj);
 		}
 	}
 }
@@ -357,12 +392,26 @@ void TestInputLayoutApp::BuildPSOs(ID3D12Device* pDevice)
 	OpaquePSODesc.DSVFormat = m_DSVFormat;
 	pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
 	m_PSOs.emplace("OpaquePSO", pOpaquePSO);
+	
+	{
+		ID3D12PipelineState* pWireframePSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC wireframePSODesc = OpaquePSODesc;
+		wireframePSODesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		wireframePSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		pDevice->CreateGraphicsPipelineState(&wireframePSODesc, IID_PPV_ARGS(&pWireframePSO));
+		m_PSOs.emplace("WireframePSO", pWireframePSO);
+	}
 
-	// 
-	ID3D12PipelineState* pWireframePSO = nullptr;
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC wireframePSODesc = OpaquePSODesc;
-	wireframePSODesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	wireframePSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	pDevice->CreateGraphicsPipelineState(&wireframePSODesc, IID_PPV_ARGS(&pWireframePSO));
-	m_PSOs.emplace("WireframePSO", pWireframePSO);
+	{
+		// SimplePosition
+		ID3D12PipelineState* pSimplePositionPSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC SimplePositionPSDesc = OpaquePSODesc;
+		SimplePositionPSDesc.InputLayout = { m_SimplePositionInputLayout.data(), (UINT)m_SimplePositionInputLayout.size() };
+		SimplePositionPSDesc.VS = { m_pVSShaderCode_Position->GetBufferPointer(), m_pVSShaderCode_Position->GetBufferSize() };
+		SimplePositionPSDesc.PS = { m_pPSShaderCode_Position->GetBufferPointer(), m_pPSShaderCode_Position->GetBufferSize() };
+		SimplePositionPSDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		SimplePositionPSDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		pDevice->CreateGraphicsPipelineState(&SimplePositionPSDesc, IID_PPV_ARGS(&pSimplePositionPSO));
+		m_PSOs.emplace("SimplePosition_PSO", pSimplePositionPSO);
+	}
 }

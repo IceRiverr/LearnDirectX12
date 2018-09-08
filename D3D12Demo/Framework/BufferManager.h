@@ -31,7 +31,7 @@ public:
 		float g_fDeltaTime;
 	};
 
-	_Buffer m_FrameBufferData;
+	_Buffer m_FrameData;
 
 	UINT m_nConstantBufferSizeAligned;
 	ID3D12Resource* m_pUploadeConstBuffer;

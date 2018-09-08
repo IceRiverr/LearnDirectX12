@@ -10,6 +10,10 @@ namespace Graphics
 
 	D3D12_INDEX_BUFFER_VIEW CreateIndexBufferView(ID3D12Resource* pIndexBuffer, UINT size, DXGI_FORMAT format);
 
+	ID3DBlob* CompileShader(std::string sFileName, std::string sEntrypoint, std::string sTarget, const D3D_SHADER_MACRO* pDefines = nullptr);
+
 	// 分辨率需要小于 128 x 64
 	void CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indees);
+
+	void CreateBox(std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indices);
 }

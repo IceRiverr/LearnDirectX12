@@ -19,6 +19,21 @@ BOOL WStringToString(const std::wstring &wstr, std::string &str)
 	return TRUE;
 }
 
+BOOL StringToWString(const std::string & str, std::wstring & wstr)
+{
+	int nLen = (int)str.length();
+	wstr.resize(nLen, L' ');
+
+	int nResult = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)str.c_str(), nLen, (LPWSTR)wstr.c_str(), nLen);
+
+	if (nResult == 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 std::wstring IntToWString(SIZE_T v)
 {
 	std::wostringstream ss;

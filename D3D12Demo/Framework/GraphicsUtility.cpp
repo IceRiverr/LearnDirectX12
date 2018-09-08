@@ -63,6 +63,28 @@ D3D12_INDEX_BUFFER_VIEW Graphics::CreateIndexBufferView(ID3D12Resource * pIndexB
 	return bufferView;
 }
 
+ID3DBlob* Graphics::CompileShader(std::string sFileName, std::string sEntrypoint, std::string sTarget, const D3D_SHADER_MACRO* pDefines)
+{
+	ID3DBlob* pShaderCode;
+	// Compile Shader
+	UINT compileFlags = 0;
+#if defined(DEBUG) || defined(_DEBUG)
+	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+	std::wstring wFilePath;
+	StringToWString(sFileName, wFilePath);
+
+	ID3DBlob* pErrorMsg = nullptr;
+	D3DCompileFromFile(wFilePath.c_str(), pDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, sEntrypoint.c_str(), sTarget.c_str(), compileFlags, 0, &pShaderCode, &pErrorMsg);
+	if (pErrorMsg)
+	{
+		std::cout << "ShaderCompileError: " << std::string((char*)pErrorMsg->GetBufferPointer()) << std::endl;
+		return nullptr;
+	}
+	return pShaderCode;
+}
+
 void Graphics::CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indees)
 {
 	if (segments >= 3 && rings >= 3)
@@ -131,4 +153,46 @@ void Graphics::CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>
 			indees.push_back(bottomUp + j);
 		}
 	}
+}
+
+void Graphics::CreateBox(std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indices)
+{
+	positions =
+	{
+		XMFLOAT3(-1.0f, -1.0f, -1.0f),
+		XMFLOAT3(-1.0f, +1.0f, -1.0f),
+		XMFLOAT3(+1.0f, +1.0f, -1.0f),
+		XMFLOAT3(+1.0f, -1.0f, -1.0f),
+		XMFLOAT3(-1.0f, -1.0f, +1.0f),
+		XMFLOAT3(-1.0f, +1.0f, +1.0f),
+		XMFLOAT3(+1.0f, +1.0f, +1.0f),
+		XMFLOAT3(+1.0f, -1.0f, +1.0f)
+	};
+
+	indices =
+	{
+		// front face
+		0, 1, 2,
+		0, 2, 3,
+
+		// back face
+		4, 6, 5,
+		4, 7, 6,
+
+		// left face
+		4, 5, 1,
+		4, 1, 0,
+
+		// right face
+		3, 2, 6,
+		3, 6, 7,
+
+		// top face
+		1, 5, 6,
+		1, 6, 2,
+
+		// bottom face
+		4, 0, 3,
+		4, 3, 7
+	};
 }

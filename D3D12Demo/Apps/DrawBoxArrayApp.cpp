@@ -147,21 +147,21 @@ void DrawBoxArrayApp::Update(double deltaTime)
 	}
 
 	// Frame Buffer
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mView, XMMatrixTranspose(mView));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mInvView, XMMatrixTranspose(mInvView));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mProj, XMMatrixTranspose(mProj));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mInvProj, XMMatrixTranspose(mInvProj));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mViewProj, XMMatrixTranspose(mViewProj));
-	XMStoreFloat4x4(&m_FrameBuffer.m_FrameBufferData.g_mInvViewProj, XMMatrixTranspose(mInvViewProj));
-	XMStoreFloat3(&m_FrameBuffer.m_FrameBufferData.g_vEyePosition, eyePos);
-	m_FrameBuffer.m_FrameBufferData.PAD_1 = 0.0f;
-	m_FrameBuffer.m_FrameBufferData.g_InvRenderTargetSize = { (float)m_nClientWindowWidth, (float)m_nClientWindowHeight};
-	m_FrameBuffer.m_FrameBufferData.g_InvRenderTargetSize = { 1.0f / (float)m_nClientWindowWidth, 1.0f / (float)m_nClientWindowHeight };
-	m_FrameBuffer.m_FrameBufferData.g_fNearZ = 1.0f;
-	m_FrameBuffer.m_FrameBufferData.g_fFarZ = 1000.0f;
-	m_FrameBuffer.m_FrameBufferData.g_fTotalTime = (float)std::fmodf((float)dTotalTime, 1.0f);
-	m_FrameBuffer.m_FrameBufferData.g_fDeltaTime = (float)deltaTime;
-	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameBufferData, m_FrameBuffer.m_nConstantBufferSizeAligned);
+	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mView, XMMatrixTranspose(mView));
+	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mInvView, XMMatrixTranspose(mInvView));
+	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mProj, XMMatrixTranspose(mProj));
+	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mInvProj, XMMatrixTranspose(mInvProj));
+	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mViewProj, XMMatrixTranspose(mViewProj));
+	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mInvViewProj, XMMatrixTranspose(mInvViewProj));
+	XMStoreFloat3(&m_FrameBuffer.m_FrameData.g_vEyePosition, eyePos);
+	m_FrameBuffer.m_FrameData.PAD_1 = 0.0f;
+	m_FrameBuffer.m_FrameData.g_InvRenderTargetSize = { (float)m_nClientWindowWidth, (float)m_nClientWindowHeight};
+	m_FrameBuffer.m_FrameData.g_InvRenderTargetSize = { 1.0f / (float)m_nClientWindowWidth, 1.0f / (float)m_nClientWindowHeight };
+	m_FrameBuffer.m_FrameData.g_fNearZ = 1.0f;
+	m_FrameBuffer.m_FrameData.g_fFarZ = 1000.0f;
+	m_FrameBuffer.m_FrameData.g_fTotalTime = (float)std::fmodf((float)dTotalTime, 1.0f);
+	m_FrameBuffer.m_FrameData.g_fDeltaTime = (float)deltaTime;
+	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
 void DrawBoxArrayApp::Draw()

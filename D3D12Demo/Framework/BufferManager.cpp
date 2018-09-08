@@ -2,7 +2,7 @@
 
 CFrameBuffer::CFrameBuffer()
 {
-	m_FrameBufferData = {};
+	m_FrameData = {};
 
 	m_nConstantBufferSizeAligned = 0;
 	m_pUploadeConstBuffer = nullptr;

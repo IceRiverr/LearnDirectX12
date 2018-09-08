@@ -15,11 +15,14 @@
 class CImportor_Obj
 {
 public:
-	struct FaceEntry
+	class FaceEntry
 	{
+	public:
 		UINT posID;
 		UINT uvID;
 		UINT nmlID;
+
+		bool operator < (const FaceEntry& f) const;
 	};
 
 	struct ObjData
@@ -30,13 +33,21 @@ public:
 		std::vector<FaceEntry> Faces;
 	};
 
-	bool ImportObjMesh(std::string path);
-	void ProcessObjData();
+	~CImportor_Obj();
+
+	void SetPath(std::string path);
+	void Import();
+	void Clear();
 
 	std::vector<MeshData*> m_MeshObjs;
 	std::vector<ObjData*> m_ObjDatas;
 
 private:
+	bool ImportObjMesh();
+	void ProcessObjData();
+
+private:
+	std::string m_ObjFilePath;
 	std::vector<std::string> m_MeshNames;
 	std::vector<XMUINT2> m_MeshRanges; // 在文件流中的位置
 };

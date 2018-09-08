@@ -153,6 +153,7 @@
     <ClInclude Include="..\Apps\DrawBoxArrayApp.h" />
     <ClInclude Include="..\Apps\TestInputLayout.h" />
     <ClInclude Include="..\Framework\BufferManager.h" />
+    <ClInclude Include="..\Framework\Camera.h" />
     <ClInclude Include="..\Framework\GraphicsUtility.h" />
     <ClInclude Include="..\Framework\ImportObj.h" />
     <ClInclude Include="..\Framework\StaticMesh.h" />
@@ -169,6 +170,7 @@
     <ClCompile Include="..\Apps\DrawBoxArrayApp.cpp" />
     <ClCompile Include="..\Apps\TestInputLayout.cpp" />
     <ClCompile Include="..\Framework\BufferManager.cpp" />
+    <ClCompile Include="..\Framework\Camera.cpp" />
     <ClCompile Include="..\Framework\GraphicsUtility.cpp" />
     <ClCompile Include="..\Framework\ImportObj.cpp" />
     <ClCompile Include="..\Framework\StaticMesh.cpp" />
@@ -189,6 +191,16 @@
       <FileType>Document</FileType>
     </None>
     <None Include="..\Shaders\color_view_info.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Shaders\position_color.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Shaders\BufferDefine.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

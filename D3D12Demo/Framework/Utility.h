@@ -2,11 +2,11 @@
 #include <string>
 #include <sstream>
 
+// https://www.cnblogs.com/02xiaoma/archive/2012/07/18/2597576.html
 BOOL WStringToString(const std::wstring &wstr, std::string &str);
+BOOL StringToWString(const std::string &str, std::wstring &wstr);
 
 std::wstring IntToWString(SIZE_T v);
-
-float String2Float(std::string t);
 
 // From DXSampleHelper.h 
 // Source: https://github.com/Microsoft/DirectX-Graphics-Samples

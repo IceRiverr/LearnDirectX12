@@ -1,6 +1,7 @@
 #include "ImportObj.h"
 #include <fstream>
 #include <regex>
+#include <map>
 
 void parse_float_in_string(std::string text, std::vector<float>& data)
 {
@@ -24,10 +25,48 @@ void parse_uint_in_string(std::string text, std::vector<UINT>& data)
 	}
 }
 
-bool CImportor_Obj::ImportObjMesh(std::string path)
+CImportor_Obj::~CImportor_Obj()
+{
+	Clear();
+}
+
+void CImportor_Obj::SetPath(std::string path)
+{
+	m_ObjFilePath = path;
+}
+
+void CImportor_Obj::Import()
+{
+	ImportObjMesh();
+	ProcessObjData();
+}
+
+void CImportor_Obj::Clear()
+{
+	m_ObjFilePath = "";
+
+	for (UINT i = 0; i < m_MeshObjs.size(); ++i)
+	{
+		MeshData* pMesh = m_MeshObjs[i];
+		delete pMesh; pMesh = nullptr;
+	}
+	m_MeshObjs.clear();
+
+	for (UINT i = 0; i < m_ObjDatas.size(); ++i)
+	{
+		ObjData* pObj = m_ObjDatas[i];
+		delete pObj; pObj = nullptr;
+	}
+	m_ObjDatas.clear();
+	
+	m_MeshNames.clear();
+	m_MeshRanges.clear();
+}
+
+bool CImportor_Obj::ImportObjMesh()
 {
 	std::fstream fs;
-	fs.open(path, std::ios::in);
+	fs.open(m_ObjFilePath, std::ios::in);
 
 	char buffer[128];
 
@@ -178,7 +217,41 @@ bool CImportor_Obj::ImportObjMesh(std::string path)
 
 void CImportor_Obj::ProcessObjData()
 {
-	
+	// 重新组织数据
+	for (UINT obj = 0; obj < m_ObjDatas.size(); ++obj)
+	{
+		std::map<FaceEntry, UINT> FaceIndexMap;
 
+		ObjData* pObjData = m_ObjDatas[obj];
+		MeshData* pMeshData = new MeshData();
+		m_MeshObjs.push_back(pMeshData);
 
+		for (UINT i = 0; i < pObjData->Faces.size(); ++i)
+		{
+			auto it = FaceIndexMap.find(pObjData->Faces[i]);
+			if (it == FaceIndexMap.end())
+			{
+				const FaceEntry& fe = pObjData->Faces[i];
+				pMeshData->Positions.push_back(pObjData->Positions[fe.posID - 1]);
+				pMeshData->UVs.push_back(pObjData->UVs[fe.uvID - 1]);
+				pMeshData->Normals.push_back(pObjData->Normals[fe.nmlID - 1]);
+
+				UINT index = (UINT)pMeshData->Positions.size() - 1;
+				pMeshData->Indices.push_back(index);
+				FaceIndexMap.emplace(fe, index);
+			}
+			else
+			{
+				UINT index = it->second;
+				pMeshData->Indices.push_back(index);
+			}
+		}
+	}
+}
+
+bool CImportor_Obj::FaceEntry::operator<(const FaceEntry& f) const
+{
+	return	 this->posID < f.posID ? true : (this->posID == f.posID ?
+			(this->uvID < f.uvID ? true : (this->uvID == f.uvID ?
+			(this->nmlID < f.nmlID ? true : false) : false)) : false);
 }
