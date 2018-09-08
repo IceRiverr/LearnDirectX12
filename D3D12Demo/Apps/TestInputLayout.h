@@ -6,6 +6,7 @@
 #include "BufferManager.h"
 #include "StaticMesh.h"
 #include "Camera.h"
+#include "InputManager.h"
 
 class TestInputLayoutApp :
 	public WinApp
@@ -18,6 +19,8 @@ public:
 	virtual void Update(double deltaTime);
 	virtual void Draw();
 	virtual void OnResize();
+
+	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
@@ -48,4 +51,5 @@ private:
 	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
 
 	CCamera* m_pCamera;
+	CInputManager m_InputMgr;
 };

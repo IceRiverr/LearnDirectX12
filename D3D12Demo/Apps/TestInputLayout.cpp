@@ -111,6 +111,21 @@ void TestInputLayoutApp::Update(double deltaTime)
 	static double dTotalTime = 0.0f;
 	dTotalTime += deltaTime;
 
+	if (m_InputMgr.IsKeyJustDown('F'))
+	{
+		std::cout << "F click" << std::endl;
+	}
+
+	if (m_InputMgr.IsKeyHoldOrDown('G'))
+	{
+		std::cout << "G hold" << std::endl;
+	}
+
+	if (m_InputMgr.IsKeyUp('G'))
+	{
+		std::cout << "G Up" << std::endl;
+	}
+
 	m_pCamera->Update(deltaTime);
 
 	// 渲染10x10 100个方格
@@ -126,6 +141,7 @@ void TestInputLayoutApp::Update(double deltaTime)
 	}
 
 	UpdateFrameBuffer((float)deltaTime, (float)dTotalTime);
+	m_InputMgr.ResetInputInfos();
 }
 
 void TestInputLayoutApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
@@ -259,6 +275,118 @@ void TestInputLayoutApp::OnResize()
 	m_pCamera->SetAspectRatio(m_nClientWindowWidth * 1.0f / m_nClientWindowHeight);
 }
 
+LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		// TODO: 在此处添加使用 hdc 的任何绘图代码...
+		EndPaint(hWnd, &ps);
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	case WM_ACTIVATE:
+		if (LOWORD(wParam) == WA_INACTIVE)
+		{
+			std::cout << "InActive" << std::endl;
+		}
+		else
+		{
+			std::cout << "Active" << std::endl;
+		}
+		break;
+	case WM_SIZE:
+	{
+		RECT clientWindow = {};
+		GetClientRect(m_hWnd, &clientWindow);
+
+		int windowWidth = (int)(clientWindow.right - clientWindow.left);
+		int windowHeight = (int)(clientWindow.bottom - clientWindow.top);
+
+		if (m_nClientWindowWidth != windowWidth || m_nClientWindowHeight != windowHeight)
+		{
+			m_nClientWindowWidth = windowWidth;
+			m_nClientWindowHeight = windowHeight;
+			OnResize();
+		}
+		break;
+	}
+	case WM_ENTERSIZEMOVE:
+		// 用户开始拖动resize bar
+		break;
+	case WM_EXITSIZEMOVE:
+		OnResize();
+		// 用户停止拖动
+		break;
+	case WM_SYSKEYDOWN:
+	case WM_KEYDOWN:
+	{
+		KeyInfo keyState = GetKeyInfo(wParam, lParam);
+		keyState.state = KeyState::Down;
+		m_InputMgr.m_KeyInfos[keyState.key] = keyState;
+
+		switch (wParam)
+		{
+		case VK_ESCAPE:
+			PostQuitMessage(0);
+			break;
+		case VK_F12: // 这个命令会导致断点，不知道什么原因
+					 //SetFullScreen(!m_bFullScreen);
+			break;
+		case 'P':
+			SetFullScreen(!m_bFullScreen);
+			break;
+		case 'A':
+			//std::cout << "A";
+			break;
+		}
+		break;
+	}
+	case WM_SYSKEYUP:
+	case WM_KEYUP:
+	{
+		KeyInfo keyState = GetKeyInfo(wParam, lParam);
+		keyState.state = KeyState::Up;
+		m_InputMgr.m_KeyInfos[keyState.key] = keyState;
+
+		break;
+	}
+	case WM_LBUTTONDOWN:
+	{
+		//std::cout << "L Button Down\n";
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		//std::cout << "R Button Down\n";
+		break;
+	}
+	case WM_MOUSEMOVE:
+	{
+		int x = LOWORD(lParam);//鼠标的横坐标
+		int y = HIWORD(lParam);//鼠标的纵坐标
+
+		m_InputMgr.m_nMouseX = x;
+		m_InputMgr.m_nMouseY = x;
+
+		m_InputMgr.m_nDelteMouseX = x - m_InputMgr.m_nLastMouseX;
+		m_InputMgr.m_nDeltaMouseY = y = m_InputMgr.m_nLastMouseY;
+
+		m_InputMgr.m_nLastMouseX = x;
+		m_InputMgr.m_nLastMouseY = y;
+		break;
+	}
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
+}
+
 void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
 	// Box
@@ -312,7 +440,7 @@ void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12Graphics
 		CStaticMesh* pMesh = new CStaticMesh();
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
 		CImportor_Obj impoortor;
-		impoortor.SetPath("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\smooth_box.obj"); // smooth_box plane  scene_simple
+		impoortor.SetPath("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\plane.obj"); // smooth_box plane  scene_simple
 		impoortor.Import();
 
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];

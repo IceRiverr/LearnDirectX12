@@ -65,7 +65,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	QueryPerformanceCounter((LARGE_INTEGER*)&_currentCounts);
 	double secendPerCount = 1.0 / _countsPerSecend;
 	
+	//--------TEST START--------
 	
+
+
+
+
+	//--------TEST END---------
 	
 	MSG msg = {};
 

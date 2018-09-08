@@ -156,6 +156,7 @@
     <ClInclude Include="..\Framework\Camera.h" />
     <ClInclude Include="..\Framework\GraphicsUtility.h" />
     <ClInclude Include="..\Framework\ImportObj.h" />
+    <ClInclude Include="..\Framework\InputManager.h" />
     <ClInclude Include="..\Framework\StaticMesh.h" />
     <ClInclude Include="..\Framework\WinApp.h" />
     <ClInclude Include="..\Framework\stdafx.h" />
@@ -173,6 +174,7 @@
     <ClCompile Include="..\Framework\Camera.cpp" />
     <ClCompile Include="..\Framework\GraphicsUtility.cpp" />
     <ClCompile Include="..\Framework\ImportObj.cpp" />
+    <ClCompile Include="..\Framework\InputManager.cpp" />
     <ClCompile Include="..\Framework\StaticMesh.cpp" />
     <ClCompile Include="..\Framework\WinApp.cpp" />
     <ClCompile Include="..\Framework\stdafx.cpp" />
