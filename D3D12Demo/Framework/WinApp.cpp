@@ -310,6 +310,11 @@ void WinApp::OnResize()
 	FlushCommandQueue();
 }
 
+void WinApp::Destroy()
+{
+
+}
+
 void WinApp::LogAdapters(IDXGIFactory * pFactory)
 {
 	std::wstring text;

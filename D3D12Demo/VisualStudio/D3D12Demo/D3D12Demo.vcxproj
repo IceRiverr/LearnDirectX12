@@ -72,10 +72,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\ThirdParty;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Apps;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\D3D12Demo;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Framework;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\libs;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Apps\imgui_dx12;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\ThirdParty\imgui-master;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\VisualStudio\D3D12Demo;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\ThirdParty;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\libs;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Framework;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Apps;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -149,36 +150,46 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Apps\DrawBoxApp.h" />
-    <ClInclude Include="..\Apps\DrawBoxArrayApp.h" />
-    <ClInclude Include="..\Apps\TestInputLayout.h" />
+    <ClInclude Include="..\..\Apps\DrawBoxApp.h" />
+    <ClInclude Include="..\..\Apps\DrawBoxArrayApp.h" />
+    <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_dx12.h" />
+    <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_win32.h" />
+    <ClInclude Include="..\..\Apps\TestInputLayout.h" />
+    <ClInclude Include="..\..\ThirdParty\imgui-master\imconfig.h" />
+    <ClInclude Include="..\..\ThirdParty\imgui-master\imgui.h" />
+    <ClInclude Include="..\..\ThirdParty\imgui-master\imgui_internal.h" />
     <ClInclude Include="..\Framework\BufferManager.h" />
-    <ClInclude Include="..\Framework\Camera.h" />
-    <ClInclude Include="..\Framework\GraphicsUtility.h" />
-    <ClInclude Include="..\Framework\ImportObj.h" />
-    <ClInclude Include="..\Framework\InputManager.h" />
-    <ClInclude Include="..\Framework\StaticMesh.h" />
-    <ClInclude Include="..\Framework\WinApp.h" />
-    <ClInclude Include="..\Framework\stdafx.h" />
-    <ClInclude Include="..\Framework\Utility.h" />
-    <ClInclude Include="..\libs\d3dx12.h" />
+    <ClInclude Include="..\..\Framework\Camera.h" />
+    <ClInclude Include="..\..\Framework\GraphicsUtility.h" />
+    <ClInclude Include="..\..\Framework\ImportObj.h" />
+    <ClInclude Include="..\..\Framework\InputManager.h" />
+    <ClInclude Include="..\..\Framework\StaticMesh.h" />
+    <ClInclude Include="..\..\Framework\WinApp.h" />
+    <ClInclude Include="..\..\Framework\stdafx.h" />
+    <ClInclude Include="..\..\Framework\Utility.h" />
+    <ClInclude Include="..\..\libs\d3dx12.h" />
     <ClInclude Include="D3D12Demo.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Apps\DrawBoxApp.cpp" />
-    <ClCompile Include="..\Apps\DrawBoxArrayApp.cpp" />
-    <ClCompile Include="..\Apps\TestInputLayout.cpp" />
-    <ClCompile Include="..\Framework\BufferManager.cpp" />
-    <ClCompile Include="..\Framework\Camera.cpp" />
-    <ClCompile Include="..\Framework\GraphicsUtility.cpp" />
-    <ClCompile Include="..\Framework\ImportObj.cpp" />
-    <ClCompile Include="..\Framework\InputManager.cpp" />
-    <ClCompile Include="..\Framework\StaticMesh.cpp" />
-    <ClCompile Include="..\Framework\WinApp.cpp" />
-    <ClCompile Include="..\Framework\stdafx.cpp" />
-    <ClCompile Include="..\Framework\Utility.cpp" />
+    <ClCompile Include="..\..\Apps\DrawBoxApp.cpp" />
+    <ClCompile Include="..\..\Apps\DrawBoxArrayApp.cpp" />
+    <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\..\Apps\TestInputLayout.cpp" />
+    <ClCompile Include="..\..\Framework\BufferManager.cpp" />
+    <ClCompile Include="..\..\Framework\Camera.cpp" />
+    <ClCompile Include="..\..\Framework\GraphicsUtility.cpp" />
+    <ClCompile Include="..\..\Framework\ImportObj.cpp" />
+    <ClCompile Include="..\..\Framework\InputManager.cpp" />
+    <ClCompile Include="..\..\Framework\StaticMesh.cpp" />
+    <ClCompile Include="..\..\Framework\WinApp.cpp" />
+    <ClCompile Include="..\..\Framework\stdafx.cpp" />
+    <ClCompile Include="..\..\Framework\Utility.cpp" />
+    <ClCompile Include="..\..\ThirdParty\imgui-master\imgui.cpp" />
+    <ClCompile Include="..\..\ThirdParty\imgui-master\imgui_demo.cpp" />
+    <ClCompile Include="..\..\ThirdParty\imgui-master\imgui_draw.cpp" />
     <ClCompile Include="D3D12Demo.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -189,20 +200,20 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Shaders\color.hlsl">
+    <None Include="..\..\Shaders\color.hlsl">
       <FileType>Document</FileType>
     </None>
-    <None Include="..\Shaders\color_view_info.hlsl">
-      <FileType>Document</FileType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Shaders\position_color.hlsl">
+    <None Include="..\..\Shaders\color_view_info.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Shaders\BufferDefine.hlsl">
+    <None Include="..\..\Shaders\position_color.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\BufferDefine.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

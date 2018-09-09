@@ -19,15 +19,21 @@ public:
 	virtual void Update(double deltaTime);
 	virtual void Draw();
 	virtual void OnResize();
+	virtual void Destroy();
 
 	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
+	void InitRenderResource();
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildScene();
 	void BuildPSOs(ID3D12Device* pDevice);
+	void InitImgui();
 
 	void UpdateFrameBuffer(float fDeltaTime, float fTotalTime);
+	void UpdateImgui();
+
+	void DrawImgui();
 
 private:
 	ID3D12DescriptorHeap * m_pCBVHeap;
@@ -52,4 +58,11 @@ private:
 
 	CCamera* m_pCamera;
 	CInputManager m_InputMgr;
+
+	UINT m_imguiDescriptorIndex;
+
+	// Test imgui
+	bool show_demo_window;
+	bool show_another_window;
+	XMFLOAT4 clear_color;
 };

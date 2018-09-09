@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2047
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D12Demo", "D3D12Demo\D3D12Demo.vcxproj", "{36C90BC4-22F3-421E-A29E-B8D6549AEA7E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D12Demo", "VisualStudio\D3D12Demo\D3D12Demo.vcxproj", "{36C90BC4-22F3-421E-A29E-B8D6549AEA7E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Test\Test.vcxproj", "{AC3A3111-A7FD-4AB5-8441-E7B6F6224CB3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "VisualStudio\Test\Test.vcxproj", "{AC3A3111-A7FD-4AB5-8441-E7B6F6224CB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -28,16 +28,17 @@
 
 *.db
 *.pdb
+*.ipch
+*.tlog
 
 # Executables
 *.exe
 *.out
 *.app
-D3D12Demo/D3D12Demo/x64/Debug/
-D3D12Demo/D3D12Demo/Debug/
+
+# Proj
+D3D12Demo/VisualStudio/D3D12Demo/Debug/
+D3D12Demo/VisualStudio/D3D12Demo/x64/
+D3D12Demo/VisualStudio/Test/x64/
 D3D12Demo/x64/
-*.ipch
-D3D12Demo/.vs/
 D3D12Demo/Content/
-D3D12Demo/D3D12Demo/x64/
-D3D12Demo/Test/x64/

@@ -1,12 +1,20 @@
 #include "TestInputLayout.h"
 #include "ImportObj.h"
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 TestInputLayoutApp::TestInputLayoutApp()
 {
 	m_pCBVHeap = nullptr;
 	m_pRootSignature = nullptr;
 	m_pVSShaderCode = nullptr;
 	m_pPSShaderCode = nullptr;
+
+	bool show_demo_window = false;
+	bool show_another_window = false;
+	clear_color = { 80.0f / 255.0f, 90.0f / 255.0f, 100.0f / 255.0f, 1.0f };
 }
 
 TestInputLayoutApp::~TestInputLayoutApp()
@@ -16,10 +24,16 @@ TestInputLayoutApp::~TestInputLayoutApp()
 
 void TestInputLayoutApp::Init()
 {
+	WinApp::Init();
+	InitRenderResource();
+	InitImgui();
+
 	m_pCamera = new CCamera();
 	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
+}
 
-	WinApp::Init();
+void TestInputLayoutApp::InitRenderResource()
+{
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 	// 所有初始化命令都放到该命令之后
 
@@ -28,7 +42,8 @@ void TestInputLayoutApp::Init()
 
 	// create cbv heap
 	D3D12_DESCRIPTOR_HEAP_DESC cbHeapDesc = {};
-	cbHeapDesc.NumDescriptors = (UINT)m_RenderObjects.size() + 1;
+	// obj + frameBuffer + imgui
+	cbHeapDesc.NumDescriptors = (UINT)m_RenderObjects.size() + 1 + 1;
 	cbHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbHeapDesc.NodeMask = 0;
@@ -46,10 +61,12 @@ void TestInputLayoutApp::Init()
 	}
 
 	m_FrameBuffer.CreateBuffer(m_pDevice);
-	m_FrameBuffer.m_nDescriptorIndex = nDescriptorIndex;
+	m_FrameBuffer.m_nDescriptorIndex = nDescriptorIndex++;
 	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
 	handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
 	m_FrameBuffer.CreateBufferView(m_pDevice, handle);
+
+	m_imguiDescriptorIndex = nDescriptorIndex;
 
 	// create root signature
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
@@ -69,12 +86,12 @@ void TestInputLayoutApp::Init()
 	D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
 
 	m_pDevice->CreateRootSignature(
-		0, 
-		serializedRootSig->GetBufferPointer(), 
-		serializedRootSig->GetBufferSize(), 
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
 		IID_PPV_ARGS(&m_pRootSignature));
 
-	if (serializedRootSig) 
+	if (serializedRootSig)
 	{
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
@@ -85,13 +102,13 @@ void TestInputLayoutApp::Init()
 	m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "VSMain", "vs_5_0");
 	m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "PSMain", "ps_5_0");
 
-	m_InputLayout = 
+	m_InputLayout =
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	m_SimplePositionInputLayout = 
+	m_SimplePositionInputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
@@ -141,6 +158,9 @@ void TestInputLayoutApp::Update(double deltaTime)
 	}
 
 	UpdateFrameBuffer((float)deltaTime, (float)dTotalTime);
+
+	UpdateImgui();
+
 	m_InputMgr.ResetInputInfos();
 }
 
@@ -162,6 +182,57 @@ void TestInputLayoutApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
+void TestInputLayoutApp::UpdateImgui()
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+	if (show_demo_window)
+		ImGui::ShowDemoWindow(&show_demo_window);
+
+	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+	{
+		static float f = 0.0f;
+		static int counter = 0;
+
+		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Another Window", &show_another_window);
+
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
+		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			counter++;
+		ImGui::SameLine();
+		ImGui::Text("counter = %d", counter);
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+	}
+
+	// 3. Show another simple window.
+	if (show_another_window)
+	{
+		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		ImGui::Text("Hello from another window!");
+		if (ImGui::Button("Close Me"))
+			show_another_window = false;
+		ImGui::End();
+	}
+}
+
+void TestInputLayoutApp::DrawImgui()
+{
+	ImGui::Render();
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_pCommandList);
+}
+
 void TestInputLayoutApp::Draw()
 {
 	m_pCommandAllocator->Reset();
@@ -178,11 +249,9 @@ void TestInputLayoutApp::Draw()
 			D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Begin Draw
-
-	float clearColors[4] = { 80.0f/255.0f, 90.0f / 255.0f, 100.0f/255.0f, 1.0f };
 	m_pCommandList->ClearRenderTargetView(
 		GetCurrentBackBufferView(),
-		clearColors, 0, nullptr);
+		(float*)&clear_color, 0, nullptr);
 
 	m_pCommandList->ClearDepthStencilView(
 		GetDepthStencilView(),
@@ -249,6 +318,9 @@ void TestInputLayoutApp::Draw()
 		}
 	}
 
+	// Imgui
+	DrawImgui();
+
 	// End Draw
 	m_pCommandList->ResourceBarrier(
 		1, &CD3DX12_RESOURCE_BARRIER::Transition(
@@ -272,11 +344,31 @@ void TestInputLayoutApp::Draw()
 void TestInputLayoutApp::OnResize()
 {
 	WinApp::OnResize();
-	m_pCamera->SetAspectRatio(m_nClientWindowWidth * 1.0f / m_nClientWindowHeight);
+	ImGui_ImplDX12_InvalidateDeviceObjects();
+	ImGui_ImplDX12_CreateDeviceObjects();
+
+	if (m_pCamera)
+	{
+		m_pCamera->SetAspectRatio(m_nClientWindowWidth * 1.0f / m_nClientWindowHeight);
+	}
 }
 
+void TestInputLayoutApp::Destroy()
+{
+	WinApp::Destroy();
+	FlushCommandQueue();
+
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+}
+
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+		return true;
+
 	switch (message)
 	{
 	case WM_PAINT:
@@ -285,11 +377,11 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 		HDC hdc = BeginPaint(hWnd, &ps);
 		// TODO: 在此处添加使用 hdc 的任何绘图代码...
 		EndPaint(hWnd, &ps);
+		return 0;
 	}
-	break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		break;
+		return 0;
 	case WM_ACTIVATE:
 		if (LOWORD(wParam) == WA_INACTIVE)
 		{
@@ -299,7 +391,7 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 		{
 			std::cout << "Active" << std::endl;
 		}
-		break;
+		return 0;
 	case WM_SIZE:
 	{
 		RECT clientWindow = {};
@@ -314,15 +406,15 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 			m_nClientWindowHeight = windowHeight;
 			OnResize();
 		}
-		break;
+		return 0;
 	}
 	case WM_ENTERSIZEMOVE:
 		// 用户开始拖动resize bar
-		break;
+		return 0;
 	case WM_EXITSIZEMOVE:
 		OnResize();
 		// 用户停止拖动
-		break;
+		return 0;
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
 	{
@@ -345,7 +437,7 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 			//std::cout << "A";
 			break;
 		}
-		break;
+		return 0;
 	}
 	case WM_SYSKEYUP:
 	case WM_KEYUP:
@@ -354,17 +446,17 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 		keyState.state = KeyState::Up;
 		m_InputMgr.m_KeyInfos[keyState.key] = keyState;
 
-		break;
+		return 0;
 	}
 	case WM_LBUTTONDOWN:
 	{
 		//std::cout << "L Button Down\n";
-		break;
+		return 0;
 	}
 	case WM_RBUTTONDOWN:
 	{
 		//std::cout << "R Button Down\n";
-		break;
+		return 0;
 	}
 	case WM_MOUSEMOVE:
 	{
@@ -379,12 +471,11 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 
 		m_InputMgr.m_nLastMouseX = x;
 		m_InputMgr.m_nLastMouseY = y;
-		break;
+		return 0;
 	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
-	return 0;
 }
 
 void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
@@ -542,4 +633,43 @@ void TestInputLayoutApp::BuildPSOs(ID3D12Device* pDevice)
 		pDevice->CreateGraphicsPipelineState(&SimplePositionPSDesc, IID_PPV_ARGS(&pSimplePositionPSO));
 		m_PSOs.emplace("SimplePosition_PSO", pSimplePositionPSO);
 	}
+}
+
+void TestInputLayoutApp::InitImgui()
+{
+	// Setup Dear ImGui binding
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+
+	ImGui_ImplWin32_Init(m_hWnd);
+	
+	auto cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
+	cpuHandle.Offset(m_imguiDescriptorIndex, m_nSRVDescriptorSize);
+	
+	auto gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+	gpuHandle.Offset(m_imguiDescriptorIndex, m_nSRVDescriptorSize);
+
+	ImGui_ImplDX12_Init(m_pDevice, 1, DXGI_FORMAT_R8G8B8A8_UNORM, cpuHandle, gpuHandle);
+
+	// Setup style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+	//ImGui::StyleColorsLight();
+
+	// Load Fonts
+	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
+	// - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
+	// - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+	// - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+	// - Read 'misc/fonts/README.txt' for more instructions and details.
+	// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+	//io.Fonts->AddFontDefault();
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+	//IM_ASSERT(font != NULL);
 }

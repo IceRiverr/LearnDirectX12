@@ -24,6 +24,7 @@ public:
 	virtual void Update(double deltaTime);
 	virtual void Draw();
 	virtual void OnResize();
+	virtual void Destroy();
 
 	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
