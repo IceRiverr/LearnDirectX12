@@ -16,14 +16,16 @@ struct CameraInfo
 	float fFarZ;
 };
 
-class CCamera
+class CInputManager;
+class CBaseCamera
 {
 public:
-	CCamera();
-
+	CBaseCamera();
+	virtual ~CBaseCamera() {};
+	
 	virtual void Init(float fovAngle, float aspectRatio, float nearZ, float farZ);
-	virtual void OnUpdate(double dt);
-	virtual void Update(double dt);
+	virtual void OnUpdate(double dt, const CInputManager& InputMgr);
+	virtual void Update(double dt, const CInputManager& InputMgr);
 
 	void SetAspectRatio(float ratio);
 
@@ -33,7 +35,7 @@ private:
 public:
 	CameraInfo m_CameraInfo;
 
-private:
+protected:
 	bool m_bDirty;
 
 	float m_fFovAngleY;
@@ -50,4 +52,24 @@ private:
 	XMMATRIX m_mInvViewMatrix;
 	XMMATRIX m_mInvProjMatrix;
 	XMMATRIX m_mInvViewProjMatrix;
+};
+
+class CAutoRotateCamera :public CBaseCamera
+{
+public:
+	virtual void OnUpdate(double dt, const CInputManager& InputMgr);
+};
+
+class CRotateCamera :public CBaseCamera
+{
+public:
+	CRotateCamera();
+	virtual void OnUpdate(double dt, const CInputManager& InputMgr);
+
+public:
+	float m_fRotateRadius;
+	float m_fMouseIntensity;
+
+	float m_fTheta;
+	float m_fPhi;
 };

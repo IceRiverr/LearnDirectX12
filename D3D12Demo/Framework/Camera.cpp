@@ -1,7 +1,11 @@
 #include "Camera.h"
+#include "InputManager.h"
+#include "Utility.h"
 
-CCamera::CCamera()
+CBaseCamera::CBaseCamera()
 {
+	m_vEyePositon = XMFLOAT3(0.0f, 10.0f, -10.0f);
+
 	m_fFovAngleY = 90.0f;
 	m_fAspectRatio = 16.0f/9.0f;
 	m_fNearZ = 1.0f;
@@ -10,7 +14,7 @@ CCamera::CCamera()
 	m_bDirty = true;
 }
 
-void CCamera::Init(float fovAngle, float aspectRatio, float nearZ, float farZ)
+void CBaseCamera::Init(float fovAngle, float aspectRatio, float nearZ, float farZ)
 {
 	m_fFovAngleY = fovAngle;
 	m_fAspectRatio = aspectRatio;
@@ -20,21 +24,14 @@ void CCamera::Init(float fovAngle, float aspectRatio, float nearZ, float farZ)
 	m_bDirty = true;
 }
 
-void CCamera::OnUpdate(double dt)
+void CBaseCamera::OnUpdate(double dt, const CInputManager& InputMgr)
 {
-	static double dTotalTime = 0.0f;
-	dTotalTime += dt;
-
-	m_vEyePositon.x = 16.0f * (float)std::cos(dTotalTime * XM_PI * 0.8f);
-	m_vEyePositon.y = 5.0f;
-	m_vEyePositon.z = 16.0f * (float)std::sin(dTotalTime * XM_PI * 0.8f);
-
-	m_bDirty = true;
+	
 }
 
-void CCamera::Update(double dt)
+void CBaseCamera::Update(double dt, const CInputManager& InputMgr)
 {
-	OnUpdate(dt);
+	OnUpdate(dt, InputMgr);
 
 	if (m_bDirty)
 	{
@@ -55,12 +52,12 @@ void CCamera::Update(double dt)
 	}
 }
 
-void CCamera::SetAspectRatio(float ratio)
+void CBaseCamera::SetAspectRatio(float ratio)
 {
 	m_fAspectRatio = ratio;
 }
 
-void CCamera::UpdateCameraInfo()
+void CBaseCamera::UpdateCameraInfo()
 {
 	m_CameraInfo.vEyePositon = this->m_vEyePositon;
 	m_CameraInfo.fNearZ = m_fNearZ;
@@ -71,4 +68,45 @@ void CCamera::UpdateCameraInfo()
 	XMStoreFloat4x4(&m_CameraInfo.mInvViewMatrix, XMMatrixTranspose(m_mInvViewMatrix));
 	XMStoreFloat4x4(&m_CameraInfo.mInvProjMatrix, XMMatrixTranspose(m_mInvProjMatrix));
 	XMStoreFloat4x4(&m_CameraInfo.mInvViewProjMatrix, XMMatrixTranspose(m_mInvViewProjMatrix));
+}
+
+void CAutoRotateCamera::OnUpdate(double dt, const CInputManager & InputMgr)
+{
+	static double dTotalTime = 0.0f;
+	dTotalTime += dt;
+
+	m_vEyePositon.x = 16.0f * (float)std::cos(dTotalTime * XM_PI * 0.8f);
+	m_vEyePositon.y = 5.0f;
+	m_vEyePositon.z = 16.0f * (float)std::sin(dTotalTime * XM_PI * 0.8f);
+
+	m_bDirty = true;
+}
+
+CRotateCamera::CRotateCamera()
+{
+	m_fRotateRadius = 20.0f;
+	m_fTheta = 0.0f;
+	m_fPhi = 45.0f;
+	m_fMouseIntensity = 0.5f;
+}
+
+void CRotateCamera::OnUpdate(double dt, const CInputManager & InputMgr)
+{
+	XMINT2 moveDelta;
+	if (InputMgr.GetMouseDelta(moveDelta))
+	{
+		m_fTheta -= moveDelta.x * m_fMouseIntensity;
+		m_fPhi += moveDelta.y * m_fMouseIntensity;
+		
+		m_fPhi = MathUtility::Clamp<float>(m_fPhi, 5.0f, 175.0f);
+
+		float thetaRadian = m_fTheta / 180.0f * XM_PI;
+		float phiRadian = m_fPhi / 180.0f * XM_PI;
+
+		m_vEyePositon.x = m_fRotateRadius * std::sinf(phiRadian) * std::cosf(thetaRadian);
+		m_vEyePositon.y = m_fRotateRadius * std::cosf(phiRadian);
+		m_vEyePositon.z = m_fRotateRadius * std::sinf(phiRadian) * std::sinf(thetaRadian);
+
+		m_bDirty = true;
+	}
 }

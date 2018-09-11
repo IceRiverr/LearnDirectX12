@@ -118,9 +118,9 @@ void DrawBoxArrayApp::Update(double deltaTime)
 	dTotalTime += deltaTime;
 
 	XMFLOAT3 f3EyePos;
-	f3EyePos.x = 20.0f * (float)std::cos(dTotalTime * PI * 0.4f);
+	f3EyePos.x = 20.0f * (float)std::cos(dTotalTime * XM_PI * 0.4f);
 	f3EyePos.y = 5.0f;
-	f3EyePos.z = 20.0f * (float)std::sin(dTotalTime * PI * 0.4f);
+	f3EyePos.z = 20.0f * (float)std::sin(dTotalTime * XM_PI * 0.4f);
 
 	XMVECTOR eyePos = XMVectorSet(f3EyePos.x, f3EyePos.y, f3EyePos.z, 1.0f);
 	XMVECTOR target = XMVectorZero();
@@ -154,7 +154,7 @@ void DrawBoxArrayApp::Update(double deltaTime)
 	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mViewProj, XMMatrixTranspose(mViewProj));
 	XMStoreFloat4x4(&m_FrameBuffer.m_FrameData.g_mInvViewProj, XMMatrixTranspose(mInvViewProj));
 	XMStoreFloat3(&m_FrameBuffer.m_FrameData.g_vEyePosition, eyePos);
-	m_FrameBuffer.m_FrameData.PAD_1 = 0.0f;
+	m_FrameBuffer.m_FrameData.PAD_0 = 0.0f;
 	m_FrameBuffer.m_FrameData.g_InvRenderTargetSize = { (float)m_nClientWindowWidth, (float)m_nClientWindowHeight};
 	m_FrameBuffer.m_FrameData.g_InvRenderTargetSize = { 1.0f / (float)m_nClientWindowWidth, 1.0f / (float)m_nClientWindowHeight };
 	m_FrameBuffer.m_FrameData.g_fNearZ = 1.0f;

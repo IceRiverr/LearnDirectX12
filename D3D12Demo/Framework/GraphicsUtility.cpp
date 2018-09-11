@@ -91,10 +91,10 @@ void Graphics::CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>
 	{
 		for (int i = 1; i < rings; ++i)
 		{
-			float phi = PI * i / rings;
+			float phi = XM_PI * i / rings;
 			for (int j = 0; j < segments; ++j)
 			{
-				float theta = PI_2 * j / segments;
+				float theta = XM_2PI * j / segments;
 				XMFLOAT3 p;
 				p.x = std::sinf(phi) * std::cosf(theta);
 				p.y = std::cosf(phi);

@@ -99,6 +99,15 @@
     <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_win32.h">
       <Filter>Apps\imgui_dx12</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Apps\LightSourceApp.h">
+      <Filter>Apps</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Framework\Light.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Framework\BufferManager.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\stdafx.cpp">
@@ -155,6 +164,12 @@
     <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_win32.cpp">
       <Filter>Apps\imgui_dx12</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Apps\LightSourceApp.h.cpp">
+      <Filter>Apps</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Framework\Light.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="D3D12Demo.rc">
@@ -180,6 +195,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="..\..\Shaders\position_color.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\..\Shaders\light_color.hlsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

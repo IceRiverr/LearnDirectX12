@@ -45,7 +45,7 @@ void CFrameBuffer::CreateBufferView(ID3D12Device * pDevice, CD3DX12_CPU_DESCRIPT
 CConstantBuffer::CConstantBuffer()
 {
 	m_nTotalConstantBuferByteSize = 0;
-	m_nConstantBufferSizeAligned = 0;
+	m_nConstantBufferSizeAligned = CRenderObject::GetConstantElementSizeAligned();
 	m_pUploadeConstBuffer = 0;
 	m_pCbvDataBegin = nullptr;
 }
@@ -61,7 +61,6 @@ void CConstantBuffer::CreateBuffer(ID3D12Device * pDevice, UINT nObjectCount)
 {
 	if (pDevice)
 	{
-		m_nConstantBufferSizeAligned = CRenderObject::GetConstantElementSizeAligned();
 		m_nTotalConstantBuferByteSize = m_nConstantBufferSizeAligned * nObjectCount;
 		UINT nSRVDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		pDevice->CreateCommittedResource(

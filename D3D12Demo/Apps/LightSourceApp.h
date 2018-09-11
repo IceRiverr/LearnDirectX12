@@ -7,13 +7,14 @@
 #include "StaticMesh.h"
 #include "Camera.h"
 #include "InputManager.h"
+#include "Light.h"
 
-class TestInputLayoutApp :
+class CLightSourceApp :
 	public WinApp
 {
 public:
-	TestInputLayoutApp();
-	~TestInputLayoutApp();
+	CLightSourceApp();
+	~CLightSourceApp();
 
 	virtual void Init();
 	virtual void Update(double deltaTime);
@@ -43,17 +44,23 @@ private:
 	CConstantBuffer m_ConstBuffer;
 	CFrameBuffer m_FrameBuffer;
 
+	std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputLayout;
 	ID3DBlob* m_pVSShaderCode;
 	ID3DBlob* m_pPSShaderCode;
 
+	std::vector<D3D12_INPUT_ELEMENT_DESC> m_SimplePositionInputLayout;
 	ID3DBlob* m_pVSShaderCode_Position;
 	ID3DBlob* m_pPSShaderCode_Position;
 
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputLayout;
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_SimplePositionInputLayout;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> m_PositionNormalInputLayout;
+	ID3DBlob* m_pVSShaderCode_Light;
+	ID3DBlob* m_pPSShaderCode_Light;
 
 	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
 	std::vector<CRenderObject*> m_RenderObjects;
+	std::vector<CPointLight*> m_Lights;
+	std::vector<CSpotLight*> m_SpotLights;
+
 	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
 
 	CBaseCamera* m_pCamera;

@@ -75,7 +75,7 @@ bool CInputManager::IsKeyUp(char vk)
 	return false;
 }
 
-bool CInputManager::GetMouseDelta(XMINT2 & delta)
+bool CInputManager::GetMouseDelta(XMINT2 & delta) const
 {
 	if (m_nDelteMouseX != 0 || m_nDeltaMouseY != 0)
 	{
@@ -86,7 +86,7 @@ bool CInputManager::GetMouseDelta(XMINT2 & delta)
 	return false;
 }
 
-XMINT2 CInputManager::GetMousePos()
+XMINT2 CInputManager::GetMousePos() const
 {
 	return XMINT2(m_nMouseX, m_nMouseY);
 }
@@ -97,6 +97,9 @@ void CInputManager::ResetInputInfos()
 	{
 		ClearKeyInfo(it->second);
 	}
+
+	m_nDelteMouseX = 0;
+	m_nDeltaMouseY = 0;
 }
 
 void ClearKeyInfo(KeyInfo & keyInfo)

@@ -29,12 +29,13 @@ public:
 	bool IsKeyHold(char virtualKey);
 	bool IsKeyHoldOrDown(char virtualKey);
 	bool IsKeyUp(char virtualKey);
-	bool GetMouseDelta(XMINT2& delta);
-	XMINT2 GetMousePos();
+	bool GetMouseDelta(XMINT2& delta) const;
+	XMINT2 GetMousePos() const;
 	void ResetInputInfos();
 
 public:
 	std::unordered_map<char, KeyInfo> m_KeyInfos;
+	
 	int m_nMouseX;
 	int m_nMouseY;
 	int m_nLastMouseX;

@@ -29,9 +29,18 @@ public:
 public:
 	ID3D12Resource* m_pPositionBufferGPU = nullptr;
 	ID3D12Resource* m_pPositionBufferUpload = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW m_PositionBufferView;
+
+	ID3D12Resource* m_pNormalBufferGPU = nullptr;
+	ID3D12Resource* m_pNormalBufferUpload = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW m_NormalBufferView;
+
+	ID3D12Resource* m_pUVBufferGPU = nullptr;
+	ID3D12Resource* m_pUVBufferUpload = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW m_UVBufferView;
+
 	ID3D12Resource* m_pVertexColorBufferGPU = nullptr;
 	ID3D12Resource* m_pVertexColorBufferUpload = nullptr;
-	D3D12_VERTEX_BUFFER_VIEW m_PositionBufferView;
 	D3D12_VERTEX_BUFFER_VIEW m_VertexColorBufferView;
 
 	ID3D12Resource* m_pIndexBuferGPU = nullptr;

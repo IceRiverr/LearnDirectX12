@@ -7,13 +7,15 @@
 #include <fcntl.h>
 
 #include "D3D12Demo.h"
+#include "ImportObj.h"
+#include <map>
+
 
 #include "WinApp.h"
 #include "DrawBoxApp.h"
 #include "DrawBoxArrayApp.h"
 #include "TestInputLayout.h"
-#include "ImportObj.h"
-#include <map>
+#include "LightSourceApp.h"
 
 #define MAX_LOADSTRING 100
 
@@ -24,7 +26,8 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 //DemoApp app;
 //DrawBoxApp app;
 //DrawBoxArrayApp app;
-TestInputLayoutApp app;
+//TestInputLayoutApp app;
+CLightSourceApp app;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -40,7 +43,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 在此放置代码。
-	//app.InitConsoleWindow();
+	app.InitConsoleWindow();
 	app.ParseCommandLineArguments();
 	
     // 初始化全局字符串

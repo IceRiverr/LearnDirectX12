@@ -2,6 +2,7 @@
 #pragma once
 #include "stdafx.h"
 #include "StaticMesh.h"
+#include "Light.h"
 
 class CFrameBuffer
 {
@@ -22,13 +23,15 @@ public:
 		XMFLOAT4X4 g_mViewProj;
 		XMFLOAT4X4 g_mInvViewProj;
 		XMFLOAT3 g_vEyePosition;
-		float PAD_1;
+		float PAD_0;
 		XMFLOAT2 g_RenderTargetSize;
 		XMFLOAT2 g_InvRenderTargetSize;
 		float g_fNearZ;
 		float g_fFarZ;
 		float g_fTotalTime;
 		float g_fDeltaTime;
+
+		LightInfo g_Lights[4];
 	};
 
 	_Buffer m_FrameData;

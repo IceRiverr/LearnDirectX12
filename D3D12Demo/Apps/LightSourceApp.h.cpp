@@ -1,11 +1,11 @@
-#include "TestInputLayout.h"
+#include "LightSourceApp.h"
 #include "ImportObj.h"
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
 
-TestInputLayoutApp::TestInputLayoutApp()
+CLightSourceApp::CLightSourceApp()
 {
 	m_pCBVHeap = nullptr;
 	m_pRootSignature = nullptr;
@@ -17,12 +17,12 @@ TestInputLayoutApp::TestInputLayoutApp()
 	clear_color = { 80.0f / 255.0f, 90.0f / 255.0f, 100.0f / 255.0f, 1.0f };
 }
 
-TestInputLayoutApp::~TestInputLayoutApp()
+CLightSourceApp::~CLightSourceApp()
 {
 	
 }
 
-void TestInputLayoutApp::Init()
+void CLightSourceApp::Init()
 {
 	WinApp::Init();
 	InitRenderResource();
@@ -32,7 +32,7 @@ void TestInputLayoutApp::Init()
 	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
 }
 
-void TestInputLayoutApp::InitRenderResource()
+void CLightSourceApp::InitRenderResource()
 {
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 	// 所有初始化命令都放到该命令之后
@@ -96,22 +96,37 @@ void TestInputLayoutApp::InitRenderResource()
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
 
-	m_pVSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "PSMain", "ps_5_0");
-
-	m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "PSMain", "ps_5_0");
-
-	m_InputLayout =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
+		m_InputLayout =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
 
-	m_SimplePositionInputLayout =
+		m_pVSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "VSMain", "vs_5_0");
+		m_pPSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "PSMain", "ps_5_0");
+	}
+	
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
+		m_SimplePositionInputLayout =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
+
+		m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "VSMain", "vs_5_0");
+		m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "PSMain", "ps_5_0");
+	}
+
+	{
+		m_PositionNormalInputLayout = 
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
+
+		m_pVSShaderCode_Light = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\light_color.hlsl", "VSMain", "vs_5_0");
+		m_pPSShaderCode_Light = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\light_color.hlsl", "PSMain", "ps_5_0");
+	}
 
 	BuildPSOs(m_pDevice);
 
@@ -123,7 +138,7 @@ void TestInputLayoutApp::InitRenderResource()
 	FlushCommandQueue();
 }
 
-void TestInputLayoutApp::Update(double deltaTime)
+void CLightSourceApp::Update(double deltaTime)
 {
 	static double dTotalTime = 0.0f;
 	dTotalTime += deltaTime;
@@ -164,8 +179,10 @@ void TestInputLayoutApp::Update(double deltaTime)
 	m_InputMgr.ResetInputInfos();
 }
 
-void TestInputLayoutApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
+void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 {
+	m_FrameBuffer.m_FrameData = {};
+
 	m_FrameBuffer.m_FrameData.g_mView = m_pCamera->m_CameraInfo.mViewMatrix;
 	m_FrameBuffer.m_FrameData.g_mInvView = m_pCamera->m_CameraInfo.mInvViewMatrix;
 	m_FrameBuffer.m_FrameData.g_mProj = m_pCamera->m_CameraInfo.mProjMatrix;
@@ -179,10 +196,41 @@ void TestInputLayoutApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	m_FrameBuffer.m_FrameData.g_fFarZ = m_pCamera->m_CameraInfo.fFarZ;
 	m_FrameBuffer.m_FrameData.g_fTotalTime = std::fmodf(fTotalTime, 1.0f);
 	m_FrameBuffer.m_FrameData.g_fDeltaTime = fDeltaTime;
+
+	if (m_Lights.size() + m_SpotLights.size() <= 4)
+	{
+		for (int i = 0; i < m_Lights.size(); ++i)
+		{
+			LightInfo lightInfo = {};
+			CPointLight* pLight = m_Lights[i];
+			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
+			lightInfo.LightRange.x = pLight->m_fMinRadius;;
+			lightInfo.LightRange.y = pLight->m_fMaxRadius;
+			lightInfo.LightColor = pLight->m_Color;
+
+			m_FrameBuffer.m_FrameData.g_Lights[i] = lightInfo;
+		}
+
+		for (int i = 0; i < m_SpotLights.size(); ++i)
+		{
+			LightInfo lightInfo = {};
+			CSpotLight* pLight = m_SpotLights[i];
+			XMStoreFloat4(&lightInfo.LightDirection, pLight->m_vDirection);
+			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
+			lightInfo.LightColor = pLight->m_Color;
+
+			lightInfo.LightRange.x = pLight->m_fMinRadius;
+			lightInfo.LightRange.y = pLight->m_fMaxRadius;
+			lightInfo.LightRange.z = std::cosf(MathUtility::ToRadian(pLight->m_fMinAngle));
+			lightInfo.LightRange.w = std::cosf(MathUtility::ToRadian(pLight->m_fMaxAngle));
+			m_FrameBuffer.m_FrameData.g_Lights[m_Lights.size() + i] = lightInfo;
+		}
+	}
+
 	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
-void TestInputLayoutApp::UpdateImgui()
+void CLightSourceApp::UpdateImgui()
 {
 	// Start the Dear ImGui frame
 	ImGui_ImplDX12_NewFrame();
@@ -227,13 +275,13 @@ void TestInputLayoutApp::UpdateImgui()
 	}
 }
 
-void TestInputLayoutApp::DrawImgui()
+void CLightSourceApp::DrawImgui()
 {
 	ImGui::Render();
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_pCommandList);
 }
 
-void TestInputLayoutApp::Draw()
+void CLightSourceApp::Draw()
 {
 	m_pCommandAllocator->Reset();
 
@@ -273,11 +321,34 @@ void TestInputLayoutApp::Draw()
 		CRenderObject* pObj = m_RenderObjects[i];
 		if (pObj->m_pStaticMesh->m_pPositionBufferGPU && pObj->m_pStaticMesh->m_pVertexColorBufferGPU)
 		{
-			m_pCommandList->SetPipelineState(m_PSOs["WireframePSO"]);
+			m_pCommandList->SetPipelineState(m_PSOs["OpaquePSO"]);
 			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[2] =
 			{
 				pObj->m_pStaticMesh->m_PositionBufferView,
 				pObj->m_pStaticMesh->m_VertexColorBufferView
+			};
+
+			m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+			m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
+			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+			handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+
+			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
+			{
+				SubMesh subMesh = it.second;
+				m_pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+			}
+		}
+		else if (pObj->m_pStaticMesh->m_pPositionBufferGPU && pObj->m_pStaticMesh->m_pNormalBufferGPU)
+		{
+			m_pCommandList->SetPipelineState(m_PSOs["Light_PSO"]);
+			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+			{
+				pObj->m_pStaticMesh->m_PositionBufferView,
+				pObj->m_pStaticMesh->m_NormalBufferView,
 			};
 
 			m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
@@ -341,7 +412,7 @@ void TestInputLayoutApp::Draw()
 	FlushCommandQueue();
 }
 
-void TestInputLayoutApp::OnResize()
+void CLightSourceApp::OnResize()
 {
 	WinApp::OnResize();
 	ImGui_ImplDX12_InvalidateDeviceObjects();
@@ -353,7 +424,7 @@ void TestInputLayoutApp::OnResize()
 	}
 }
 
-void TestInputLayoutApp::Destroy()
+void CLightSourceApp::Destroy()
 {
 	WinApp::Destroy();
 	FlushCommandQueue();
@@ -364,7 +435,7 @@ void TestInputLayoutApp::Destroy()
 }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CLightSourceApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 		return true;
@@ -478,7 +549,7 @@ LRESULT TestInputLayoutApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, L
 	}
 }
 
-void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+void CLightSourceApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
 	// Box
 	{
@@ -546,9 +617,47 @@ void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12Graphics
 
 		impoortor.Clear();
 	}
+
+	// Plane
+	{
+		CStaticMesh* pBoxMesh = new CStaticMesh();
+		m_StaticMeshes.emplace("Plane_Mesh", pBoxMesh);
+		XMFLOAT3 positions[4] = 
+		{
+			XMFLOAT3(-1.0f, 0.0f, -1.0f),
+			XMFLOAT3(-1.0f, 0.0f, 1.0f),
+			XMFLOAT3(1.0f, 0.0f, 1.0f),
+			XMFLOAT3(1.0f, 0.0f, -1.0f)
+		};
+
+		XMFLOAT3 normals[4] = 
+		{
+			XMFLOAT3(0.0f, 1.0f, 0.0f),
+			XMFLOAT3(0.0f, 1.0f, 0.0f),
+			XMFLOAT3(0.0f, 1.0f, 0.0f),
+			XMFLOAT3(0.0f, 1.0f, 0.0f)
+		};
+
+		UINT16 indices[6] =
+		{
+			0, 1, 2,
+			0, 2, 3
+		};
+
+		pBoxMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], 4 * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
+		pBoxMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, 4 * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+
+		pBoxMesh->m_pNormalBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &normals[0], 4 * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
+		pBoxMesh->m_NormalBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pNormalBufferGPU, 4 * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		
+		pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], 6 * sizeof(UINT16), &pBoxMesh->m_pIndexBufferUpload);
+		pBoxMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, 6 * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
+
+		pBoxMesh->AddSubMesh("Sub0", 6, 0, 0);
+	}
 }
 
-void TestInputLayoutApp::BuildScene()
+void CLightSourceApp::BuildScene()
 {
 	{
 		// Box Matrix
@@ -572,8 +681,8 @@ void TestInputLayoutApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(5.0f, 0.0f, 0.0f);
-			pObj->m_mWorldMatrix = XMMatrixTranslation(5.0f, 0.0f, 0.0f);
+			pObj->m_WorldTransform.Position = XMFLOAT3(5.0f, 1.0f, 0.0f);
+			pObj->m_mWorldMatrix = XMMatrixTranslation(5.0f, 1.0f, 0.0f);
 			m_RenderObjects.push_back(pObj);
 		}
 	}
@@ -584,14 +693,66 @@ void TestInputLayoutApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
-			pObj->m_mWorldMatrix = XMMatrixTranslation(10.0f, 0.0f, 0.0f);
+			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 1.0f, 0.0f);
+			pObj->m_mWorldMatrix = XMMatrixTranslation(10.0f, 1.0f, 0.0f);
 			m_RenderObjects.push_back(pObj);
 		}
 	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["Plane_Mesh"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
+
+			XMMATRIX translateMat = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+			XMMATRIX scaleMat = XMMatrixScaling(20.0f, 20.0f, 20.0f);
+			pObj->m_mWorldMatrix = scaleMat * translateMat;
+			
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_Lights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+		pLight0->m_vPosition = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fMinRadius = 0.5f;
+		
+		CPointLight* pLight1 = new CPointLight();
+		m_Lights.push_back(pLight1);
+		pLight1->m_Color = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+		pLight1->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
+		pLight1->m_fMaxRadius = 10.0f;
+		pLight1->m_fMinRadius = 0.5f;
+
+		CSpotLight* pSpotLight0 = new CSpotLight();
+		m_SpotLights.push_back(pSpotLight0);
+		pSpotLight0->m_Color = XMFLOAT4(0.333f, 0.333f, 0.333f, 1.0f);
+		pSpotLight0->m_vPosition = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
+		pSpotLight0->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
+		pSpotLight0->m_fMaxRadius = 10.0f;
+		pSpotLight0->m_fMinRadius = 0.5f;
+		pSpotLight0->m_fMaxAngle = 70.0f;
+		pSpotLight0->m_fMinAngle = 65.0f;
+
+		CSpotLight* pSpotLight1 = new CSpotLight();
+		m_SpotLights.push_back(pSpotLight1);
+		pSpotLight1->m_Color = XMFLOAT4(0.667f, 0.667f, 0.667f, 1.0f);
+		pSpotLight1->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
+		pSpotLight1->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
+		pSpotLight1->m_fMaxRadius = 10.0f;
+		pSpotLight1->m_fMinRadius = 0.5f;
+		pSpotLight1->m_fMaxAngle = 70.0f;
+		pSpotLight1->m_fMinAngle = 65.0f;
+	}
 }
 
-void TestInputLayoutApp::BuildPSOs(ID3D12Device* pDevice)
+void CLightSourceApp::BuildPSOs(ID3D12Device* pDevice)
 {
 	ID3D12PipelineState* pOpaquePSO = nullptr;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
@@ -633,9 +794,21 @@ void TestInputLayoutApp::BuildPSOs(ID3D12Device* pDevice)
 		pDevice->CreateGraphicsPipelineState(&SimplePositionPSDesc, IID_PPV_ARGS(&pSimplePositionPSO));
 		m_PSOs.emplace("SimplePosition_PSO", pSimplePositionPSO);
 	}
+
+	{
+		// LightTest
+		ID3D12PipelineState* pPSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = OpaquePSODesc;
+		psoDesc.InputLayout = { m_PositionNormalInputLayout.data(), (UINT)m_PositionNormalInputLayout.size() };
+		psoDesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
+		psoDesc.PS = { m_pPSShaderCode_Light->GetBufferPointer(), m_pPSShaderCode_Light->GetBufferSize() };
+		//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPSO));
+		m_PSOs.emplace("Light_PSO", pPSO);
+	}
 }
 
-void TestInputLayoutApp::InitImgui()
+void CLightSourceApp::InitImgui()
 {
 	// Setup Dear ImGui binding
 	IMGUI_CHECKVERSION();

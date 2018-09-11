@@ -154,7 +154,10 @@
     <ClInclude Include="..\..\Apps\DrawBoxArrayApp.h" />
     <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_dx12.h" />
     <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_win32.h" />
+    <ClInclude Include="..\..\Apps\LightSourceApp.h" />
     <ClInclude Include="..\..\Apps\TestInputLayout.h" />
+    <ClInclude Include="..\..\Framework\BufferManager.h" />
+    <ClInclude Include="..\..\Framework\Light.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui_internal.h" />
@@ -177,12 +180,14 @@
     <ClCompile Include="..\..\Apps\DrawBoxArrayApp.cpp" />
     <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_dx12.cpp" />
     <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\..\Apps\LightSourceApp.h.cpp" />
     <ClCompile Include="..\..\Apps\TestInputLayout.cpp" />
     <ClCompile Include="..\..\Framework\BufferManager.cpp" />
     <ClCompile Include="..\..\Framework\Camera.cpp" />
     <ClCompile Include="..\..\Framework\GraphicsUtility.cpp" />
     <ClCompile Include="..\..\Framework\ImportObj.cpp" />
     <ClCompile Include="..\..\Framework\InputManager.cpp" />
+    <ClCompile Include="..\..\Framework\Light.cpp" />
     <ClCompile Include="..\..\Framework\StaticMesh.cpp" />
     <ClCompile Include="..\..\Framework\WinApp.cpp" />
     <ClCompile Include="..\..\Framework\stdafx.cpp" />
@@ -214,6 +219,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Shaders\BufferDefine.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\light_color.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
