@@ -7,13 +7,15 @@
 #include "StaticMesh.h"
 #include "Camera.h"
 #include "InputManager.h"
+#include "Light.h"
 
-class TestInputLayoutApp :
+
+class CMaterialBRDFApp :
 	public WinApp
 {
 public:
-	TestInputLayoutApp();
-	~TestInputLayoutApp();
+	CMaterialBRDFApp();
+	~CMaterialBRDFApp();
 
 	virtual void Init();
 	virtual void Update(double deltaTime);
@@ -25,6 +27,7 @@ public:
 
 private:
 	void InitRenderResource();
+	void BuildMaterials();
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildScene();
 	void BuildPSOs(ID3D12Device* pDevice);
@@ -40,23 +43,24 @@ private:
 	UINT m_CBVHeapSize;
 	ID3D12RootSignature* m_pRootSignature;
 
-	CObjectConstantBuffer m_ConstBuffer;
+	CObjectConstantBuffer m_ObjectBuffer;
+	CMaterialConstantBuffer m_MaterialBuffer;
 	CFrameBuffer m_FrameBuffer;
 
-	ID3DBlob* m_pVSShaderCode;
-	ID3DBlob* m_pPSShaderCode;
-
-	ID3DBlob* m_pVSShaderCode_Position;
-	ID3DBlob* m_pPSShaderCode_Position;
-
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputLayout;
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_SimplePositionInputLayout;
-
-	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> m_PositionNormalInputLayout;
+	ID3DBlob* m_pVSShaderCode_Light;
+	ID3DBlob* m_pPSShaderCode_Light;
+	
 	std::vector<CRenderObject*> m_RenderObjects;
-	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
+	std::vector<CDirectionalLight*> m_DirLights;
+	std::vector<CPointLight*> m_PointLights;
+	std::vector<CSpotLight*> m_SpotLights;
 
-	CBaseCamera* m_pCamera;
+	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
+	std::unordered_map<std::string, CMaterial*> m_Materials;
+	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
+
+	CRotateCamera* m_pCamera;
 	CInputManager m_InputMgr;
 
 	UINT m_imguiDescriptorIndex;

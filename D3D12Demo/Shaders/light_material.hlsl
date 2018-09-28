@@ -88,7 +88,7 @@ float4 PSMain(VertexOut pin) : SV_Target
     for (int a = 0; a < g_LightNumbers.x; ++a)
     {
         LightInfo light = g_Lights[a];
-        resultColor += light.LightColor.rgb;
+        resultColor += light.LightColor.rgb * dot(-light.LightDirection.xyz, pin.NormalW) * g_Material.DiffuseColor.rgb;
     }
 
     for (int i = g_LightNumbers.x; i < pointLightEnd; ++i)

@@ -41,7 +41,7 @@ private:
 	UINT m_CBVHeapSize;
 	ID3D12RootSignature* m_pRootSignature;
 
-	CConstantBuffer m_ConstBuffer;
+	CObjectConstantBuffer m_ConstBuffer;
 	CFrameBuffer m_FrameBuffer;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputLayout;

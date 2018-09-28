@@ -1,16 +1,6 @@
 
 #include "BufferDefine.hlsl"
 
-cbuffer cbPerObject : register(b0)
-{
-    float4x4 g_mWorldMat;
-};
-
-cbuffer cbPerMaterial : register(b1)
-{
-    float4 m_cColor;
-};
-
 struct VertexIn
 {
     float3 PosL : POSITION;
@@ -32,5 +22,6 @@ VertexOut VSMain(VertexIn vin)
 
 float4 PSMain(VertexOut pin) : SV_Target
 {
-    return m_cColor;
+    //return m_cColor;
+    return float4(1.0f, 0.0f, 0.0f, 1.0f);
 }

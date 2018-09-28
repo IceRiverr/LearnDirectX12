@@ -55,10 +55,15 @@ void CLightSourceApp::InitRenderResource()
 	m_ConstBuffer.CreateBuffer(m_pDevice, (UINT)m_RenderObjects.size());
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
-		m_RenderObjects[i]->m_nConstantBufferIndex = nDescriptorIndex;
+		m_RenderObjects[i]->m_ObjectAddress.nBufferIndex = i;
+		m_RenderObjects[i]->m_ObjectAddress.pBuffer = m_ConstBuffer.m_pUploadeConstBuffer;
+		m_RenderObjects[i]->m_ObjectAddress.pBufferHeap = m_pCBVHeap;
+		m_RenderObjects[i]->m_ObjectAddress.nHeapOffset = nDescriptorIndex;
+
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(m_RenderObjects[i]->m_nConstantBufferIndex, m_nSRVDescriptorSize);
-		m_ConstBuffer.CreateBufferView(m_pDevice, handle, m_RenderObjects[i]->m_nConstantBufferIndex);
+		handle.Offset(nDescriptorIndex, m_nSRVDescriptorSize);
+		m_ConstBuffer.CreateBufferView(m_pDevice, handle, i);
+
 		nDescriptorIndex++;
 	}
 
@@ -169,9 +174,9 @@ void CLightSourceApp::Update(double deltaTime)
 		//XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
 		//mWorldMat = mRotateMat * mWorldMat;
 
-		CRenderObject::ConstantElement objConstant;
+		ConstantShaderBlock objConstant;
 		XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
-		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_nConstantBufferIndex);
+		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_ObjectAddress.nBufferIndex);
 	}
 
 	UpdateFrameBuffer((float)deltaTime, (float)dTotalTime);
@@ -352,7 +357,7 @@ void CLightSourceApp::Draw()
 			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-			handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
 			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
@@ -375,7 +380,7 @@ void CLightSourceApp::Draw()
 			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-			handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
 			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
@@ -397,7 +402,7 @@ void CLightSourceApp::Draw()
 			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-			handle1.Offset(pObj->m_nConstantBufferIndex, m_nSRVDescriptorSize);
+			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
 			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)

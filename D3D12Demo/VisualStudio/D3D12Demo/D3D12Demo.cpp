@@ -16,6 +16,7 @@
 #include "DrawBoxArrayApp.h"
 #include "TestInputLayout.h"
 #include "LightSourceApp.h"
+#include "Material_BRDF.h"
 
 #define MAX_LOADSTRING 100
 
@@ -27,7 +28,8 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 //DrawBoxApp app;
 //DrawBoxArrayApp app;
 //TestInputLayoutApp app;
-CLightSourceApp app;
+//CLightSourceApp app;
+CMaterialBRDFApp app;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);

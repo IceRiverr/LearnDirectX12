@@ -155,6 +155,7 @@
     <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_dx12.h" />
     <ClInclude Include="..\..\Apps\imgui_dx12\imgui_impl_win32.h" />
     <ClInclude Include="..\..\Apps\LightSourceApp.h" />
+    <ClInclude Include="..\..\Apps\Material_BRDF.h" />
     <ClInclude Include="..\..\Apps\TestInputLayout.h" />
     <ClInclude Include="..\..\Framework\BufferManager.h" />
     <ClInclude Include="..\..\Framework\GraphicPipeline.h" />
@@ -183,6 +184,7 @@
     <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_dx12.cpp" />
     <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_win32.cpp" />
     <ClCompile Include="..\..\Apps\LightSourceApp.cpp" />
+    <ClCompile Include="..\..\Apps\Material_BRDF.cpp" />
     <ClCompile Include="..\..\Apps\TestInputLayout.cpp" />
     <ClCompile Include="..\..\Framework\BufferManager.cpp" />
     <ClCompile Include="..\..\Framework\Camera.cpp" />
@@ -233,6 +235,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Shaders\color_material.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\light_material.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

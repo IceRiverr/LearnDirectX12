@@ -35,7 +35,7 @@ private:
 	UINT m_CBVHeapSize;
 	ID3D12RootSignature* m_pRootSignature;
 
-	CConstantBuffer m_ConstBuffer;
+	CObjectConstantBuffer m_ConstBuffer;
 	CFrameBuffer m_FrameBuffer;
 
 	ID3DBlob* m_pVSShaderCode;

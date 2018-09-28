@@ -11,6 +11,16 @@ struct LightInfo
     float MaxAngle;
 };
 
+struct BRDFMaterial
+{
+    float4 DiffuseColor;
+};
+
+cbuffer cbPerObject : register(b0)
+{
+    float4x4 g_mWorldMat;
+};
+
 cbuffer cbPerPass : register(b1)
 {
     float4x4 g_mView;
@@ -31,3 +41,8 @@ cbuffer cbPerPass : register(b1)
     int4 g_LightNumbers;
     LightInfo g_Lights[16];
 };
+
+cbuffer cbPerMaterial : register(b2)
+{
+    BRDFMaterial g_Material;
+}

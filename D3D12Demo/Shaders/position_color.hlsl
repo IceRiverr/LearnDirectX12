@@ -1,11 +1,6 @@
 
 #include "BufferDefine.hlsl"
 
-cbuffer cbPerObject : register(b0)
-{
-	float4x4 g_mWorldMat;
-};
-
 struct VertexIn
 {
 	float3 PosL : POSITION;

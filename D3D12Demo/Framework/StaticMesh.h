@@ -6,6 +6,33 @@
 
 using namespace DirectX;
 
+struct ConstantBufferAddress
+{
+	ID3D12Resource* pBuffer;
+	UINT nBufferIndex;
+	ID3D12DescriptorHeap* pBufferHeap;
+	UINT nHeapOffset;
+};
+
+struct MaterialShaderBlock
+{
+	XMFLOAT4 DiffuseColor;
+};
+
+struct ConstantShaderBlock
+{
+	XMFLOAT4X4 mWorldMat;
+};
+
+class CMaterial
+{
+public:
+	std::string m_sName;
+	XMFLOAT4 m_cDiffuseColor;
+
+	ConstantBufferAddress m_MaterialAddress;
+};
+
 struct MeshData
 {
 	std::vector<XMFLOAT3> Positions;
@@ -49,6 +76,8 @@ public:
 	D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 
 	std::unordered_map<std::string, SubMesh> m_SubMeshes;
+
+	CMaterial* m_pMaterial;
 };
 
 struct TransformData
@@ -58,32 +87,17 @@ struct TransformData
 	XMFLOAT3 Scale;
 };
 
-class CMaterial
-{
-public:
-	BufferView m_MaterialBufferView;
-};
 
 class CRenderObject
 {
 public:
-	struct ConstantElement
-	{
-		XMFLOAT4X4 mWorldMat;
-	};
-
 	CRenderObject();
 	void Render(ID3D12GraphicsCommandList* pCommandList);
 	
-	static UINT GetConstantElementSizeAligned();
 public:
 	CStaticMesh* m_pStaticMesh;
 	TransformData m_WorldTransform;
 	XMMATRIX m_mWorldMatrix;
-
-	UINT m_nConstantBufferIndex;
-
-	// 放在这里可能，不合适，因为一个Obj，可能有多个材质，应该归于不同的StaticMesh，应该进行拆分
-	CMaterial* m_pMaterial;
-	BufferView m_ObjectBufferView; // 只和当前物体有关的buffer，和材质无关的放出来
+	
+	ConstantBufferAddress m_ObjectAddress;
 };
