@@ -4,6 +4,7 @@
 #include "StaticMesh.h"
 #include "Light.h"
 
+
 class CFrameBuffer
 {
 public:
@@ -31,7 +32,8 @@ public:
 		float g_fTotalTime;
 		float g_fDeltaTime;
 
-		LightInfo g_Lights[4];
+		int g_LightNumbers[4]; // 0 DirLightNum 1 PointLightNum 2 SpotLightNum
+		LightInfo g_Lights[16];
 	};
 
 	_Buffer m_FrameData;

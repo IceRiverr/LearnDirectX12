@@ -6,6 +6,8 @@ namespace Graphics
 {
 	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer);
 
+	ID3D12Resource* CreateConstantBuffer(ID3D12Device* pDevice, UINT64 byteSize);
+
 	D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(ID3D12Resource* pVertexBuffer, UINT size, UINT stride);
 
 	D3D12_INDEX_BUFFER_VIEW CreateIndexBufferView(ID3D12Resource* pIndexBuffer, UINT size, DXGI_FORMAT format);
@@ -16,4 +18,6 @@ namespace Graphics
 	void CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indees);
 
 	void CreateBox(std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indices);
+
+	UINT CalcConstBufferBytersAligned(UINT rawBytes);
 }

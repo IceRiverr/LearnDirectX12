@@ -4,7 +4,11 @@ struct LightInfo
     float4 LightColor;
     float4 LightDirection;
     float4 LightPosition;
-    float4 LightRange; // radius min
+
+    float RefDist;
+    float MaxRadius;
+    float MinAngle;
+    float MaxAngle;
 };
 
 cbuffer cbPerPass : register(b1)
@@ -24,7 +28,6 @@ cbuffer cbPerPass : register(b1)
     float g_fTotalTime;
     float g_fDeltaTime;
 
+    int4 g_LightNumbers;
     LightInfo g_Lights[16];
-    int g_nLightCount;
-    float PAD_1[3];
 };

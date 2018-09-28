@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "Utility.h"
 #include <unordered_map>
+#include "GPUResource.h"
 
 using namespace DirectX;
 
@@ -57,6 +58,12 @@ struct TransformData
 	XMFLOAT3 Scale;
 };
 
+class CMaterial
+{
+public:
+	BufferView m_MaterialBufferView;
+};
+
 class CRenderObject
 {
 public:
@@ -75,4 +82,8 @@ public:
 	XMMATRIX m_mWorldMatrix;
 
 	UINT m_nConstantBufferIndex;
+
+	// 放在这里可能，不合适，因为一个Obj，可能有多个材质，应该归于不同的StaticMesh，应该进行拆分
+	CMaterial* m_pMaterial;
+	BufferView m_ObjectBufferView; // 只和当前物体有关的buffer，和材质无关的放出来
 };

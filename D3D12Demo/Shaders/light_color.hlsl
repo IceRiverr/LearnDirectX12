@@ -30,43 +30,33 @@ VertexOut VSMain(VertexIn vin)
     return vout;
 }
 
-float DistanceFallOff(float minDist, float maxDist, float d)
+float DistanceFallOff(float refDist, float d)
 {
-    float distDelta = maxDist / max(d, minDist);
+    float distDelta = refDist / max(d, 0.01f);
     float distFalloff = distDelta * distDelta;
     return distFalloff;
 }
 
+float DistanceWindowFunction(float maxRadius, float d)
+{
+    float winDelta = clamp(1.0f - pow(d / maxRadius, 4.0f), 0.0f, 1.0f);
+    return winDelta * winDelta;
+}
+
 float PointLightFallOff(LightInfo light, float toLightLen)
 {
-    float distFalloff = DistanceFallOff(light.LightRange.x, light.LightRange.y, toLightLen);
+    float distFalloff = DistanceFallOff(light.RefDist, toLightLen);
+    float winFallOff = DistanceWindowFunction(light.MaxRadius, toLightLen);
     
-    float winDelta = clamp(1.0f - pow(toLightLen / light.LightRange.y, 4.0f), 0.0f, 1.0f);
-    float winFalloff = winDelta * winDelta;
-
-    return distFalloff * winFalloff;
+    return distFalloff * winFallOff;
 }
 
 float SpotLightFallOff(LightInfo light, float toLightLen, float3 toLight)
 {
-    float distFalloff = DistanceFallOff(light.LightRange.x, light.LightRange.y, toLightLen);
-
-    float fMinxCosA = light.LightRange.z;
-    float fMaxCosA = light.LightRange.w;
-    float dirDelta = (dot(toLight, -light.LightDirection.xyz) - fMaxCosA) / (fMinxCosA - fMaxCosA);
-    dirDelta = clamp(dirDelta, 0.0f, 1.0f);
-    float dirFalloff = pow(dirDelta, 2.0f);
-
-    return distFalloff * dirFalloff;
-}
-
-float SpotLightFallOffV2(LightInfo light, float toLightLen, float3 toLight)
-{
-    float distFalloff = 1.0f;
-
-    float fMinxCosA = light.LightRange.z;
-    float fMaxCosA = light.LightRange.w;
-    float dirDelta = (dot(toLight, -light.LightDirection.xyz) - fMaxCosA) / (fMinxCosA - fMaxCosA);
+    float distFalloff = DistanceFallOff(light.RefDist, toLightLen);
+    float winFallOff = DistanceWindowFunction(light.MaxRadius, toLightLen);
+  
+    float dirDelta = (dot(toLight, -light.LightDirection.xyz) - light.MaxAngle) / (light.MinAngle - light.MaxAngle);
     dirDelta = clamp(dirDelta, 0.0f, 1.0f);
     float dirFalloff = pow(dirDelta, 2.0f);
 
@@ -96,24 +86,32 @@ float4 PSMain(VertexOut pin) : SV_Target
     float VDotN = dot(normalize(toEye), pin.NormalW);
 
     float3 resultColor;
-    //for (int i = 0; i < 2; ++i)
-    //{
-    //    LightInfo light = g_Lights[i];
-    //    float3 toLight = light.LightPosition.xyz - pin.PosW.xyz;
-    //    float toLightLength = length(toLight);
-            
-    //    float LdotN = dot(normalize(toLight), pin.NormalW);
-
-    //    resultColor += light.LightColor.rgb * PointLightFallOff(light, toLightLength);
-    //}
     
-    for (int i = 2; i < 4; ++i)
+    int pointLightEnd = g_LightNumbers.x + g_LightNumbers.y;
+    int spotLightEnd = pointLightEnd + g_LightNumbers.z;
+
+    for (int a = 0; a < g_LightNumbers.x; ++a)
+    {
+        LightInfo light = g_Lights[a];
+        resultColor += light.LightColor.rgb;
+    }
+
+    for (int i = g_LightNumbers.x; i < pointLightEnd; ++i)
     {
         LightInfo light = g_Lights[i];
         float3 toLight = light.LightPosition.xyz - pin.PosW.xyz;
         float toLightLength = length(toLight);
         toLight = toLight / toLightLength;
-        resultColor += light.LightColor.rgb * SpotLightFallOffV2(light, toLightLength, toLight);
+        resultColor += light.LightColor.rgb * PointLightFallOff(light, toLightLength);
+    }
+
+    for (int j = pointLightEnd; j < spotLightEnd; ++j)
+    {
+        LightInfo light = g_Lights[j];
+        float3 toLight = light.LightPosition.xyz - pin.PosW.xyz;
+        float toLightLength = length(toLight);
+        toLight = toLight / toLightLength;
+        resultColor += light.LightColor.rgb * SpotLightFallOff(light, toLightLength, toLight);
     }
 
     resultColor = linearColorToSRGB(resultColor);

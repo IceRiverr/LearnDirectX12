@@ -19,7 +19,9 @@ CLightSourceApp::CLightSourceApp()
 
 CLightSourceApp::~CLightSourceApp()
 {
-	
+	// 内存析构都没有做，需要完善
+
+
 }
 
 void CLightSourceApp::Init()
@@ -197,20 +199,32 @@ void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	m_FrameBuffer.m_FrameData.g_fTotalTime = std::fmodf(fTotalTime, 1.0f);
 	m_FrameBuffer.m_FrameData.g_fDeltaTime = fDeltaTime;
 
-	if (m_Lights.size() + m_SpotLights.size() <= 4)
+	if (m_DirLights.size() + m_PointLights.size() + m_SpotLights.size() <= 16)
 	{
-		for (int i = 0; i < m_Lights.size(); ++i)
+		for (int i = 0; i < m_DirLights.size(); ++i)
 		{
 			LightInfo lightInfo = {};
-			CPointLight* pLight = m_Lights[i];
-			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
-			lightInfo.LightRange.x = pLight->m_fMinRadius;;
-			lightInfo.LightRange.y = pLight->m_fMaxRadius;
+			CDirectionalLight* pLight = m_DirLights[i];
+			XMStoreFloat4(&lightInfo.LightDirection, pLight->m_vDirection);
 			lightInfo.LightColor = pLight->m_Color;
 
 			m_FrameBuffer.m_FrameData.g_Lights[i] = lightInfo;
 		}
 
+		int nPointLightStart = (int)m_DirLights.size();
+		for (int i = 0; i < m_PointLights.size(); ++i)
+		{
+			LightInfo lightInfo = {};
+			CPointLight* pLight = m_PointLights[i];
+			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
+			lightInfo.RefDist = pLight->m_fRefDist;;
+			lightInfo.MaxRadius = pLight->m_fMaxRadius;
+			lightInfo.LightColor = pLight->m_Color;
+
+			m_FrameBuffer.m_FrameData.g_Lights[nPointLightStart + i] = lightInfo;
+		}
+
+		int nSpotLightStart = (int)(nPointLightStart + m_PointLights.size());
 		for (int i = 0; i < m_SpotLights.size(); ++i)
 		{
 			LightInfo lightInfo = {};
@@ -219,12 +233,17 @@ void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
 			lightInfo.LightColor = pLight->m_Color;
 
-			lightInfo.LightRange.x = pLight->m_fMinRadius;
-			lightInfo.LightRange.y = pLight->m_fMaxRadius;
-			lightInfo.LightRange.z = std::cosf(MathUtility::ToRadian(pLight->m_fMinAngle));
-			lightInfo.LightRange.w = std::cosf(MathUtility::ToRadian(pLight->m_fMaxAngle));
-			m_FrameBuffer.m_FrameData.g_Lights[m_Lights.size() + i] = lightInfo;
+			lightInfo.RefDist = pLight->m_fRefDist;
+			lightInfo.MaxRadius = pLight->m_fMaxRadius;
+			lightInfo.MinAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMinAngle));
+			lightInfo.MaxAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMaxAngle));
+			m_FrameBuffer.m_FrameData.g_Lights[nSpotLightStart + i] = lightInfo;
 		}
+
+		m_FrameBuffer.m_FrameData.g_LightNumbers[0] = (int)m_DirLights.size();
+		m_FrameBuffer.m_FrameData.g_LightNumbers[1] = (int)m_PointLights.size();
+		m_FrameBuffer.m_FrameData.g_LightNumbers[2] = (int)m_SpotLights.size();
+		m_FrameBuffer.m_FrameData.g_LightNumbers[3] = 0;
 	}
 
 	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
@@ -716,19 +735,24 @@ void CLightSourceApp::BuildScene()
 	}
 
 	{
+		/*CDirectionalLight* pLight = new CDirectionalLight();
+		m_DirLights.push_back(pLight);
+		pLight->m_Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		pLight->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);*/
+
 		CPointLight* pLight0 = new CPointLight();
-		m_Lights.push_back(pLight0);
+		m_PointLights.push_back(pLight0);
 		pLight0->m_Color = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
-		pLight0->m_vPosition = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, -15.0f, 1.0f);
 		pLight0->m_fMaxRadius = 10.0f;
-		pLight0->m_fMinRadius = 0.5f;
+		pLight0->m_fRefDist = 5.0f;
 		
 		CPointLight* pLight1 = new CPointLight();
-		m_Lights.push_back(pLight1);
+		m_PointLights.push_back(pLight1);
 		pLight1->m_Color = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-		pLight1->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
+		pLight1->m_vPosition = XMVectorSet(0.0f, 5.0f, 15.0f, 1.0f);
 		pLight1->m_fMaxRadius = 10.0f;
-		pLight1->m_fMinRadius = 0.5f;
+		pLight1->m_fRefDist = 5.0f;
 
 		CSpotLight* pSpotLight0 = new CSpotLight();
 		m_SpotLights.push_back(pSpotLight0);
@@ -736,7 +760,7 @@ void CLightSourceApp::BuildScene()
 		pSpotLight0->m_vPosition = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
 		pSpotLight0->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
 		pSpotLight0->m_fMaxRadius = 10.0f;
-		pSpotLight0->m_fMinRadius = 0.5f;
+		pSpotLight0->m_fRefDist = 5.0f;
 		pSpotLight0->m_fMaxAngle = 70.0f;
 		pSpotLight0->m_fMinAngle = 65.0f;
 
@@ -746,7 +770,7 @@ void CLightSourceApp::BuildScene()
 		pSpotLight1->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
 		pSpotLight1->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
 		pSpotLight1->m_fMaxRadius = 10.0f;
-		pSpotLight1->m_fMinRadius = 0.5f;
+		pSpotLight1->m_fRefDist = 5.0f;
 		pSpotLight1->m_fMaxAngle = 70.0f;
 		pSpotLight1->m_fMinAngle = 65.0f;
 	}

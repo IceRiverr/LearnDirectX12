@@ -108,6 +108,12 @@
     <ClInclude Include="..\..\Framework\BufferManager.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Framework\GraphicPipeline.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Framework\GPUResource.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\stdafx.cpp">
@@ -164,11 +170,17 @@
     <ClCompile Include="..\..\Apps\imgui_dx12\imgui_impl_win32.cpp">
       <Filter>Apps\imgui_dx12</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Apps\LightSourceApp.h.cpp">
-      <Filter>Apps</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Framework\Light.cpp">
       <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Framework\GraphicPipeline.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Framework\GPUResource.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Apps\LightSourceApp.cpp">
+      <Filter>Apps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -198,6 +210,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="..\..\Shaders\light_color.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\..\Shaders\color_material.hlsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

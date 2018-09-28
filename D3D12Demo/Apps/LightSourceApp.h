@@ -58,7 +58,8 @@ private:
 
 	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
 	std::vector<CRenderObject*> m_RenderObjects;
-	std::vector<CPointLight*> m_Lights;
+	std::vector<CDirectionalLight*> m_DirLights;
+	std::vector<CPointLight*> m_PointLights;
 	std::vector<CSpotLight*> m_SpotLights;
 
 	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;

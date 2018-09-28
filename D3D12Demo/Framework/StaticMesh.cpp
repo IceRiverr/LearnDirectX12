@@ -17,6 +17,10 @@ CRenderObject::CRenderObject()
 	m_WorldTransform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
 	m_nConstantBufferIndex = -1;
+
+	m_pMaterial = new CMaterial();
+	m_pMaterial->m_MaterialBufferView = {};
+	m_ObjectBufferView = {};
 }
 
 void CRenderObject::Render(ID3D12GraphicsCommandList * pCommandList)

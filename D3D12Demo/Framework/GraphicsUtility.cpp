@@ -45,6 +45,20 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12Graph
 	return pDefaultBuffer;
 }
 
+ID3D12Resource* Graphics::CreateConstantBuffer(ID3D12Device * pDevice, UINT64 byteSize)
+{
+	ID3D12Resource * pConstBuffer = nullptr; 
+	pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&pConstBuffer));
+
+	return pConstBuffer;
+}
+
 D3D12_VERTEX_BUFFER_VIEW Graphics::CreateVertexBufferView(ID3D12Resource * pVertexBuffer, UINT size, UINT stride)
 {
 	D3D12_VERTEX_BUFFER_VIEW bufferView;
@@ -195,4 +209,9 @@ void Graphics::CreateBox(std::vector<XMFLOAT3>& positions, std::vector<UINT16>& 
 		4, 0, 3,
 		4, 3, 7
 	};
+}
+
+UINT Graphics::CalcConstBufferBytersAligned(UINT rawBytes)
+{
+	return ((rawBytes + 255) & (~255));
 }
