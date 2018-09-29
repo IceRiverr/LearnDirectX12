@@ -83,7 +83,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\ThirdParty;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\libs;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Framework;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\D3D12Demo;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Apps;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\VisualStudio\D3D12Demo;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\ThirdParty\imgui-master;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Apps\imgui_dx12;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\ThirdParty;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\libs;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Framework;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\D3D12Demo;D:\Projects\MyProjects\LearnDirectX12\D3D12Demo\Apps;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -240,6 +240,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Shaders\light_material.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\BRDF_Lib.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\Light_Lib.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

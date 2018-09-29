@@ -147,8 +147,8 @@ bool CImportor_Obj::ImportObjMesh()
 			else if (buffer[0] == 'v' && buffer[1] == ' ')
 			{
 				// "v 1.000000 -1.000000 -1.000000"
-				std::regex reg_vtx("^v(\\s+-?\\d+\\.\\d+){3}$");
-				if (std::regex_match(line, reg_vtx))
+				//std::regex reg_vtx("^v(\\s+-?\\d+\\.\\d+){3}$");
+				//if (std::regex_match(line, reg_vtx))
 				{
 					std::vector<float> data;
 					parse_float_in_string(line, data);
@@ -161,8 +161,8 @@ bool CImportor_Obj::ImportObjMesh()
 			else if (buffer[0] == 'v' && buffer[1] == 't')
 			{
 				// "vt 0.833333 0.126139"
-				std::regex reg_vt("^vt(\\s+-?\\d+\\.\\d+){2}$");
-				if (std::regex_match(line, reg_vt))
+				//std::regex reg_vt("^vt(\\s+-?\\d+\\.\\d+){2}$");
+				//if (std::regex_match(line, reg_vt))
 				{
 					std::vector<float> data;
 					parse_float_in_string(line, data);
@@ -175,8 +175,8 @@ bool CImportor_Obj::ImportObjMesh()
 			else if (buffer[0] == 'v' && buffer[1] == 'n')
 			{
 				// "vn - 0.9684 0.2114 0.1326"
-				std::regex reg_vtx("^vn(\\s+-?\\d+\\.\\d+){3}$");
-				if (std::regex_match(line, reg_vtx))
+				//std::regex reg_vtx("^vn(\\s+-?\\d+\\.\\d+){3}$");
+				//if (std::regex_match(line, reg_vtx))
 				{
 					std::vector<float> data;
 					parse_float_in_string(line, data);

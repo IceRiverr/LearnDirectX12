@@ -22,7 +22,7 @@ inline void ThrowIfFailed(HRESULT hr)
 }
 
 template<typename T>
-T StringToNumber(std::string t)
+T StringToNumber(const std::string& t)
 {
 	std::istringstream ss(t);
 	T v;

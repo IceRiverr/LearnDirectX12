@@ -1,5 +1,7 @@
 
 #include "BufferDefine.hlsl"
+#include "BRDF_Lib.hlsl"
+#include "Light_Lib.hlsl"
 
 struct VertexIn
 {
@@ -25,44 +27,11 @@ VertexOut VSMain(VertexIn vin)
     return vout;
 }
 
-float DistanceFallOff(float refDist, float d)
-{
-    float distDelta = refDist / max(d, 0.01f);
-    float distFalloff = distDelta * distDelta;
-    return distFalloff;
-}
-
-float DistanceWindowFunction(float maxRadius, float d)
-{
-    float winDelta = clamp(1.0f - pow(d / maxRadius, 4.0f), 0.0f, 1.0f);
-    return winDelta * winDelta;
-}
-
-float PointLightFallOff(LightInfo light, float toLightLen)
-{
-    float distFalloff = DistanceFallOff(light.RefDist, toLightLen);
-    float winFallOff = DistanceWindowFunction(light.MaxRadius, toLightLen);
-    
-    return distFalloff * winFallOff;
-}
-
-float SpotLightFallOff(LightInfo light, float toLightLen, float3 toLight)
-{
-    float distFalloff = DistanceFallOff(light.RefDist, toLightLen);
-    float winFallOff = DistanceWindowFunction(light.MaxRadius, toLightLen);
-  
-    float dirDelta = (dot(toLight, -light.LightDirection.xyz) - light.MaxAngle) / (light.MinAngle - light.MaxAngle);
-    dirDelta = clamp(dirDelta, 0.0f, 1.0f);
-    float dirFalloff = pow(dirDelta, 2.0f);
-
-    return distFalloff * dirFalloff;
-}
-
 float GammaCorrection(float a)
 {
     if (a > 0.0031308f)
     {
-        return 1.055f * pow(a, 1.0f / 2.4f) - 0.055f;
+        return 1.055f * pow(abs(a), 1.0f / 2.4f) - 0.055f;
     }
     else
     {
@@ -88,9 +57,23 @@ float4 PSMain(VertexOut pin) : SV_Target
     for (int a = 0; a < g_LightNumbers.x; ++a)
     {
         LightInfo light = g_Lights[a];
-        resultColor += light.LightColor.rgb * dot(-light.LightDirection.xyz, pin.NormalW) * g_Material.DiffuseColor.rgb;
-    }
 
+        float3 L = -light.LightDirection.xyz;
+        float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
+        float3 N = pin.NormalW;
+        float3 H = normalize(L + V);
+
+        float NdotV = abs(dot(N, V)) + 1e-5f;
+        float LdotH = saturate(dot(L, H));
+        float NdotL = saturate(dot(N, L));
+        float NdotH = saturate(dot(N, H));
+        
+        float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, 0.9f);
+
+        resultColor += light.LightColor.rgb * g_Material.DiffuseColor.rgb * Fd * NdotL * XM_1DIVPI;
+
+    }
+    
     for (int i = g_LightNumbers.x; i < pointLightEnd; ++i)
     {
         LightInfo light = g_Lights[i];
