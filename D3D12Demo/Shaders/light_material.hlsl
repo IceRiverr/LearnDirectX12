@@ -47,10 +47,10 @@ float3 linearColorToSRGB(float3 color)
 float4 PSMain(VertexOut pin) : SV_Target
 {
     float3 resultColor;
-    
-    float3 f0 = float3(g_Material.F0, g_Material.F0, g_Material.F0);
-    f0 = lerp(f0, g_Material.BaseColor.rgb, g_Material.MetalMask);
 
+    float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
+    float3 N = pin.NormalW;
+    
     int pointLightEnd = g_LightNumbers.x + g_LightNumbers.y;
     int spotLightEnd = pointLightEnd + g_LightNumbers.z;
 
@@ -61,28 +61,10 @@ float4 PSMain(VertexOut pin) : SV_Target
         float3 L = -light.LightDirection.xyz;
         L = normalize(L);
 
-        float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
-        float3 N = pin.NormalW;
-        float3 H = normalize(L + V);
-
-        float NdotV = abs(dot(N, V)) + 1e-5f;
-        float LdotH = saturate(dot(L, H));
+        float3 brdf = Default_ShadeModel(N, V, L, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
         float NdotL = saturate(dot(N, L));
-        float NdotH = saturate(dot(N, H));
-        
-        // Diffuse BRDF
-        float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, g_Material.Roughness);
 
-        // Specular BRDF
-        float3 f90 = float3(1.0f, 1.0f, 1.0f);
-        float3 F = F_Schick(f0, f90, LdotH);
-        float3 Fr = Fr_Specular(NdotV, NdotL, NdotH, g_Material.Roughness, F);
-
-        // Diffuse Weight
-        float3 diffuseWeight = float3(1.0f, 1.0f, 1.0f) - F;
-        diffuseWeight *= 1.0f - g_Material.MetalMask;
-
-        resultColor += (g_Material.BaseColor.rgb * diffuseWeight * Fd + Fr) * light.LightColor.rgb * light.Intensity * NdotL * XM_1DIVPI;
+        resultColor += brdf * light.LightColor.rgb * light.Intensity * NdotL;
     }
     
     for (int i = g_LightNumbers.x; i < pointLightEnd; ++i)
@@ -93,30 +75,11 @@ float4 PSMain(VertexOut pin) : SV_Target
         float toLight = length(L);
         L = L / toLight;
 
-        float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
-        float3 N = pin.NormalW;
-        float3 H = normalize(L + V);
-
-        float NdotV = abs(dot(N, V)) + 1e-5f;
-        float LdotH = saturate(dot(L, H));
-        float NdotL = saturate(dot(N, L));
-        float NdotH = saturate(dot(N, H));
-
-        // Diffuse BRDF
-        float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, g_Material.Roughness);
-
-        // Specular BRDF
-        float3 f90 = float3(1.0f, 1.0f, 1.0f);
-        float3 F = F_Schick(f0, f90, LdotH);
-        float3 Fr = Fr_Specular(NdotV, NdotL, NdotH, g_Material.Roughness, F);
-
-        // Diffuse Weight
-        float3 diffuseWeight = float3(1.0f, 1.0f, 1.0f) - F;
-        diffuseWeight *= 1.0f - g_Material.MetalMask;
-
+        float3 brdf = Default_ShadeModel(N, V, L, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
         float fallOff = PointLightFallOff(light, toLight);
+        float NdotL = saturate(dot(N, L));
 
-        resultColor += (g_Material.BaseColor.rgb * diffuseWeight * Fd + Fr) * light.LightColor.rgb * light.Intensity * fallOff * NdotL * XM_1DIVPI;
+        resultColor += brdf * light.LightColor.rgb * light.Intensity * fallOff * NdotL;
     }
 
     for (int j = pointLightEnd; j < spotLightEnd; ++j)
@@ -127,30 +90,11 @@ float4 PSMain(VertexOut pin) : SV_Target
         float toLight = length(L);
         L = L / toLight;
 
-        float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
-        float3 N = pin.NormalW;
-        float3 H = normalize(L + V);
-
-        float NdotV = abs(dot(N, V)) + 1e-5f;
-        float LdotH = saturate(dot(L, H));
-        float NdotL = saturate(dot(N, L));
-        float NdotH = saturate(dot(N, H));
-
-        // Diffuse BRDF
-        float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, g_Material.Roughness);
-
-        // Specular BRDF
-        float3 f90 = float3(1.0f, 1.0f, 1.0f);
-        float3 F = F_Schick(f0, f90, LdotH);
-        float3 Fr = Fr_Specular(NdotV, NdotL, NdotH, g_Material.Roughness, F);
-
-        // Diffuse Weight
-        float3 diffuseWeight = float3(1.0f, 1.0f, 1.0f) - F;
-        diffuseWeight *= 1.0f - g_Material.MetalMask;
-
+        float3 brdf = Default_ShadeModel(N, V, L, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
         float fallOff = SpotLightFallOff(light, toLight, L);
+        float NdotL = saturate(dot(N, L));
 
-        resultColor += (g_Material.BaseColor.rgb * diffuseWeight * Fd + Fr) * light.LightColor.rgb * light.Intensity * fallOff * NdotL * XM_1DIVPI;
+        resultColor += brdf * light.LightColor.rgb * light.Intensity * fallOff * NdotL;
     }
     
     resultColor = linearColorToSRGB(resultColor);

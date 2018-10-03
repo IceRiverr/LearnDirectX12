@@ -375,15 +375,17 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 	}
 	
 	{
+		std::string gun_model_path = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\Gun\\gun.obj";
+		std::string smooth_box_path = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\smooth_box.obj";
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\smooth_box.obj", pDevice, cmdList); // smooth_box plane  scene_simple
+		pMesh->ImportFromFile(gun_model_path, pDevice, cmdList);
 		m_StaticMeshes.emplace("Smooth_box", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF"];
 	}
 
 	{
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\UVSphere.obj", pDevice, cmdList); // smooth_box plane  scene_simple
+		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\UVSphere.obj", pDevice, cmdList);
 		m_StaticMeshes.emplace("UVSphere", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF"];
 	}
@@ -412,6 +414,7 @@ void CMaterialBRDFApp::BuildScene()
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
 			pObj->m_Transform.Position = XMFLOAT3(4.0f, 1.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(2.0f, 2.0f, 2.0f);
 
 			m_RenderObjects.push_back(pObj);
 		}

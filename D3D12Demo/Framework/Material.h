@@ -31,3 +31,12 @@ public:
 
 	ConstantBufferAddress m_MaterialAddress;
 };
+
+class CBRDFMaterial : public CMaterial
+{
+public:
+	std::string m_AldeboMapPath;
+	std::string m_NormalMapPath;
+	std::string m_SmoothnessMapPath;
+	std::string m_MetalicMapPath;
+};

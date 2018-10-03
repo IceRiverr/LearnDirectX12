@@ -75,8 +75,6 @@ float3 Fr_Specular(float NdotV, float NdotL, float NdotH, float linearRoughness,
 
 float3 Default_ShadeModel(float3 N, float3 V, float3 L, float3 BaseColor, float Roughness, float MetalMask, float F0)
 {
-    float3 brdf = (float3) 0;
-
     float3 H = normalize(L + V);
 
     float NdotV = abs(dot(N, V)) + 1e-5f;
@@ -88,8 +86,7 @@ float3 Default_ShadeModel(float3 N, float3 V, float3 L, float3 BaseColor, float 
     float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, Roughness);
 
     // Specular BRDF
-    float3 f0 = float3(F0, F0, F0);
-    f0 = lerp(f0, BaseColor, MetalMask);
+    float3 f0 = lerp(float3(F0, F0, F0), BaseColor, MetalMask);
     float3 f90 = float3(1.0f, 1.0f, 1.0f);
     float3 F = F_Schick(f0, f90, LdotH);
     float3 Fr = Fr_Specular(NdotV, NdotL, NdotH, Roughness, F);
@@ -98,7 +95,7 @@ float3 Default_ShadeModel(float3 N, float3 V, float3 L, float3 BaseColor, float 
     float3 diffuseWeight = float3(1.0f, 1.0f, 1.0f) - F;
     diffuseWeight *= 1.0f - MetalMask;
 
-    brdf = BaseColor.rgb * diffuseWeight * Fd + Fr * XM_1DIVPI;
+    return (BaseColor.rgb * diffuseWeight * Fd + Fr) * XM_1DIVPI;
 }
 
 #endif

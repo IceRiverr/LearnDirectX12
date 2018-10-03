@@ -18,9 +18,9 @@ public:
 	class FaceEntry
 	{
 	public:
-		UINT posID;
-		UINT uvID;
-		UINT nmlID;
+		int posID;
+		int uvID;
+		int nmlID;
 
 		bool operator < (const FaceEntry& f) const;
 	};
@@ -44,6 +44,8 @@ public:
 
 private:
 	bool ImportObjMesh();
+	bool ImportObjMesh_v2();
+
 	void ProcessObjData();
 
 private:
