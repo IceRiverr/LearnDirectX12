@@ -86,7 +86,7 @@ CRotateCamera::CRotateCamera()
 {
 	m_fRotateRadius = 20.0f;
 	m_fTheta = 0.0f;
-	m_fPhi = 45.0f;
+	m_fPhi = 0.0f;
 	m_fMouseIntensity = 0.5f;
 }
 

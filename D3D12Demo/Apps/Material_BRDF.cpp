@@ -12,9 +12,10 @@ CMaterialBRDFApp::CMaterialBRDFApp()
 	m_pVSShaderCode_Light = nullptr;
 	m_pPSShaderCode_Light = nullptr;
 
-	bool show_demo_window = false;
-	bool show_another_window = false;
-	clear_color = { 80.0f / 255.0f, 90.0f / 255.0f, 100.0f / 255.0f, 1.0f };
+	clear_color = { 135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f };
+	m_pBRDFMat = nullptr;
+
+	m_bGuiMode = false;
 }
 
 CMaterialBRDFApp::~CMaterialBRDFApp()
@@ -31,7 +32,7 @@ void CMaterialBRDFApp::Init()
 	InitImgui();
 
 	m_pCamera = new CRotateCamera();
-	m_pCamera->m_fRotateRadius = 5.0f;
+	m_pCamera->m_fRotateRadius = 10.0f;
 	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
 }
 
@@ -59,23 +60,18 @@ void CMaterialBRDFApp::Update(double deltaTime)
 	
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
-		XMMATRIX mWorldMat = m_RenderObjects[i]->m_mWorldMatrix;
-		//XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
-		//mWorldMat = mRotateMat * mWorldMat;
-
-		ConstantShaderBlock objConstant;
-		XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
+		m_RenderObjects[i]->Update();
+		
+		ObjectShaderBlock objConstant = m_RenderObjects[i]->CreateShaderBlock();
 		m_ObjectBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_ObjectAddress.nBufferIndex);
 	}
 
 	for (auto it = m_Materials.begin(); it != m_Materials.end(); ++it)
 	{
 		CMaterial* pMat = it->second;
-		
-		MaterialShaderBlock matBlock;
-		matBlock.DiffuseColor = pMat->m_cDiffuseColor;
-		m_MaterialBuffer.UpdateBuffer((UINT8*)&matBlock, sizeof(matBlock), pMat->m_MaterialAddress.nBufferIndex);
-		XM_PI;
+		MaterialShaderBlock shaderBlock = pMat->CreateShaderBlock();
+
+		m_MaterialBuffer.UpdateBuffer((UINT8*)&shaderBlock, sizeof(shaderBlock), pMat->m_MaterialAddress.nBufferIndex);
 	}
 
 	UpdateFrameBuffer((float)deltaTime, (float)dTotalTime);
@@ -107,41 +103,19 @@ void CMaterialBRDFApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	{
 		for (int i = 0; i < m_DirLights.size(); ++i)
 		{
-			LightInfo lightInfo = {};
-			CDirectionalLight* pLight = m_DirLights[i];
-			XMStoreFloat4(&lightInfo.LightDirection, pLight->m_vDirection);
-			lightInfo.LightColor = pLight->m_Color;
-
-			m_FrameBuffer.m_FrameData.g_Lights[i] = lightInfo;
+			m_FrameBuffer.m_FrameData.g_Lights[i] = m_DirLights[i]->CreateShaderBlock();
 		}
 
 		int nPointLightStart = (int)m_DirLights.size();
 		for (int i = 0; i < m_PointLights.size(); ++i)
 		{
-			LightInfo lightInfo = {};
-			CPointLight* pLight = m_PointLights[i];
-			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
-			lightInfo.RefDist = pLight->m_fRefDist;;
-			lightInfo.MaxRadius = pLight->m_fMaxRadius;
-			lightInfo.LightColor = pLight->m_Color;
-
-			m_FrameBuffer.m_FrameData.g_Lights[nPointLightStart + i] = lightInfo;
+			m_FrameBuffer.m_FrameData.g_Lights[nPointLightStart + i] = m_PointLights[i]->CreateShaderBlock();
 		}
 
 		int nSpotLightStart = (int)(nPointLightStart + m_PointLights.size());
 		for (int i = 0; i < m_SpotLights.size(); ++i)
 		{
-			LightInfo lightInfo = {};
-			CSpotLight* pLight = m_SpotLights[i];
-			XMStoreFloat4(&lightInfo.LightDirection, pLight->m_vDirection);
-			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
-			lightInfo.LightColor = pLight->m_Color;
-
-			lightInfo.RefDist = pLight->m_fRefDist;
-			lightInfo.MaxRadius = pLight->m_fMaxRadius;
-			lightInfo.MinAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMinAngle));
-			lightInfo.MaxAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMaxAngle));
-			m_FrameBuffer.m_FrameData.g_Lights[nSpotLightStart + i] = lightInfo;
+			m_FrameBuffer.m_FrameData.g_Lights[nSpotLightStart + i] = m_SpotLights[i]->CreateShaderBlock();
 		}
 
 		m_FrameBuffer.m_FrameData.g_LightNumbers[0] = (int)m_DirLights.size();
@@ -382,59 +356,95 @@ void CMaterialBRDFApp::InitRenderResource()
 
 void CMaterialBRDFApp::BuildMaterials()
 {
-	CMaterial* pMat = new CMaterial();
-	pMat->m_sName = "Blue";
-	pMat->m_cDiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Materials.emplace(pMat->m_sName, pMat);
+	m_pBRDFMat = new CMaterial();
+	m_pBRDFMat->m_sName = "BRDF";
+	m_pBRDFMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	m_pBRDFMat->m_fSmoothness = 0.2f;
+	m_pBRDFMat->m_fMetalMask = 0.0f;
+	m_pBRDFMat->m_fReflectance = 0.2f;
+	m_Materials.emplace(m_pBRDFMat->m_sName, m_pBRDFMat);
 }
 
 void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
-	
-	// Obj
 	{
 		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\plane.obj", pDevice, cmdList); // smooth_box plane  scene_simple
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
-		CImportor_Obj impoortor;
-		impoortor.SetPath("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\UVSphere.obj"); // smooth_box plane  scene_simple
-		impoortor.Import();
+		pMesh->m_pMaterial = m_Materials["BRDF"];
+	}
+	
+	{
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\smooth_box.obj", pDevice, cmdList); // smooth_box plane  scene_simple
+		m_StaticMeshes.emplace("Smooth_box", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF"];
+	}
 
-		MeshData* pMeshData = impoortor.m_MeshObjs[0];
-
-		pMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3), &pMesh->m_pPositionBufferUpload);
-		pMesh->m_pNormalBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Normals[0], pMeshData->Normals.size() * sizeof(XMFLOAT3), &pMesh->m_pNormalBufferUpload);
-		pMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT), &pMesh->m_pIndexBufferUpload);
-
-		pMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pMesh->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pMesh->m_NormalBufferView = Graphics::CreateVertexBufferView(pMesh->m_pNormalBufferGPU, (UINT)pMeshData->Normals.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pMesh->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
-
-		pMesh->AddSubMesh("Sub0", (UINT)pMeshData->Indices.size(), 0, 0);
-		pMesh->m_pMaterial = m_Materials["Blue"];
-
-		impoortor.Clear();
+	{
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\UVSphere.obj", pDevice, cmdList); // smooth_box plane  scene_simple
+		m_StaticMeshes.emplace("UVSphere", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF"];
 	}
 }
 
 void CMaterialBRDFApp::BuildScene()
 {
 	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["Plane_Obj"];
+		CStaticMesh* pSphereMesh = nullptr;
+		pSphereMesh = m_StaticMeshes["Plane_Obj"];
 		if (pSphereMesh)
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
-			pObj->m_mWorldMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+			pObj->m_Transform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(10.0f, 10.0f, 10.0f);
+
 			m_RenderObjects.push_back(pObj);
 		}
 	}
 
 	{
-		CDirectionalLight* pLight = new CDirectionalLight();
+		CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_Transform.Position = XMFLOAT3(4.0f, 1.0f, 0.0f);
+
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["UVSphere"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_Transform.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		/*CDirectionalLight* pLight = new CDirectionalLight();
 		m_DirLights.push_back(pLight);
-		pLight->m_Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		pLight->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
+		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight->m_fIntensity = 3.14f;
+		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
+	}
+
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 3.14f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 5.0f;
 	}
 }
 
@@ -491,41 +501,19 @@ void CMaterialBRDFApp::UpdateImgui()
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-
-	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-	if (show_demo_window)
-		ImGui::ShowDemoWindow(&show_demo_window);
-
-	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+	
 	{
-		static float f = 0.0f;
-		static int counter = 0;
+		ImGui::Begin("BRDF Property");                          // Create a window called "Hello, world!" and append into it.
+		//ImGui::Text("Property");               // Display some text (you can use a format strings too)
 
-		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+		ImGui::ColorEdit4("Base Color", (float*)&m_pBRDFMat->m_cBaseColor);
+		ImGui::SliderFloat("Smoothness", &m_pBRDFMat->m_fSmoothness, 0.0f, 1.0f);
+		ImGui::SliderFloat("MetalMask", &m_pBRDFMat->m_fMetalMask, 0.0f, 1.0f);
+		ImGui::SliderFloat("Reflectance", &m_pBRDFMat->m_fReflectance, 0.0f, 1.0f);
 
-		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-		ImGui::Checkbox("Another Window", &show_another_window);
-
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
-		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-			counter++;
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::End();
-	}
-
-	// 3. Show another simple window.
-	if (show_another_window)
-	{
-		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-		ImGui::Text("Hello from another window!");
-		if (ImGui::Button("Close Me"))
-			show_another_window = false;
+		ImGui::Dummy(ImVec2(0.0, 8.0f));
+		ImGui::Text("F9: GUI Mode");
+		ImGui::Text("Status: %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
 	}
 }
@@ -597,6 +585,9 @@ LRESULT CMaterialBRDFApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 		case VK_F12: // 这个命令会导致断点，不知道什么原因
 					 //SetFullScreen(!m_bFullScreen);
 			break;
+		case VK_F9:
+			m_bGuiMode = !m_bGuiMode;
+			break;
 		case 'P':
 			SetFullScreen(!m_bFullScreen);
 			break;
@@ -627,17 +618,21 @@ LRESULT CMaterialBRDFApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	}
 	case WM_MOUSEMOVE:
 	{
-		int x = LOWORD(lParam);//鼠标的横坐标
-		int y = HIWORD(lParam);//鼠标的纵坐标
+		if (m_bGuiMode == false)
+		{
+			int x = LOWORD(lParam);//鼠标的横坐标
+			int y = HIWORD(lParam);//鼠标的纵坐标
 
-		m_InputMgr.m_nMouseX = x;
-		m_InputMgr.m_nMouseY = x;
+			m_InputMgr.m_nMouseX = x;
+			m_InputMgr.m_nMouseY = x;
 
-		m_InputMgr.m_nDelteMouseX = x - m_InputMgr.m_nLastMouseX;
-		m_InputMgr.m_nDeltaMouseY = y - m_InputMgr.m_nLastMouseY;
+			m_InputMgr.m_nDelteMouseX = x - m_InputMgr.m_nLastMouseX;
+			m_InputMgr.m_nDeltaMouseY = y - m_InputMgr.m_nLastMouseY;
 
-		m_InputMgr.m_nLastMouseX = x;
-		m_InputMgr.m_nLastMouseY = y;
+			m_InputMgr.m_nLastMouseX = x;
+			m_InputMgr.m_nLastMouseY = y;
+		}
+		
 		return 0;
 	}
 	default:

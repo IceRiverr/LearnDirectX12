@@ -174,7 +174,7 @@ void CLightSourceApp::Update(double deltaTime)
 		//XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
 		//mWorldMat = mRotateMat * mWorldMat;
 
-		ConstantShaderBlock objConstant;
+		ObjectShaderBlock objConstant;
 		XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
 		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_ObjectAddress.nBufferIndex);
 	}
@@ -208,7 +208,7 @@ void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	{
 		for (int i = 0; i < m_DirLights.size(); ++i)
 		{
-			LightInfo lightInfo = {};
+			LightInfoShaderStruct lightInfo = {};
 			CDirectionalLight* pLight = m_DirLights[i];
 			XMStoreFloat4(&lightInfo.LightDirection, pLight->m_vDirection);
 			lightInfo.LightColor = pLight->m_Color;
@@ -219,7 +219,7 @@ void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 		int nPointLightStart = (int)m_DirLights.size();
 		for (int i = 0; i < m_PointLights.size(); ++i)
 		{
-			LightInfo lightInfo = {};
+			LightInfoShaderStruct lightInfo = {};
 			CPointLight* pLight = m_PointLights[i];
 			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
 			lightInfo.RefDist = pLight->m_fRefDist;;
@@ -232,7 +232,7 @@ void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 		int nSpotLightStart = (int)(nPointLightStart + m_PointLights.size());
 		for (int i = 0; i < m_SpotLights.size(); ++i)
 		{
-			LightInfo lightInfo = {};
+			LightInfoShaderStruct lightInfo = {};
 			CSpotLight* pLight = m_SpotLights[i];
 			XMStoreFloat4(&lightInfo.LightDirection, pLight->m_vDirection);
 			XMStoreFloat4(&lightInfo.LightPosition, pLight->m_vPosition);
@@ -240,8 +240,8 @@ void CLightSourceApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 
 			lightInfo.RefDist = pLight->m_fRefDist;
 			lightInfo.MaxRadius = pLight->m_fMaxRadius;
-			lightInfo.MinAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMinAngle));
-			lightInfo.MaxAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMaxAngle));
+			lightInfo.CosMinAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMinAngle));
+			lightInfo.CosMaxAngle = std::cosf(MathUtility::ToRadian(pLight->m_fMaxAngle));
 			m_FrameBuffer.m_FrameData.g_Lights[nSpotLightStart + i] = lightInfo;
 		}
 
@@ -692,7 +692,7 @@ void CLightSourceApp::BuildScene()
 			{
 				CRenderObject* pObj = new CRenderObject();
 				pObj->m_pStaticMesh = pBoxMesh;
-				pObj->m_WorldTransform.Position = XMFLOAT3(0.0f, (j - 5.0f) * 4.0f, 0.0f);
+				pObj->m_Transform.Position = XMFLOAT3(0.0f, (j - 5.0f) * 4.0f, 0.0f);
 				pObj->m_mWorldMatrix = XMMatrixTranslation(0.0f, (j - 5.0f) * 4.0f, 0.0f);
 				m_RenderObjects.push_back(pObj);
 			}
@@ -705,7 +705,7 @@ void CLightSourceApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(5.0f, 1.0f, 0.0f);
+			pObj->m_Transform.Position = XMFLOAT3(5.0f, 1.0f, 0.0f);
 			pObj->m_mWorldMatrix = XMMatrixTranslation(5.0f, 1.0f, 0.0f);
 			m_RenderObjects.push_back(pObj);
 		}
@@ -717,7 +717,7 @@ void CLightSourceApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 1.0f, 0.0f);
+			pObj->m_Transform.Position = XMFLOAT3(10.0f, 1.0f, 0.0f);
 			pObj->m_mWorldMatrix = XMMatrixTranslation(10.0f, 1.0f, 0.0f);
 			m_RenderObjects.push_back(pObj);
 		}
@@ -729,7 +729,7 @@ void CLightSourceApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
+			pObj->m_Transform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
 
 			XMMATRIX translateMat = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX scaleMat = XMMatrixScaling(20.0f, 20.0f, 20.0f);
@@ -747,21 +747,21 @@ void CLightSourceApp::BuildScene()
 
 		CPointLight* pLight0 = new CPointLight();
 		m_PointLights.push_back(pLight0);
-		pLight0->m_Color = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+		pLight0->m_Color = XMFLOAT3(0.3f, 0.3f, 0.3f);
 		pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, -15.0f, 1.0f);
 		pLight0->m_fMaxRadius = 10.0f;
 		pLight0->m_fRefDist = 5.0f;
 		
 		CPointLight* pLight1 = new CPointLight();
 		m_PointLights.push_back(pLight1);
-		pLight1->m_Color = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+		pLight1->m_Color = XMFLOAT3(0.7f, 0.7f, 0.7f);
 		pLight1->m_vPosition = XMVectorSet(0.0f, 5.0f, 15.0f, 1.0f);
 		pLight1->m_fMaxRadius = 10.0f;
 		pLight1->m_fRefDist = 5.0f;
 
 		CSpotLight* pSpotLight0 = new CSpotLight();
 		m_SpotLights.push_back(pSpotLight0);
-		pSpotLight0->m_Color = XMFLOAT4(0.333f, 0.333f, 0.333f, 1.0f);
+		pSpotLight0->m_Color = XMFLOAT3(0.333f, 0.333f, 0.333f);
 		pSpotLight0->m_vPosition = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
 		pSpotLight0->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
 		pSpotLight0->m_fMaxRadius = 10.0f;
@@ -771,7 +771,7 @@ void CLightSourceApp::BuildScene()
 
 		CSpotLight* pSpotLight1 = new CSpotLight();
 		m_SpotLights.push_back(pSpotLight1);
-		pSpotLight1->m_Color = XMFLOAT4(0.667f, 0.667f, 0.667f, 1.0f);
+		pSpotLight1->m_Color = XMFLOAT3(0.667f, 0.667f, 0.667f);
 		pSpotLight1->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
 		pSpotLight1->m_vDirection = XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f);
 		pSpotLight1->m_fMaxRadius = 10.0f;

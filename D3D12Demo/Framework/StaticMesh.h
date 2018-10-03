@@ -3,34 +3,13 @@
 #include "Utility.h"
 #include <unordered_map>
 #include "GPUResource.h"
+#include "Material.h"
 
 using namespace DirectX;
 
-struct ConstantBufferAddress
-{
-	ID3D12Resource* pBuffer;
-	UINT nBufferIndex;
-	ID3D12DescriptorHeap* pBufferHeap;
-	UINT nHeapOffset;
-};
-
-struct MaterialShaderBlock
-{
-	XMFLOAT4 DiffuseColor;
-};
-
-struct ConstantShaderBlock
+struct ObjectShaderBlock
 {
 	XMFLOAT4X4 mWorldMat;
-};
-
-class CMaterial
-{
-public:
-	std::string m_sName;
-	XMFLOAT4 m_cDiffuseColor;
-
-	ConstantBufferAddress m_MaterialAddress;
 };
 
 struct MeshData
@@ -53,6 +32,7 @@ class CStaticMesh
 {
 public:
 	void AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc);
+	void ImportFromFile(std::string filePath, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 
 public:
 	ID3D12Resource* m_pPositionBufferGPU = nullptr;
@@ -92,12 +72,16 @@ class CRenderObject
 {
 public:
 	CRenderObject();
+	void Update();
 	void Render(ID3D12GraphicsCommandList* pCommandList);
+
+	ObjectShaderBlock CreateShaderBlock() const;
 	
 public:
 	CStaticMesh* m_pStaticMesh;
-	TransformData m_WorldTransform;
+	TransformData m_Transform;
 	XMMATRIX m_mWorldMatrix;
 	
 	ConstantBufferAddress m_ObjectAddress;
+	bool m_bTransformDirty;
 };

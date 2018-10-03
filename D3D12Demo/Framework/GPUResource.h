@@ -2,6 +2,14 @@
 
 #include "stdafx.h"
 
+struct ConstantBufferAddress
+{
+	ID3D12Resource* pBuffer;
+	UINT nBufferIndex;
+	ID3D12DescriptorHeap* pBufferHeap;
+	UINT nHeapOffset;
+};
+
 struct BufferView
 {
 	ID3D12Resource* pResource;

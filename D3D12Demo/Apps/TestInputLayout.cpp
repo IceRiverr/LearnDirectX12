@@ -157,7 +157,7 @@ void TestInputLayoutApp::Update(double deltaTime)
 		//XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
 		//mWorldMat = mRotateMat * mWorldMat;
 
-		ConstantShaderBlock objConstant;
+		ObjectShaderBlock objConstant;
 		XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
 		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_ObjectAddress.nBufferIndex);
 	}
@@ -564,7 +564,7 @@ void TestInputLayoutApp::BuildScene()
 			{
 				CRenderObject* pObj = new CRenderObject();
 				pObj->m_pStaticMesh = pBoxMesh;
-				pObj->m_WorldTransform.Position = XMFLOAT3(0.0f, (j - 5.0f) * 4.0f, 0.0f);
+				pObj->m_Transform.Position = XMFLOAT3(0.0f, (j - 5.0f) * 4.0f, 0.0f);
 				pObj->m_mWorldMatrix = XMMatrixTranslation(0.0f, (j - 5.0f) * 4.0f, 0.0f);
 				m_RenderObjects.push_back(pObj);
 			}
@@ -577,7 +577,7 @@ void TestInputLayoutApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(5.0f, 0.0f, 0.0f);
+			pObj->m_Transform.Position = XMFLOAT3(5.0f, 0.0f, 0.0f);
 			pObj->m_mWorldMatrix = XMMatrixTranslation(5.0f, 0.0f, 0.0f);
 			m_RenderObjects.push_back(pObj);
 		}
@@ -589,7 +589,7 @@ void TestInputLayoutApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_WorldTransform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
+			pObj->m_Transform.Position = XMFLOAT3(10.0f, 0.0f, 0.0f);
 			pObj->m_mWorldMatrix = XMMatrixTranslation(10.0f, 0.0f, 0.0f);
 			m_RenderObjects.push_back(pObj);
 		}

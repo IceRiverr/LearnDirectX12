@@ -8,7 +8,7 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "Light.h"
-
+#include "Material.h"
 
 class CMaterialBRDFApp :
 	public WinApp
@@ -64,9 +64,9 @@ private:
 	CInputManager m_InputMgr;
 
 	UINT m_imguiDescriptorIndex;
-
-	// Test imgui
-	bool show_demo_window;
-	bool show_another_window;
+	
 	XMFLOAT4 clear_color;
+	CMaterial* m_pBRDFMat;
+
+	bool m_bGuiMode;
 };

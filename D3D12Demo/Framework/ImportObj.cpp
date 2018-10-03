@@ -35,10 +35,14 @@ void CImportor_Obj::SetPath(std::string path)
 	m_ObjFilePath = path;
 }
 
-void CImportor_Obj::Import()
+bool CImportor_Obj::Import()
 {
-	ImportObjMesh();
-	ProcessObjData();
+	if(ImportObjMesh())
+	{
+		ProcessObjData();
+		return true;
+	}
+	return false;
 }
 
 void CImportor_Obj::Clear()

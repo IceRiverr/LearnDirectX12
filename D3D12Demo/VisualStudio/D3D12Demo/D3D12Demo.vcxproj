@@ -161,6 +161,7 @@
     <ClInclude Include="..\..\Framework\GraphicPipeline.h" />
     <ClInclude Include="..\..\Framework\Light.h" />
     <ClInclude Include="..\..\Framework\GPUResource.h" />
+    <ClInclude Include="..\..\Framework\Material.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui_internal.h" />
@@ -194,6 +195,7 @@
     <ClCompile Include="..\..\Framework\InputManager.cpp" />
     <ClCompile Include="..\..\Framework\Light.cpp" />
     <ClCompile Include="..\..\Framework\GPUResource.cpp" />
+    <ClCompile Include="..\..\Framework\Material.cpp" />
     <ClCompile Include="..\..\Framework\StaticMesh.cpp" />
     <ClCompile Include="..\..\Framework\WinApp.cpp" />
     <ClCompile Include="..\..\Framework\stdafx.cpp" />

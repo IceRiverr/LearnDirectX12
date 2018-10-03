@@ -2,29 +2,38 @@
 
 #include "stdafx.h"
 
-struct LightInfo
+struct LightInfoShaderStruct
 {
-	XMFLOAT4 LightColor;
+	XMFLOAT3 LightColor;
+	float Intensity;
 	XMFLOAT4 LightDirection;
 	XMFLOAT4 LightPosition;
 
 	float RefDist;
 	float MaxRadius;
-	float MinAngle;
-	float MaxAngle;
+	float CosMinAngle;
+	float CosMaxAngle;
 };
 
 class CDirectionalLight
 {
 public:
-	XMFLOAT4 m_Color;
+	LightInfoShaderStruct CreateShaderBlock() const;
+
+public:
+	XMFLOAT3 m_Color;
+	float m_fIntensity;
 	XMVECTOR m_vDirection;
 };
 
 class CPointLight
 {
 public:
-	XMFLOAT4 m_Color;
+	LightInfoShaderStruct CreateShaderBlock() const;
+
+public:
+	XMFLOAT3 m_Color;
+	float m_fIntensity;
 	XMVECTOR m_vPosition;
 	float m_fRefDist;
 	float m_fMaxRadius;
@@ -33,7 +42,11 @@ public:
 class CSpotLight
 {
 public:
-	XMFLOAT4 m_Color;
+	LightInfoShaderStruct CreateShaderBlock() const;
+
+public:
+	XMFLOAT3 m_Color;
+	float m_fIntensity;
 	XMVECTOR m_vPosition;
 	XMVECTOR m_vDirection;
 	float m_fRefDist;

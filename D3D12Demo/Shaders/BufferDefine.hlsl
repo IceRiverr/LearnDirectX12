@@ -1,19 +1,28 @@
+#ifndef _BUFFER_DEFINE_H_
+#define _BUFFER_DEFINE_H_
 
 struct LightInfo
 {
-    float4 LightColor;
+    float3 LightColor;
+    float Intensity;
     float4 LightDirection;
     float4 LightPosition;
 
     float RefDist;
     float MaxRadius;
-    float MinAngle;
-    float MaxAngle;
+    float CosMinAngle;
+    float CosMaxAngle;
 };
 
 struct BRDFMaterial
 {
-    float4 DiffuseColor;
+    float4 BaseColor;
+
+    float Roughness;
+    float MetalMask;
+    float F0;
+
+    float Unused;
 };
 
 cbuffer cbPerObject : register(b0)
@@ -46,3 +55,5 @@ cbuffer cbPerMaterial : register(b2)
 {
     BRDFMaterial g_Material;
 }
+
+#endif

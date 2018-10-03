@@ -146,7 +146,7 @@ void DrawBoxArrayApp::Update(double deltaTime)
 		//XMMATRIX mRotateMat = XMMatrixRotationY((float)fTotalTime * (i + j + 1) * 0.2f);
 		//mWorldMat = mRotateMat * mWorldMat;
 
-		ConstantShaderBlock objConstant;
+		ObjectShaderBlock objConstant;
 		XMStoreFloat4x4(&objConstant.mWorldMat, XMMatrixTranspose(mWorldMat));
 		m_ConstBuffer.UpdateBuffer((UINT8*)&objConstant, sizeof(objConstant), m_RenderObjects[i]->m_ObjectAddress.nHeapOffset);
 	}
@@ -378,7 +378,7 @@ void DrawBoxArrayApp::BuildScene()
 				{
 					pObj->m_pStaticMesh = pBoxMesh;
 				}
-				pObj->m_WorldTransform.Position = XMFLOAT3((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
+				pObj->m_Transform.Position = XMFLOAT3((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
 				pObj->m_mWorldMatrix = XMMatrixTranslation((i - 5.0f) * 4.0f, (j - 5.0f) * 4.0f, 0.0f);
 				m_RenderObjects.push_back(pObj);
 			}

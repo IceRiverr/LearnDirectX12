@@ -4,7 +4,6 @@
 #include "StaticMesh.h"
 #include "Light.h"
 
-
 class CFrameBuffer
 {
 public:
@@ -33,7 +32,7 @@ public:
 		float g_fDeltaTime;
 
 		int g_LightNumbers[4]; // 0 DirLightNum 1 PointLightNum 2 SpotLightNum
-		LightInfo g_Lights[16];
+		LightInfoShaderStruct g_Lights[16];
 	};
 
 	_Buffer m_FrameData;
@@ -119,5 +118,5 @@ void TBaseConstantBuffer<T>::UpdateBuffer(UINT8 * pData, UINT nDataSize, UINT nC
 	memcpy(pObjConstBegin, pData, nDataSize);
 }
 
-typedef TBaseConstantBuffer<ConstantShaderBlock> CObjectConstantBuffer;
+typedef TBaseConstantBuffer<ObjectShaderBlock> CObjectConstantBuffer;
 typedef TBaseConstantBuffer<MaterialShaderBlock> CMaterialConstantBuffer;

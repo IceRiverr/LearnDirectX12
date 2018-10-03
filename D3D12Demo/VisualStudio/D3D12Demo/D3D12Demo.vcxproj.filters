@@ -117,6 +117,9 @@
     <ClInclude Include="..\..\Apps\Material_BRDF.h">
       <Filter>Apps</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Framework\Material.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\stdafx.cpp">
@@ -188,6 +191,9 @@
     <ClCompile Include="..\..\Apps\Material_BRDF.cpp">
       <Filter>Apps</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Framework\Material.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="D3D12Demo.rc">
@@ -224,13 +230,7 @@
     <None Include="..\..\Shaders\light_material.hlsl">
       <Filter>Shaders</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="..\..\Shaders\BRDF_Lib.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\Shaders\Light_Lib.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
+    <None Include="..\..\Shaders\BRDF_Lib.hlsl" />
+    <None Include="..\..\Shaders\Light_Lib.hlsl" />
   </ItemGroup>
 </Project>

@@ -36,7 +36,7 @@ public:
 	~CImportor_Obj();
 
 	void SetPath(std::string path);
-	void Import();
+	bool Import();
 	void Clear();
 
 	std::vector<MeshData*> m_MeshObjs;
