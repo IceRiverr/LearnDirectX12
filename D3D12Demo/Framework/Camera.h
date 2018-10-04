@@ -24,8 +24,8 @@ public:
 	virtual ~CBaseCamera() {};
 	
 	virtual void Init(float fovAngle, float aspectRatio, float nearZ, float farZ);
-	virtual void OnUpdate(double dt, const CInputManager& InputMgr);
-	virtual void Update(double dt, const CInputManager& InputMgr);
+	virtual void OnUpdate(double dt, CInputManager& InputMgr);
+	virtual void Update(double dt, CInputManager& InputMgr);
 
 	void SetAspectRatio(float ratio);
 
@@ -57,15 +57,30 @@ protected:
 class CAutoRotateCamera :public CBaseCamera
 {
 public:
-	virtual void OnUpdate(double dt, const CInputManager& InputMgr);
+	virtual void OnUpdate(double dt, CInputManager& InputMgr);
 };
 
 class CRotateCamera :public CBaseCamera
 {
 public:
 	CRotateCamera();
-	virtual void OnUpdate(double dt, const CInputManager& InputMgr);
+	virtual void OnUpdate(double dt, CInputManager& InputMgr);
 
+public:
+	float m_fRotateRadius;
+	float m_fMouseIntensity;
+
+	float m_fTheta;
+	float m_fPhi;
+	float m_fSmooth;
+};
+
+class CFPSCamera : public CBaseCamera
+{
+public:
+	CFPSCamera();
+
+	virtual void OnUpdate(double dt, CInputManager& InputMgr);
 public:
 	float m_fRotateRadius;
 	float m_fMouseIntensity;

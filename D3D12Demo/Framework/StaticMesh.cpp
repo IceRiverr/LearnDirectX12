@@ -39,8 +39,8 @@ void CStaticMesh::ImportFromFile(std::string filePath, ID3D12Device* pDevice, ID
 
 			if (pMeshData->Tangents.size() > 0)
 			{
-				this->m_pTangentBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Tangents[0], pMeshData->Tangents.size() * sizeof(XMFLOAT3), &this->m_pNormalBufferUpload);
-				this->m_TangentBufferView = Graphics::CreateVertexBufferView(this->m_pTangentBufferGPU, (UINT)pMeshData->Tangents.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+				this->m_pTangentBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Tangents[0], pMeshData->Tangents.size() * sizeof(XMFLOAT4), &this->m_pTangentBufferUpload);
+				this->m_TangentBufferView = Graphics::CreateVertexBufferView(this->m_pTangentBufferGPU, (UINT)pMeshData->Tangents.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
 			}
 
 			if (pMeshData->UVs.size() > 0)
@@ -65,51 +65,73 @@ void CStaticMesh::CalcTangents(MeshData& mesh)
 	if (mesh.Positions.size() == mesh.UVs.size())
 	{
 		mesh.Tangents.resize(mesh.Positions.size());
+
+		std::vector<XMFLOAT3> Tangents; 
+		Tangents.resize(mesh.Positions.size());
+
+		std::vector<XMFLOAT3> BiNormals;
+		BiNormals.resize(mesh.Positions.size());
+
 		for (int i = 0; i < mesh.Indices.size(); i += 3)
 		{
-			XMFLOAT3 T;
+			int i0 = mesh.Indices[i];
+			int i1 = mesh.Indices[i + 1];
+			int i2 = mesh.Indices[i + 2];
 
-			int index0 = mesh.Indices[i];
-			int index1 = mesh.Indices[i + 1];
-			int index2 = mesh.Indices[i + 2];
+			XMFLOAT3 p0 = mesh.Positions[i0];
+			XMFLOAT3 p1 = mesh.Positions[i1];
+			XMFLOAT3 p2 = mesh.Positions[i2];
 
-			XMFLOAT3 p0 = mesh.Positions[index0];
-			XMFLOAT3 p1 = mesh.Positions[index1];
-			XMFLOAT3 p2 = mesh.Positions[index2];
+			XMFLOAT2 uv0 = mesh.UVs[i0];
+			XMFLOAT2 uv1 = mesh.UVs[i1];
+			XMFLOAT2 uv2 = mesh.UVs[i2];
 
-			XMFLOAT2 uv0 = mesh.UVs[index0];
-			XMFLOAT2 uv1 = mesh.UVs[index1];
-			XMFLOAT2 uv2 = mesh.UVs[index2];
+			float x1 = p1.x - p0.x;
+			float y1 = p1.y - p0.y;
+			float z1 = p1.z - p0.z;
+			float x2 = p2.x - p0.x;
+			float y2 = p2.y - p0.y;
+			float z2 = p2.z - p0.z;
 
-			XMFLOAT3 edge1 = MathLib::XMFloat3Subtract(p1, p0);
-			XMFLOAT3 edge2 = MathLib::XMFloat3Subtract(p2, p0);
+			float s1 = uv1.x - uv0.x;
+			float t1 = uv1.y - uv0.y;
+			float s2 = uv2.x - uv0.x;
+			float t2 = uv2.y - uv0.y;
 
-			XMFLOAT2 deltaUV1 = MathLib::XMFloat2Subtract(uv1, uv0);
-			XMFLOAT2 deltaUV2 = MathLib::XMFloat2Subtract(uv2, uv0);
+			float r = 1.0f / (s1 * t2 - s2 * t1);
 
-			float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+			XMFLOAT3 T = XMFLOAT3(r * (t2 * x1 - t1 *x2), r * (t2 * y1 - t1 * y2),	r * (t2 * z1 - t1 * z2));
+			XMFLOAT3 B = XMFLOAT3(r * (-s2 * x1 + s1 *x2), r * (-s2 * y1 + s1 * y2), r * (-s2 * z1 + s1 * z2));
 
-			T.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-			T.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-			T.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+			Tangents[i0] = MathLib::XMFloat3Add(Tangents[i0], T);
+			Tangents[i1] = MathLib::XMFloat3Add(Tangents[i1], T);
+			Tangents[i2] = MathLib::XMFloat3Add(Tangents[i2], T);
 
-			float length = std::sqrtf(T.x * T.x + T.y * T.y + T.z * T.z);
-			T.x /= length;
-			T.y /= length;
-			T.z /= length;
-
-			mesh.Tangents[index0] = MathLib::XMFloat3Add(mesh.Tangents[index0], T);
-			mesh.Tangents[index1] = MathLib::XMFloat3Add(mesh.Tangents[index1], T);
-			mesh.Tangents[index2] = MathLib::XMFloat3Add(mesh.Tangents[index2], T);
+			BiNormals[i0] = MathLib::XMFloat3Add(BiNormals[i0], B);
+			BiNormals[i1] = MathLib::XMFloat3Add(BiNormals[i1], B);
+			BiNormals[i2] = MathLib::XMFloat3Add(BiNormals[i2], B);
 		}
 
 		for (int i = 0; i < mesh.Tangents.size(); ++i)
 		{
-			XMFLOAT3& T = mesh.Tangents[i];
-			float length = std::sqrtf(T.x * T.x + T.y * T.y + T.z * T.z);
-			T.x /= length;
-			T.y /= length;
-			T.z /= length;
+			//   T = normalize(T - dot(T, N) * N);
+			XMVECTOR N = XMLoadFloat3(&mesh.Normals[i]);
+			XMVECTOR T = XMLoadFloat3(&Tangents[i]);
+			XMVECTOR B = XMLoadFloat3(&BiNormals[i]);
+			
+			T = XMVectorSubtract(T, XMVector3Dot(T, N) * N);
+			T = XMVector3Normalize(T);
+
+			XMVECTOR H = XMVector3Dot(XMVector3Cross(N, T), B);
+			float h;
+			XMStoreFloat(&h, H);
+			float handness = h > 0.0f ? 1.0f : -1.0f;
+
+			XMFLOAT4 mT;
+			XMStoreFloat4(&mT, T);
+			mT.w = handness;
+
+			mesh.Tangents[i] = mT;
 		}
 	}
 }
@@ -145,7 +167,10 @@ void CRenderObject::Render(ID3D12GraphicsCommandList * pCommandList)
 ObjectShaderBlock CRenderObject::CreateShaderBlock() const
 {
 	ObjectShaderBlock shaderBlock;
+
+	XMMATRIX InvWOrldMat = XMMatrixInverse(&XMMatrixDeterminant(m_mWorldMatrix), m_mWorldMatrix);
 	XMStoreFloat4x4(&shaderBlock.mWorldMat, XMMatrixTranspose(m_mWorldMatrix));
+	XMStoreFloat4x4(&shaderBlock.mInvWorldMat, XMMatrixTranspose(InvWOrldMat));
 
 	return shaderBlock;
 }

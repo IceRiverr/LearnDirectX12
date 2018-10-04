@@ -8,7 +8,7 @@ struct VertexIn
 {
     float3 PosL : POSITION;
     float3 Normal : NORMAL0;
-    float3 Tangent : NORMAL1;
+    float4 Tangent : NORMAL1;
     float2 UV : TEXCOORD;
 };
 
@@ -33,9 +33,8 @@ VertexOut VSMain(VertexIn vin)
     vout.PosH = mul(vout.PosW, g_mViewProj);
 	
 	float3 N = normalize(mul(vin.Normal, (float3x3) g_mWorldMat));
-    float3 T = normalize(mul(vin.Tangent, (float3x3) g_mWorldMat));
-    T = normalize(T - dot(T, N) * N);
-    float3 B = cross(T, N);
+    float3 T = normalize(mul(vin.Tangent.xyz, (float3x3) g_mWorldMat));
+    float3 B = cross(T, N) * vin.Tangent.w;
     vout.TBN = float3x3(T, B, N);
 
     vout.UV = vin.UV;
@@ -51,9 +50,9 @@ float4 PSMain(VertexOut pin) : SV_Target
     float3 BaseColor = g_AldeboMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
     BaseColor = pow(BaseColor, 2.2f);
 
-    float3 Mat_N = g_NormalMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
-    Mat_N = Mat_N * 2.0f - 1.0f;
-    float3 N = mul(Mat_N, pin.TBN);
+    float3 BumpNormal = g_NormalMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
+    BumpNormal = BumpNormal * 2.0f - 1.0f;
+    float3 N = mul(BumpNormal, pin.TBN);
 
     float Roughness = g_RoughnessMap.Sample(g_LinearWrapSampler, pin.UV).r;
     float MetalMask = g_MetalMaskMap.Sample(g_LinearWrapSampler, pin.UV).r;

@@ -72,7 +72,7 @@ private:
 	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
 	std::unordered_map<std::string, Texture2DResource*> m_Textures;
 
-	CRotateCamera* m_pCamera;
+	CFPSCamera* m_pCamera;
 	CInputManager m_InputMgr;
 
 	UINT m_imguiDescriptorIndex;

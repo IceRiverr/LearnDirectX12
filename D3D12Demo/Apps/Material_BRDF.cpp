@@ -37,10 +37,8 @@ void CMaterialBRDFApp::Init()
 	WinApp::Init();
 	InitRenderResource();
 	InitImgui();
-	
 
-	m_pCamera = new CRotateCamera();
-	m_pCamera->m_fRotateRadius = 10.0f;
+	m_pCamera = new CFPSCamera();
 	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 1.0f, 1000.0f);
 }
 
@@ -364,7 +362,7 @@ void CMaterialBRDFApp::InitRenderResource()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",	  1, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",	  1, DXGI_FORMAT_R32G32B32A32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0}
 	};
 
@@ -474,19 +472,19 @@ void CMaterialBRDFApp::BuildScene()
 	}
 
 	{
-	/*	CDirectionalLight* pLight = new CDirectionalLight();
+		CDirectionalLight* pLight = new CDirectionalLight();
 		m_DirLights.push_back(pLight);
 		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		pLight->m_fIntensity = 3.14f;
-		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
+		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);
 	}
 
 	{
 		CPointLight* pLight0 = new CPointLight();
 		m_PointLights.push_back(pLight0);
 		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		pLight0->m_fIntensity = 100.0f; //3.14f;
-		pLight0->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fIntensity = 50.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
 		pLight0->m_fMaxRadius = 10.0f;
 		pLight0->m_fRefDist = 1.0f;
 	}

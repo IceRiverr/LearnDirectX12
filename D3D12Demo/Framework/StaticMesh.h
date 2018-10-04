@@ -10,6 +10,7 @@ using namespace DirectX;
 struct ObjectShaderBlock
 {
 	XMFLOAT4X4 mWorldMat;
+	XMFLOAT4X4 mInvWorldMat;
 };
 
 struct MeshData
@@ -17,7 +18,7 @@ struct MeshData
 	std::vector<XMFLOAT3> Positions;
 	std::vector<XMFLOAT2> UVs;
 	std::vector<XMFLOAT3> Normals;
-	std::vector<XMFLOAT3> Tangents;
+	std::vector<XMFLOAT4> Tangents;
 	std::vector<XMFLOAT4> VtxColors;
 	std::vector<UINT> Indices;
 };
@@ -34,7 +35,7 @@ class CStaticMesh
 public:
 	void AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc);
 	void ImportFromFile(std::string filePath, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
-	void CalcTangents(MeshData& mesh);
+	void CalcTangents(MeshData& mesh); // TBN 切线空间是 右手坐标系
 
 public:
 	ID3D12Resource* m_pPositionBufferGPU = nullptr;

@@ -175,6 +175,18 @@ https://github.com/Microsoft/DirectXTex/wiki/TGA-I-O-Functions
 
 
 
+## Normal Map 法线映射
+
+在使用公式来计算时；
+
+- 按照每个三角形来计算Tangent 和BiNormal，此时计算出来的值并不是单位矢量，只有这样才能通过 TBN 将切线空间的值转换对了；
+- 然后再在每个顶点上进行平均；
+- 只计算 N 和 T ，到了ps阶段再计算 B；
+
+
+
+
+
 
 
 

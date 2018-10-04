@@ -28,6 +28,7 @@ struct BRDFMaterial
 cbuffer cbPerObject : register(b0)
 {
     float4x4 g_mWorldMat;
+    float4x4 g_mInvWorldMat;
 };
 
 cbuffer cbPerPass : register(b1)
