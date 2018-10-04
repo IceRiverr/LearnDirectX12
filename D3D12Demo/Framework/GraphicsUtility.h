@@ -1,12 +1,13 @@
 #pragma once
 #include "stdafx.h"
 #include "StaticMesh.h"
+#include "GPUResource.h"
 
 namespace Graphics
 {
 	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer);
 
-	ID3D12Resource* CreateConstantBuffer(ID3D12Device* pDevice, UINT64 byteSize);
+	Texture2DResource* CreateTexture2DResourceFromFile(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, std::wstring tgaPath);
 
 	D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(ID3D12Resource* pVertexBuffer, UINT size, UINT stride);
 

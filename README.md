@@ -165,6 +165,14 @@ memcpy(m_pCbvDataBegin, &m_ConstantBufferData, sizeof(m_ConstantBufferData));
 
 
 
+## BRDF Material
+
+纹理加载库 https://github.com/Microsoft/DirectXTex/tree/master/DirectXTex
+
+https://github.com/Microsoft/DirectXTex/wiki/TGA-I-O-Functions
+
+构建库的时候，选择Win10版本，不然不支持DX12
+
 
 
 

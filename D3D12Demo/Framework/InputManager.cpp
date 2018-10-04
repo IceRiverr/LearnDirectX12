@@ -100,6 +100,7 @@ void CInputManager::ResetInputInfos()
 
 	m_nDelteMouseX = 0;
 	m_nDeltaMouseY = 0;
+	m_nMouseZDelta = 0;
 }
 
 void ClearKeyInfo(KeyInfo & keyInfo)

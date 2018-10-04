@@ -34,6 +34,24 @@ BOOL StringToWString(const std::string & str, std::wstring & wstr)
 	return TRUE;
 }
 
+std::string WStringToString(const std::wstring & wstr)
+{
+	std::string str;
+	if (WStringToString(wstr, str))
+		return str;
+	else
+		return std::string();
+}
+
+std::wstring StringToWString(const std::string & str)
+{
+	std::wstring wStr;
+	if (StringToWString(str, wStr))
+		return wStr;
+	else
+		return std::wstring();
+}
+
 std::wstring IntToWString(SIZE_T v)
 {
 	std::wostringstream ss;

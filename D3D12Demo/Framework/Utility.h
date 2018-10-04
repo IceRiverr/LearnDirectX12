@@ -9,6 +9,9 @@ using namespace DirectX;
 BOOL WStringToString(const std::wstring &wstr, std::string &str);
 BOOL StringToWString(const std::string &str, std::wstring &wstr);
 
+std::string WStringToString(const std::wstring &wstr);
+std::wstring StringToWString(const std::string &str);
+
 std::wstring IntToWString(SIZE_T v);
 
 // From DXSampleHelper.h 

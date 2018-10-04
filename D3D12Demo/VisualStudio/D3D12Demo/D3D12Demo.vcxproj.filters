@@ -120,6 +120,9 @@
     <ClInclude Include="..\..\Framework\Material.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Framework\MathLib.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\stdafx.cpp">
@@ -194,6 +197,9 @@
     <ClCompile Include="..\..\Framework\Material.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Framework\MathLib.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="D3D12Demo.rc">
@@ -232,5 +238,11 @@
     </None>
     <None Include="..\..\Shaders\BRDF_Lib.hlsl" />
     <None Include="..\..\Shaders\Light_Lib.hlsl" />
+    <None Include="..\..\Shaders\Common_Function.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\..\Shaders\Mat_DefaultShader.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

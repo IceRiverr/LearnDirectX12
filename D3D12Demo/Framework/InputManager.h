@@ -42,4 +42,5 @@ public:
 	int m_nLastMouseY;
 	int m_nDelteMouseX;
 	int m_nDeltaMouseY;
+	int m_nMouseZDelta;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
+#include <vector>
 
 struct ConstantBufferAddress
 {
@@ -10,20 +11,27 @@ struct ConstantBufferAddress
 	UINT nHeapOffset;
 };
 
-struct BufferView
+struct Texture2DResource
 {
-	ID3D12Resource* pResource;
-	UINT64 DataOffset;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
+	ID3D12Resource* pTexture;
+	ID3D12Resource* pUploadBuffer;
+
+	ConstantBufferAddress m_TextureAddress;
 };
 
-class CCommonBuffer
+enum STATIC_SAMPLER_TYPE
 {
-public:
-	ID3D12Resource* m_pCommonBuffer;
-	UINT8* m_pData;
+	Point_Wrap_Sampler,
+	Point_Clamp_Sampler,
+	Linear_Wrap_Sampler,
+	Linear_Clamp_Sampler,
+	Anisotropic_Wrap_Sampler,
+	Anisotropic_Clamp_Sampler,
+	SAMPLER_COUNT
+};
 
-	void Map();
-	void UnMap();
+struct StaticSamplerStates
+{
+	std::vector<CD3DX12_STATIC_SAMPLER_DESC> Samplers;
+	void CreateStaticSamplers();
 };

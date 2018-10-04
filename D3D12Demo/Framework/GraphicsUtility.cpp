@@ -1,5 +1,6 @@
 #include "GraphicsUtility.h"
 #include "Utility.h"
+#include "DirectXTex.h"
 
 ID3D12Resource* Graphics::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer)
 {
@@ -45,18 +46,40 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12Graph
 	return pDefaultBuffer;
 }
 
-ID3D12Resource* Graphics::CreateConstantBuffer(ID3D12Device * pDevice, UINT64 byteSize)
+Texture2DResource* Graphics::CreateTexture2DResourceFromFile(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, std::wstring tgaPath)
 {
-	ID3D12Resource * pConstBuffer = nullptr; 
-	pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&pConstBuffer));
+	if (pDevice && cmdList)
+	{
+		Texture2DResource* pTextureResource = new Texture2DResource();
 
-	return pConstBuffer;
+		auto baseImage = std::make_unique<ScratchImage>();
+		HRESULT hr = LoadFromTGAFile(tgaPath.c_str(), nullptr, *baseImage);
+
+		auto mipmapImage = std::make_unique<ScratchImage>();
+		hr = GenerateMipMaps(baseImage->GetImages(), baseImage->GetImageCount(), baseImage->GetMetadata(), TEX_FILTER_DEFAULT, 0, *mipmapImage);
+	
+		hr = CreateTexture(pDevice, mipmapImage->GetMetadata(), &pTextureResource->pTexture);
+
+		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+		hr = PrepareUpload(pDevice, mipmapImage->GetImages(), mipmapImage->GetImageCount(), mipmapImage->GetMetadata(), subresources);
+
+		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(pTextureResource->pTexture, 0, (UINT)subresources.size());
+		
+		hr = pDevice->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&pTextureResource->pUploadBuffer));
+
+		UpdateSubresources(cmdList, pTextureResource->pTexture, pTextureResource->pUploadBuffer, 0, 0, (UINT)subresources.size(), subresources.data());
+		return pTextureResource;
+	}
+	else
+	{
+		return nullptr;
+	}
 }
 
 D3D12_VERTEX_BUFFER_VIEW Graphics::CreateVertexBufferView(ID3D12Resource * pVertexBuffer, UINT size, UINT stride)

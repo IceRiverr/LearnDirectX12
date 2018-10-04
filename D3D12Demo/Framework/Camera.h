@@ -72,4 +72,5 @@ public:
 
 	float m_fTheta;
 	float m_fPhi;
+	float m_fSmooth;
 };

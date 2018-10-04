@@ -88,25 +88,34 @@ CRotateCamera::CRotateCamera()
 	m_fTheta = 0.0f;
 	m_fPhi = 0.0f;
 	m_fMouseIntensity = 0.5f;
+	m_fSmooth = 0.01f;
 }
 
 void CRotateCamera::OnUpdate(double dt, const CInputManager & InputMgr)
 {
 	XMINT2 moveDelta;
+	if (InputMgr.m_nMouseZDelta != 0)
+	{
+		m_fRotateRadius += -m_fSmooth * InputMgr.m_nMouseZDelta;
+		m_bDirty = true;
+	}
+
 	if (InputMgr.GetMouseDelta(moveDelta))
 	{
 		m_fTheta -= moveDelta.x * m_fMouseIntensity;
 		m_fPhi += moveDelta.y * m_fMouseIntensity;
 		
 		m_fPhi = MathUtility::Clamp<float>(m_fPhi, 5.0f, 175.0f);
+		m_bDirty = true;
+	}
 
+	if (m_bDirty)
+	{
 		float thetaRadian = m_fTheta / 180.0f * XM_PI;
 		float phiRadian = m_fPhi / 180.0f * XM_PI;
 
 		m_vEyePositon.x = m_fRotateRadius * std::sinf(phiRadian) * std::cosf(thetaRadian);
 		m_vEyePositon.y = m_fRotateRadius * std::cosf(phiRadian);
 		m_vEyePositon.z = m_fRotateRadius * std::sinf(phiRadian) * std::sinf(thetaRadian);
-
-		m_bDirty = true;
 	}
 }

@@ -10,6 +10,7 @@
 #include "Light.h"
 #include "Material.h"
 
+
 class CMaterialBRDFApp :
 	public WinApp
 {
@@ -30,6 +31,7 @@ private:
 	void BuildMaterials();
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildScene();
+	void BuildHeapDescriptors();
 	void BuildPSOs(ID3D12Device* pDevice);
 	void InitImgui();
 
@@ -38,7 +40,12 @@ private:
 
 	void DrawImgui();
 
+	void CreateTextureResources();
+
 private:
+	std::string m_ContentRootPath;
+	std::string m_ShaderRootPath;
+
 	ID3D12DescriptorHeap * m_pCBVHeap;
 	UINT m_CBVHeapSize;
 	ID3D12RootSignature* m_pRootSignature;
@@ -50,6 +57,10 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> m_PositionNormalInputLayout;
 	ID3DBlob* m_pVSShaderCode_Light;
 	ID3DBlob* m_pPSShaderCode_Light;
+
+	std::vector<D3D12_INPUT_ELEMENT_DESC> m_PositionNomralUVInputLayout;
+	ID3DBlob* m_pVSShaderCode_Material;
+	ID3DBlob* m_pPSShaderCode_Material;
 	
 	std::vector<CRenderObject*> m_RenderObjects;
 	std::vector<CDirectionalLight*> m_DirLights;
@@ -59,14 +70,19 @@ private:
 	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
 	std::unordered_map<std::string, CMaterial*> m_Materials;
 	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
+	std::unordered_map<std::string, Texture2DResource*> m_Textures;
 
 	CRotateCamera* m_pCamera;
 	CInputManager m_InputMgr;
 
 	UINT m_imguiDescriptorIndex;
-	
+	bool m_bGuiMode;
+
 	XMFLOAT4 clear_color;
 	CMaterial* m_pBRDFMat;
 
-	bool m_bGuiMode;
+	Texture2DResource* m_pAldeboMap;
+	Texture2DResource* m_pNormalMap;
+	Texture2DResource* m_pRoughnessMap;
+	Texture2DResource* m_pMetalicMap;
 };

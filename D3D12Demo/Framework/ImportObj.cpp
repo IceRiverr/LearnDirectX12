@@ -309,7 +309,8 @@ bool CImportor_Obj::ImportObjMesh_v2()
 				// "vt 0.833333 0.126139"
 				float uv[2];
 				sscanf(buffer, "vt %f %f", &uv[0], &uv[1]);
-				pObjData->UVs.push_back(XMFLOAT2(uv));
+				// 如果数据来自Blender，则将V坐标进行转换
+				pObjData->UVs.push_back(XMFLOAT2(uv[0], 1.0f - uv[1]));
 			}
 			else if (buffer[0] == 'v' && buffer[1] == 'n')
 			{

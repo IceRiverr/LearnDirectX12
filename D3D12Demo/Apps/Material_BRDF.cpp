@@ -5,8 +5,13 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
 
+#include "DirectXTex.h"
+
 CMaterialBRDFApp::CMaterialBRDFApp()
 {
+	m_ContentRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\";
+	m_ShaderRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\";
+
 	m_pCBVHeap = nullptr;
 	m_pRootSignature = nullptr;
 	m_pVSShaderCode_Light = nullptr;
@@ -16,6 +21,8 @@ CMaterialBRDFApp::CMaterialBRDFApp()
 	m_pBRDFMat = nullptr;
 
 	m_bGuiMode = false;
+
+	m_pAldeboMap = nullptr;
 }
 
 CMaterialBRDFApp::~CMaterialBRDFApp()
@@ -30,6 +37,7 @@ void CMaterialBRDFApp::Init()
 	WinApp::Init();
 	InitRenderResource();
 	InitImgui();
+	
 
 	m_pCamera = new CRotateCamera();
 	m_pCamera->m_fRotateRadius = 10.0f;
@@ -133,6 +141,35 @@ void CMaterialBRDFApp::DrawImgui()
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_pCommandList);
 }
 
+// https://github.com/Microsoft/DirectXTex/wiki/CreateTexture
+// https://github.com/Microsoft/DirectXTex/wiki/GenerateMipMaps
+void CMaterialBRDFApp::CreateTextureResources()
+{
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_A.tga");
+		m_pAldeboMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
+		m_Textures.emplace("Cerberus_A", m_pAldeboMap);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_N.tga");
+		m_pNormalMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
+		m_Textures.emplace("Cerberus_N", m_pNormalMap);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_R.tga");
+		m_pRoughnessMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
+		m_Textures.emplace("Cerberus_R", m_pRoughnessMap);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_M.tga");
+		m_pMetalicMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
+		m_Textures.emplace("m_pMetalicMap", m_pMetalicMap);
+	}
+}
+
 void CMaterialBRDFApp::Draw()
 {
 	m_pCommandAllocator->Reset();
@@ -164,28 +201,49 @@ void CMaterialBRDFApp::Draw()
 	m_pCommandList->SetDescriptorHeaps(1, pDescriptorHeap);
 	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature);
 
-	auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-	handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
-	m_pCommandList->SetGraphicsRootDescriptorTable(1, handle);
-
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
 		CRenderObject* pObj = m_RenderObjects[i];
 
-		m_pCommandList->SetPipelineState(m_PSOs["Light_PSO"]);
-		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		if (pObj->m_pStaticMesh->m_pMaterial->m_sName == "BRDF_Color")
 		{
-			pObj->m_pStaticMesh->m_PositionBufferView,
-			pObj->m_pStaticMesh->m_NormalBufferView,
-		};
+			m_pCommandList->SetPipelineState(m_PSOs["Light_PSO"]);
+			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+			{
+				pObj->m_pStaticMesh->m_PositionBufferView,
+				pObj->m_pStaticMesh->m_NormalBufferView,
+			};
 
-		m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+			m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+		}
+		else if (pObj->m_pStaticMesh->m_pMaterial->m_sName == "BRDF_Texture")
+		{
+			m_pCommandList->SetPipelineState(m_PSOs["Material_PSO"]);
+			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+			{
+				pObj->m_pStaticMesh->m_PositionBufferView,
+				pObj->m_pStaticMesh->m_NormalBufferView,
+				pObj->m_pStaticMesh->m_TangentBufferView,
+				pObj->m_pStaticMesh->m_UVBufferView,
+			};
+
+			m_pCommandList->IASetVertexBuffers(0, 4, &VertexBufferViews[0]);
+
+			auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+			handle.Offset(m_pAldeboMap->m_TextureAddress.nHeapOffset, m_nSRVDescriptorSize);
+			m_pCommandList->SetGraphicsRootDescriptorTable(3, handle);
+		}
+		
 		m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
 		m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 		handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
 		m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+
+		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+		handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
+		m_pCommandList->SetGraphicsRootDescriptorTable(1, handle);
 
 		auto handle2 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 		handle2.Offset(pObj->m_pStaticMesh->m_pMaterial->m_MaterialAddress.nHeapOffset, m_nSRVDescriptorSize);
@@ -248,14 +306,202 @@ void CMaterialBRDFApp::InitRenderResource()
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 	// 所有初始化命令都放到该命令之后
 
+	CreateTextureResources();
 	BuildMaterials();
 	BuildStaticMeshes(m_pDevice, m_pCommandList);
 	BuildScene();
+	BuildHeapDescriptors();
 
+	// create root signature
+	CD3DX12_DESCRIPTOR_RANGE cbvTable;
+	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
+	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
+	cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+
+	CD3DX12_DESCRIPTOR_RANGE textureTable;
+	textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
+	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
+	slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
+
+	StaticSamplerStates StaticSamplers;
+	StaticSamplers.CreateStaticSamplers();
+
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	ID3DBlob* serializedRootSig = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+	D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
+
+	m_pDevice->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(&m_pRootSignature));
+
+	if (serializedRootSig)
+	{
+		serializedRootSig->Release(); serializedRootSig = nullptr;
+	}
+
+	m_PositionNormalInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.hlsl", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.hlsl", "PSMain", "ps_5_0");
+
+	m_PositionNomralUVInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",	  1, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0}
+	};
+
+	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.hlsl", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.hlsl", "PSMain", "ps_5_0");
+
+	BuildPSOs(m_pDevice);
+
+	m_pCommandList->Close();
+
+	// flush command
+	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
+	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
+	FlushCommandQueue();
+}
+
+void CMaterialBRDFApp::BuildMaterials()
+{
+	{
+		m_pBRDFMat = new CMaterial();
+		m_pBRDFMat->m_sName = "BRDF_Color";
+		m_pBRDFMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		m_pBRDFMat->m_fSmoothness = 0.2f;
+		m_pBRDFMat->m_fMetalMask = 0.0f;
+		m_pBRDFMat->m_fReflectance = 0.2f;
+		m_Materials.emplace(m_pBRDFMat->m_sName, m_pBRDFMat);
+	}
+
+	{
+		CMaterial* pMat = new CMaterial();
+		pMat->m_sName = "BRDF_Texture";
+		pMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		pMat->m_fSmoothness = 0.2f;
+		pMat->m_fMetalMask = 0.0f;
+		pMat->m_fReflectance = 0.8f;
+		m_Materials.emplace(pMat->m_sName, pMat);
+
+		
+	}
+}
+
+void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+{
+	{
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->ImportFromFile(m_ContentRootPath + "plane.obj", pDevice, cmdList); // smooth_box plane  scene_simple
+		m_StaticMeshes.emplace("Plane_Obj", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF_Texture"];
+	}
+	
+	{
+		std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
+		std::string smooth_box_path = m_ContentRootPath + "smooth_box.obj";
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->ImportFromFile(gun_model_path, pDevice, cmdList);
+		m_StaticMeshes.emplace("Smooth_box", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF_Texture"];
+	}
+
+	{
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->ImportFromFile(m_ContentRootPath + "UVSphere.obj", pDevice, cmdList);
+		m_StaticMeshes.emplace("UVSphere", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+	}
+}
+
+void CMaterialBRDFApp::BuildScene()
+{
+	{
+		CStaticMesh* pSphereMesh = nullptr;
+		pSphereMesh = m_StaticMeshes["Plane_Obj"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_Transform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(10.0f, 10.0f, 10.0f);
+
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_Transform.Position = XMFLOAT3(4.0f, 2.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(5.0f, 5.0f, 5.0f);
+
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["UVSphere"];
+		if (pSphereMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pSphereMesh;
+			pObj->m_Transform.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+	/*	CDirectionalLight* pLight = new CDirectionalLight();
+		m_DirLights.push_back(pLight);
+		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight->m_fIntensity = 3.14f;
+		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
+	}
+
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 100.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 1.0f;
+	}
+}
+
+void CMaterialBRDFApp::BuildHeapDescriptors()
+{
 	// create cbv heap
 	D3D12_DESCRIPTOR_HEAP_DESC cbHeapDesc = {};
-	// obj + material + frameBuffer + imgui
-	cbHeapDesc.NumDescriptors = (UINT)m_RenderObjects.size() + (UINT)m_Materials.size() + 1 + 1;
+	// obj + material + textures + frameBuffer + imgui
+	cbHeapDesc.NumDescriptors = 
+		(UINT)m_RenderObjects.size() + 
+		(UINT)m_Materials.size() + 
+		(UINT)m_Textures.size() + 
+		1 + 1;
 	cbHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbHeapDesc.NodeMask = 0;
@@ -295,6 +541,28 @@ void CMaterialBRDFApp::InitRenderResource()
 		nDescriptorIndex++;
 	}
 
+	for (auto it = m_Textures.begin(); it != m_Textures.end(); ++it)
+	{
+		Texture2DResource* pResource = it->second;
+		pResource->m_TextureAddress.pBufferHeap = m_pCBVHeap;
+		pResource->m_TextureAddress.nHeapOffset = nDescriptorIndex;
+
+		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
+		handle.Offset(nDescriptorIndex, m_nSRVDescriptorSize);
+		
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Format = pResource->pTexture->GetDesc().Format;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.MipLevels = pResource->pTexture->GetDesc().MipLevels;
+		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+		m_pDevice->CreateShaderResourceView(pResource->pTexture, &srvDesc, handle);
+
+		nDescriptorIndex++;
+	}
+
 	m_FrameBuffer.CreateBuffer(m_pDevice);
 	m_FrameBuffer.m_nDescriptorIndex = nDescriptorIndex++;
 	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
@@ -302,178 +570,55 @@ void CMaterialBRDFApp::InitRenderResource()
 	m_FrameBuffer.CreateBufferView(m_pDevice, handle);
 
 	m_imguiDescriptorIndex = nDescriptorIndex;
-
-	// create root signature
-	CD3DX12_DESCRIPTOR_RANGE cbvTable;
-	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
-	cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
-
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	ID3DBlob* serializedRootSig = nullptr;
-	ID3DBlob* errorBlob = nullptr;
-	D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
-
-	m_pDevice->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&m_pRootSignature));
-
-	if (serializedRootSig)
-	{
-		serializedRootSig->Release(); serializedRootSig = nullptr;
-	}
-
-	m_PositionNormalInputLayout =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	m_pVSShaderCode_Light = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\light_material.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Light = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\light_material.hlsl", "PSMain", "ps_5_0");
-
-	BuildPSOs(m_pDevice);
-
-	m_pCommandList->Close();
-
-	// flush command
-	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
-	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
-	FlushCommandQueue();
-}
-
-void CMaterialBRDFApp::BuildMaterials()
-{
-	m_pBRDFMat = new CMaterial();
-	m_pBRDFMat->m_sName = "BRDF";
-	m_pBRDFMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	m_pBRDFMat->m_fSmoothness = 0.2f;
-	m_pBRDFMat->m_fMetalMask = 0.0f;
-	m_pBRDFMat->m_fReflectance = 0.2f;
-	m_Materials.emplace(m_pBRDFMat->m_sName, m_pBRDFMat);
-}
-
-void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
-{
-	{
-		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\plane.obj", pDevice, cmdList); // smooth_box plane  scene_simple
-		m_StaticMeshes.emplace("Plane_Obj", pMesh);
-		pMesh->m_pMaterial = m_Materials["BRDF"];
-	}
-	
-	{
-		std::string gun_model_path = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\Gun\\gun.obj";
-		std::string smooth_box_path = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\smooth_box.obj";
-		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->ImportFromFile(gun_model_path, pDevice, cmdList);
-		m_StaticMeshes.emplace("Smooth_box", pMesh);
-		pMesh->m_pMaterial = m_Materials["BRDF"];
-	}
-
-	{
-		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->ImportFromFile("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\UVSphere.obj", pDevice, cmdList);
-		m_StaticMeshes.emplace("UVSphere", pMesh);
-		pMesh->m_pMaterial = m_Materials["BRDF"];
-	}
-}
-
-void CMaterialBRDFApp::BuildScene()
-{
-	{
-		CStaticMesh* pSphereMesh = nullptr;
-		pSphereMesh = m_StaticMeshes["Plane_Obj"];
-		if (pSphereMesh)
-		{
-			CRenderObject* pObj = new CRenderObject();
-			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_Transform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
-			pObj->m_Transform.Scale = XMFLOAT3(10.0f, 10.0f, 10.0f);
-
-			m_RenderObjects.push_back(pObj);
-		}
-	}
-
-	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
-		if (pSphereMesh)
-		{
-			CRenderObject* pObj = new CRenderObject();
-			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_Transform.Position = XMFLOAT3(4.0f, 1.0f, 0.0f);
-			pObj->m_Transform.Scale = XMFLOAT3(2.0f, 2.0f, 2.0f);
-
-			m_RenderObjects.push_back(pObj);
-		}
-	}
-
-	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["UVSphere"];
-		if (pSphereMesh)
-		{
-			CRenderObject* pObj = new CRenderObject();
-			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_Transform.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
-
-			m_RenderObjects.push_back(pObj);
-		}
-	}
-
-	{
-		/*CDirectionalLight* pLight = new CDirectionalLight();
-		m_DirLights.push_back(pLight);
-		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		pLight->m_fIntensity = 3.14f;
-		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
-	}
-
-	{
-		CPointLight* pLight0 = new CPointLight();
-		m_PointLights.push_back(pLight0);
-		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		pLight0->m_fIntensity = 3.14f; //3.14f;
-		pLight0->m_vPosition = XMVectorSet(5.0f, 5.0f, 0.0f, 1.0f);
-		pLight0->m_fMaxRadius = 10.0f;
-		pLight0->m_fRefDist = 5.0f;
-	}
 }
 
 void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 {
-	ID3D12PipelineState* pOpaquePSO = nullptr;
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-	OpaquePSODesc.InputLayout = { m_PositionNormalInputLayout.data(), (UINT)m_PositionNormalInputLayout.size() };
-	OpaquePSODesc.pRootSignature = m_pRootSignature;
-	OpaquePSODesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
-	OpaquePSODesc.PS = { m_pPSShaderCode_Light->GetBufferPointer(), m_pPSShaderCode_Light->GetBufferSize() };
-	OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	OpaquePSODesc.SampleMask = UINT_MAX;
-	OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	OpaquePSODesc.NumRenderTargets = 1;
-	OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
-	OpaquePSODesc.SampleDesc.Count = 1;
-	OpaquePSODesc.SampleDesc.Quality = 0;
-	OpaquePSODesc.DSVFormat = m_DSVFormat;
-	//OpaquePSODesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	//OpaquePSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	{
+		ID3D12PipelineState* pOpaquePSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
+		OpaquePSODesc.InputLayout = { m_PositionNormalInputLayout.data(), (UINT)m_PositionNormalInputLayout.size() };
+		OpaquePSODesc.pRootSignature = m_pRootSignature;
+		OpaquePSODesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
+		OpaquePSODesc.PS = { m_pPSShaderCode_Light->GetBufferPointer(), m_pPSShaderCode_Light->GetBufferSize() };
+		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.SampleMask = UINT_MAX;
+		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		OpaquePSODesc.NumRenderTargets = 1;
+		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
+		OpaquePSODesc.SampleDesc.Count = 1;
+		OpaquePSODesc.SampleDesc.Quality = 0;
+		OpaquePSODesc.DSVFormat = m_DSVFormat;
+		//OpaquePSODesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		//OpaquePSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
-	pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
-	m_PSOs.emplace("Light_PSO", pOpaquePSO);
+		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
+		m_PSOs.emplace("Light_PSO", pOpaquePSO);
+	}
+	
+	{
+		ID3D12PipelineState* pOpaquePSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
+		OpaquePSODesc.InputLayout = { m_PositionNomralUVInputLayout.data(), (UINT)m_PositionNomralUVInputLayout.size() };
+		OpaquePSODesc.pRootSignature = m_pRootSignature;
+		OpaquePSODesc.VS = { m_pVSShaderCode_Material->GetBufferPointer(), m_pVSShaderCode_Material->GetBufferSize() };
+		OpaquePSODesc.PS = { m_pPSShaderCode_Material->GetBufferPointer(), m_pPSShaderCode_Material->GetBufferSize() };
+		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.SampleMask = UINT_MAX;
+		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		OpaquePSODesc.NumRenderTargets = 1;
+		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
+		OpaquePSODesc.SampleDesc.Count = 1;
+		OpaquePSODesc.SampleDesc.Quality = 0;
+		OpaquePSODesc.DSVFormat = m_DSVFormat;
+		
+		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
+		m_PSOs.emplace("Material_PSO", pOpaquePSO);
+	}
 }
 
 void CMaterialBRDFApp::InitImgui()
@@ -496,7 +641,6 @@ void CMaterialBRDFApp::InitImgui()
 	// Setup style
 	ImGui::StyleColorsDark();
 }
-
 
 void CMaterialBRDFApp::UpdateImgui()
 {
@@ -636,6 +780,12 @@ LRESULT CMaterialBRDFApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 			m_InputMgr.m_nLastMouseY = y;
 		}
 		
+		return 0;
+	}
+	case WM_MOUSEWHEEL:
+	{
+		int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+		m_InputMgr.m_nMouseZDelta = zDelta;
 		return 0;
 	}
 	default:
