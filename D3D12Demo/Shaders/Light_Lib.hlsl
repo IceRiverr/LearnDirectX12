@@ -1,7 +1,7 @@
 #ifndef _LIGHT_LIB_H_
 #define _LIGHT_LIB_H_
 
-#include "BufferDefine.hlsl"
+#include "Common_Define.hlsl"
 
 float DistanceFallOff(float refDist, float d)
 {

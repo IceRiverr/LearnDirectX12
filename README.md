@@ -183,7 +183,8 @@ https://github.com/Microsoft/DirectXTex/wiki/TGA-I-O-Functions
 - 然后再在每个顶点上进行平均；
 - 只计算 N 和 T ，到了ps阶段再计算 B；
 
-
+- 注意手相性；
+- https://www.cnblogs.com/sddai/p/5928101.html
 
 
 

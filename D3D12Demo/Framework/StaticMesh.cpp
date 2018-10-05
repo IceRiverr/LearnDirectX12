@@ -114,11 +114,12 @@ void CStaticMesh::CalcTangents(MeshData& mesh)
 
 		for (int i = 0; i < mesh.Tangents.size(); ++i)
 		{
-			//   T = normalize(T - dot(T, N) * N);
 			XMVECTOR N = XMLoadFloat3(&mesh.Normals[i]);
 			XMVECTOR T = XMLoadFloat3(&Tangents[i]);
 			XMVECTOR B = XMLoadFloat3(&BiNormals[i]);
 			
+			// T = normalize(T - dot(T, N) * N);
+			// 举证做一个初等变换，相当于normalize，随意不会对矩阵的乘积产生影响
 			T = XMVectorSubtract(T, XMVector3Dot(T, N) * N);
 			T = XMVector3Normalize(T);
 

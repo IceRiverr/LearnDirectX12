@@ -167,6 +167,7 @@
     <ClInclude Include="..\..\Framework\GPUResource.h" />
     <ClInclude Include="..\..\Framework\Material.h" />
     <ClInclude Include="..\..\Framework\MathLib.h" />
+    <ClInclude Include="..\..\Framework\SkyBox.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui_internal.h" />
@@ -202,6 +203,7 @@
     <ClCompile Include="..\..\Framework\GPUResource.cpp" />
     <ClCompile Include="..\..\Framework\Material.cpp" />
     <ClCompile Include="..\..\Framework\MathLib.cpp" />
+    <ClCompile Include="..\..\Framework\SkyBox.cpp" />
     <ClCompile Include="..\..\Framework\StaticMesh.cpp" />
     <ClCompile Include="..\..\Framework\WinApp.cpp" />
     <ClCompile Include="..\..\Framework\stdafx.cpp" />
@@ -219,35 +221,35 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\color.hlsl">
+    <None Include="..\..\Shaders\color.fx">
       <FileType>Document</FileType>
     </None>
-    <None Include="..\..\Shaders\color_view_info.hlsl">
-      <FileType>Document</FileType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\Shaders\position_color.hlsl">
+    <None Include="..\..\Shaders\color_view_info.fx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\BufferDefine.hlsl">
+    <None Include="..\..\Shaders\position_color.fx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\light_color.hlsl">
+    <None Include="..\..\Shaders\Common_Define.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\color_material.hlsl">
+    <None Include="..\..\Shaders\light_color.fx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\light_material.hlsl">
+    <None Include="..\..\Shaders\color_material.fx">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\light_material.fx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
@@ -267,7 +269,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\Mat_DefaultShader.hlsl">
+    <None Include="..\..\Shaders\Mat_DefaultShader.fx">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Shaders\SkyBoxShader.fx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

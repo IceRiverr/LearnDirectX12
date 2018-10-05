@@ -101,11 +101,11 @@ void TestInputLayoutApp::InitRenderResource()
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
 
-	m_pVSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.hlsl", "PSMain", "ps_5_0");
+	m_pVSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.fx", "PSMain", "ps_5_0");
 
-	m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.hlsl", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.fx", "PSMain", "ps_5_0");
 
 	m_InputLayout =
 	{

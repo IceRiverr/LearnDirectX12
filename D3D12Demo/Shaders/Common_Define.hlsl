@@ -1,5 +1,5 @@
-#ifndef _BUFFER_DEFINE_H_
-#define _BUFFER_DEFINE_H_
+#ifndef _COMMON_DEFINE_H_
+#define _COMMON_DEFINE_H_
 
 struct LightInfo
 {
@@ -57,11 +57,11 @@ cbuffer cbPerMaterial : register(b2)
     BRDFMaterial g_Material;
 }
 
-SamplerState g_PointWrapSampler : register(s0);
-SamplerState g_PointClampSampler : register(s1);
-SamplerState g_LinearWrapSampler : register(s2);
-SamplerState g_LinearClampSampler : register(s3);
-SamplerState g_AnisotropicWrapSampler : register(s4);
-SamplerState g_AnisotropicClampSampler : register(s5);
+SamplerState g_PointWrapSampler			: register(s0);
+SamplerState g_PointClampSampler		: register(s1);
+SamplerState g_LinearWrapSampler		: register(s2);
+SamplerState g_LinearClampSampler		: register(s3);
+SamplerState g_AnisotropicWrapSampler	: register(s4);
+SamplerState g_AnisotropicClampSampler	: register(s5);
 
 #endif

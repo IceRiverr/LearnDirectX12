@@ -1,5 +1,5 @@
 
-#include "BufferDefine.hlsl"
+#include "Common_Define.hlsl"
 
 struct VertexIn
 {

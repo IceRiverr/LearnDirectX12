@@ -355,8 +355,8 @@ void CMaterialBRDFApp::InitRenderResource()
 		{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.hlsl", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
 
 	m_PositionNomralUVInputLayout =
 	{
@@ -366,8 +366,8 @@ void CMaterialBRDFApp::InitRenderResource()
 		{ "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0}
 	};
 
-	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.hlsl", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.hlsl", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
 
 	BuildPSOs(m_pDevice);
 

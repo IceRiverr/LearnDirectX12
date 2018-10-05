@@ -34,6 +34,12 @@
     <Filter Include="Apps\imgui_dx12">
       <UniqueIdentifier>{88533b08-17a2-448f-9d2f-c982add0aa9f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Lib">
+      <UniqueIdentifier>{c5149cd6-7439-4f91-94a3-35bca373bb19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\sfx">
+      <UniqueIdentifier>{a4acc85d-a6ba-4a40-9113-fc962d398757}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -123,6 +129,9 @@
     <ClInclude Include="..\..\Framework\MathLib.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Framework\SkyBox.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\stdafx.cpp">
@@ -200,6 +209,9 @@
     <ClCompile Include="..\..\Framework\MathLib.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Framework\SkyBox.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="D3D12Demo.rc">
@@ -215,34 +227,41 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\color_view_info.hlsl">
-      <Filter>Shaders</Filter>
+    <None Include="..\..\Shaders\BRDF_Lib.hlsl">
+      <Filter>Shaders\Lib</Filter>
     </None>
-    <None Include="..\..\Shaders\color.hlsl">
-      <Filter>Shaders</Filter>
+    <None Include="..\..\Shaders\Common_Define.hlsl">
+      <Filter>Shaders\Lib</Filter>
     </None>
-    <None Include="..\..\Shaders\BufferDefine.hlsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\..\Shaders\position_color.hlsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\..\Shaders\light_color.hlsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\..\Shaders\color_material.hlsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\..\Shaders\light_material.hlsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\..\Shaders\BRDF_Lib.hlsl" />
-    <None Include="..\..\Shaders\Light_Lib.hlsl" />
     <None Include="..\..\Shaders\Common_Function.hlsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Lib</Filter>
     </None>
-    <None Include="..\..\Shaders\Mat_DefaultShader.hlsl">
-      <Filter>Shaders</Filter>
+    <None Include="..\..\Shaders\Light_Lib.hlsl">
+      <Filter>Shaders\Lib</Filter>
+    </None>
+    <None Include="..\..\Shaders\color.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\color_material.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\color_view_info.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\light_color.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\light_material.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\Mat_DefaultShader.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\position_color.fx">
+      <Filter>Shaders\sfx</Filter>
+    </None>
+    <None Include="..\..\Shaders\SkyBoxShader.fx">
+      <Filter>Shaders\sfx</Filter>
     </None>
   </ItemGroup>
 </Project>
