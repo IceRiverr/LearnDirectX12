@@ -1,6 +1,7 @@
 #include "GraphicsUtility.h"
 #include "Utility.h"
 #include "DirectXTex.h"
+#include "DirectXTexExr.h"
 
 ID3D12Resource* Graphics::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer)
 {
@@ -46,40 +47,70 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12Graph
 	return pDefaultBuffer;
 }
 
-Texture2DResource* Graphics::CreateTexture2DResourceFromFile(ID3D12Device * pDevice, ID3D12GraphicsCommandList * cmdList, std::wstring tgaPath)
+Texture2DResource* Graphics::CreateTexture2DResourceFromFile(
+	ID3D12Device * pDevice, 
+	ID3D12GraphicsCommandList * cmdList, 
+	std::wstring imagePath, 
+	bool bGenerateMipmaps)
 {
 	if (pDevice && cmdList)
 	{
 		Texture2DResource* pTextureResource = new Texture2DResource();
 
 		auto baseImage = std::make_unique<ScratchImage>();
-		HRESULT hr = LoadFromTGAFile(tgaPath.c_str(), nullptr, *baseImage);
 
-		auto mipmapImage = std::make_unique<ScratchImage>();
-		hr = GenerateMipMaps(baseImage->GetImages(), baseImage->GetImageCount(), baseImage->GetMetadata(), TEX_FILTER_DEFAULT, 0, *mipmapImage);
-	
-		hr = CreateTexture(pDevice, mipmapImage->GetMetadata(), &pTextureResource->pTexture);
+		size_t offset = imagePath.find_last_of(L'.');
+		std::wstring imageType = imagePath.substr(offset + 1);
 
-		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-		hr = PrepareUpload(pDevice, mipmapImage->GetImages(), mipmapImage->GetImageCount(), mipmapImage->GetMetadata(), subresources);
+		HRESULT hr;
+		if (imageType == L"dds" || imageType == L"DDS")
+		{
+			hr = LoadFromDDSFile(imagePath.c_str(), 0, nullptr, *baseImage);
+		}
+		else if (imageType == L"tga" || imageType == L"TGA")
+		{
+			hr = LoadFromTGAFile(imagePath.c_str(), nullptr, *baseImage);
+		}
+		else if (imageType == L"exr" || imageType == L"EXR")
+		{
+			hr = LoadFromEXRFile(imagePath.c_str(), nullptr, *baseImage);
+		}
+		if (hr == S_OK)
+		{
+			auto mipmapImage = std::make_unique<ScratchImage>();
+			if (bGenerateMipmaps)
+			{
+				hr = GenerateMipMaps(baseImage->GetImages(), baseImage->GetImageCount(), baseImage->GetMetadata(), TEX_FILTER_DEFAULT, 0, *mipmapImage);
+			}
+			else
+			{
+				mipmapImage = std::move(baseImage);
+			}
 
-		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(pTextureResource->pTexture, 0, (UINT)subresources.size());
-		
-		hr = pDevice->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&pTextureResource->pUploadBuffer));
+			hr = CreateTexture(pDevice, mipmapImage->GetMetadata(), &pTextureResource->pTexture);
 
-		UpdateSubresources(cmdList, pTextureResource->pTexture, pTextureResource->pUploadBuffer, 0, 0, (UINT)subresources.size(), subresources.data());
-		return pTextureResource;
+			std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+			hr = PrepareUpload(pDevice, mipmapImage->GetImages(), mipmapImage->GetImageCount(), mipmapImage->GetMetadata(), subresources);
+
+			const UINT64 uploadBufferSize = GetRequiredIntermediateSize(pTextureResource->pTexture, 0, (UINT)subresources.size());
+
+			hr = pDevice->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				D3D12_HEAP_FLAG_NONE,
+				&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(&pTextureResource->pUploadBuffer));
+
+			UpdateSubresources(cmdList, pTextureResource->pTexture, pTextureResource->pUploadBuffer, 0, 0, (UINT)subresources.size(), subresources.data());
+			return pTextureResource;
+		}
+		else
+		{
+			delete pTextureResource;
+		}
 	}
-	else
-	{
-		return nullptr;
-	}
+	return nullptr;
 }
 
 D3D12_VERTEX_BUFFER_VIEW Graphics::CreateVertexBufferView(ID3D12Resource * pVertexBuffer, UINT size, UINT stride)
@@ -188,6 +219,76 @@ void Graphics::CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>
 			indees.push_back(bottom);
 			indees.push_back(bottomUp + j + 1);
 			indees.push_back(bottomUp + j);
+		}
+	}
+}
+
+void Graphics::CreateUVSphereMesh(int segments, int rings, MeshData & mesh)
+{
+	if (segments >= 3 && rings >= 3)
+	{
+		for (int i = 1; i < rings; ++i)
+		{
+			float phi = XM_PI * i / rings;
+			for (int j = 0; j < segments; ++j)
+			{
+				float theta = XM_2PI * j / segments;
+				XMFLOAT3 p;
+				p.x = std::sinf(phi) * std::cosf(theta);
+				p.y = std::cosf(phi);
+				p.z = std::sinf(phi) * std::sinf(theta);
+				mesh.Positions.push_back(p);
+			}
+		}
+		mesh.Positions.push_back(XMFLOAT3(0.0f, 1.0f, 0.0f));
+		mesh.Positions.push_back(XMFLOAT3(0.0f, -1.0f, 0.0f));
+
+		for (int i = 1; i < rings - 1; ++i)
+		{
+			for (int j = 0; j < segments - 1; ++j)
+			{
+				int p00 = (i - 1) * segments + j;		int p01 = (i - 1) * segments + j + 1;
+				int p10 = (i - 1 + 1) * segments + j;	int p11 = (i - 1 + 1) * segments + j + 1;
+				
+				mesh.Indices.push_back(p00);
+				mesh.Indices.push_back(p10);
+				mesh.Indices.push_back(p11);
+
+				mesh.Indices.push_back(p00);
+				mesh.Indices.push_back(p11);
+				mesh.Indices.push_back(p01);
+			}
+
+			int p00 = (i - 1) * segments + segments - 1;		int p01 = (i - 1) * segments;
+			int p10 = (i - 1 + 1) * segments + segments - 1;	int p11 = (i - 1 + 1) * segments;
+
+			mesh.Indices.push_back(p00);
+			mesh.Indices.push_back(p10);
+			mesh.Indices.push_back(p11);
+
+			mesh.Indices.push_back(p00);
+			mesh.Indices.push_back(p11);
+			mesh.Indices.push_back(p01);
+		}
+
+		int top = (int)mesh.Positions.size() - 2;
+		for (int j = 0; j < segments - 1; ++j)
+		{
+			mesh.Indices.push_back(top);
+			mesh.Indices.push_back(j);
+			mesh.Indices.push_back(j + 1);
+		}
+		mesh.Indices.push_back(top);
+		mesh.Indices.push_back(segments);
+		mesh.Indices.push_back(0);
+
+		int bottom = (int)mesh.Positions.size() - 1;
+		int bottomUp = segments * (rings - 2);
+		for (int j = 0; j < segments - 1; ++j)
+		{
+			mesh.Indices.push_back(bottom);
+			mesh.Indices.push_back(bottomUp + j + 1);
+			mesh.Indices.push_back(bottomUp + j);
 		}
 	}
 }

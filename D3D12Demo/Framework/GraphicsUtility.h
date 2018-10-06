@@ -7,7 +7,9 @@ namespace Graphics
 {
 	ID3D12Resource* CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ID3D12Resource** ppUploadBuffer);
 
-	Texture2DResource* CreateTexture2DResourceFromFile(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, std::wstring tgaPath);
+	// https://github.com/Microsoft/DirectXTex/wiki/CreateTexture
+	// https://github.com/Microsoft/DirectXTex/wiki/GenerateMipMaps
+	Texture2DResource* CreateTexture2DResourceFromFile(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, std::wstring imagePath, bool bGenerateMipmaps = false);
 
 	D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(ID3D12Resource* pVertexBuffer, UINT size, UINT stride);
 
@@ -17,6 +19,8 @@ namespace Graphics
 
 	// 分辨率需要小于 128 x 64
 	void CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indees);
+
+	void CreateUVSphereMesh(int segments, int rings, MeshData& mesh);
 
 	void CreateBox(std::vector<XMFLOAT3>& positions, std::vector<UINT16>& indices);
 

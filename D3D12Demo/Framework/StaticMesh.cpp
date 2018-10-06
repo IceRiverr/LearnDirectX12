@@ -162,7 +162,57 @@ void CRenderObject::Update()
 
 void CRenderObject::Render(ID3D12GraphicsCommandList * pCommandList)
 {
+	pCommandList->SetPipelineState(m_pStaticMesh->m_pMaterial->m_pPSO);
 	
+	// Bind Mesh
+	if (m_pStaticMesh->m_pMaterial->m_InputLayoutType == INPUT_LAYOUT_TYPE::P3N3)
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			m_pStaticMesh->m_PositionBufferView,
+			m_pStaticMesh->m_NormalBufferView,
+		};
+
+		pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+	}
+	else if (m_pStaticMesh->m_pMaterial->m_InputLayoutType == INPUT_LAYOUT_TYPE::P3N3T4UV2)
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			m_pStaticMesh->m_PositionBufferView,
+			m_pStaticMesh->m_NormalBufferView,
+			m_pStaticMesh->m_TangentBufferView,
+			m_pStaticMesh->m_UVBufferView,
+		};
+
+		pCommandList->IASetVertexBuffers(0, 4, &VertexBufferViews[0]);
+	}
+
+	pCommandList->IASetIndexBuffer(&m_pStaticMesh->m_IndexBufferView);
+	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
+	auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_ObjectAddress.pBufferHeap->GetGPUDescriptorHandleForHeapStart());
+	handle1.Offset(m_ObjectAddress.nHeapOffset, m_ObjectAddress.nSRVDescriptorSize);
+	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, handle1);
+
+	// Bind Material
+	auto handle2 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pStaticMesh->m_pMaterial->m_MaterialAddress.pBufferHeap->GetGPUDescriptorHandleForHeapStart());
+	handle2.Offset(m_pStaticMesh->m_pMaterial->m_MaterialAddress.nHeapOffset, m_pStaticMesh->m_pMaterial->m_MaterialAddress.nSRVDescriptorSize);
+	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_BUFFER_INDEX, handle2);
+
+	if (m_pStaticMesh->m_pMaterial->m_pAldeboMap)
+	{
+		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.pBufferHeap->GetGPUDescriptorHandleForHeapStart());
+		handle.Offset(m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.nHeapOffset, m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.nSRVDescriptorSize);
+		pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, handle);
+	}
+
+	// Draw
+	for (auto it : m_pStaticMesh->m_SubMeshes)
+	{
+		SubMesh subMesh = it.second;
+		pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+	}
 }
 
 ObjectShaderBlock CRenderObject::CreateShaderBlock() const

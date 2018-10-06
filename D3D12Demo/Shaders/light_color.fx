@@ -51,7 +51,7 @@ float SpotLightFallOff(LightInfo light, float toLightLen, float3 toLight)
     float distFalloff = DistanceFallOff(light.RefDist, toLightLen);
     float winFallOff = DistanceWindowFunction(light.MaxRadius, toLightLen);
   
-    float dirDelta = (dot(toLight, -light.LightDirection.xyz) - light.MaxAngle) / (light.MinAngle - light.MaxAngle);
+    float dirDelta = (dot(toLight, -light.LightDirection.xyz) - light.CosMaxAngle) / (light.CosMinAngle - light.CosMaxAngle);
     dirDelta = clamp(dirDelta, 0.0f, 1.0f);
     float dirFalloff = pow(dirDelta, 2.0f);
 

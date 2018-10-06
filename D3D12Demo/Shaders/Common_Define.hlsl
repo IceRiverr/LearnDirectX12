@@ -25,13 +25,8 @@ struct BRDFMaterial
     float Unused;
 };
 
-cbuffer cbPerObject : register(b0)
-{
-    float4x4 g_mWorldMat;
-    float4x4 g_mInvWorldMat;
-};
 
-cbuffer cbPerPass : register(b1)
+cbuffer cbPerPass : register(b0)
 {
     float4x4 g_mView;
     float4x4 g_mInvView;
@@ -50,6 +45,13 @@ cbuffer cbPerPass : register(b1)
 
     int4 g_LightNumbers;
     LightInfo g_Lights[16];
+};
+
+
+cbuffer cbPerObject : register(b1)
+{
+    float4x4 g_mWorldMat;
+    float4x4 g_mInvWorldMat;
 };
 
 cbuffer cbPerMaterial : register(b2)

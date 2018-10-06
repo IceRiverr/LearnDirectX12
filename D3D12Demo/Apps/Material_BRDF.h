@@ -28,19 +28,20 @@ public:
 
 private:
 	void InitRenderResource();
+
+	void BuildRootSignature();
+	void BuildPSOs(ID3D12Device* pDevice);
+	void BuildTextureResources(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildMaterials();
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildScene();
 	void BuildHeapDescriptors();
-	void BuildPSOs(ID3D12Device* pDevice);
 	void InitImgui();
 
 	void UpdateFrameBuffer(float fDeltaTime, float fTotalTime);
 	void UpdateImgui();
 
 	void DrawImgui();
-
-	void CreateTextureResources();
 
 private:
 	std::string m_ContentRootPath;
@@ -53,12 +54,10 @@ private:
 	CObjectConstantBuffer m_ObjectBuffer;
 	CMaterialConstantBuffer m_MaterialBuffer;
 	CFrameBuffer m_FrameBuffer;
-
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_PositionNormalInputLayout;
+	
 	ID3DBlob* m_pVSShaderCode_Light;
 	ID3DBlob* m_pPSShaderCode_Light;
-
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_PositionNomralUVInputLayout;
+	
 	ID3DBlob* m_pVSShaderCode_Material;
 	ID3DBlob* m_pPSShaderCode_Material;
 	
@@ -80,9 +79,4 @@ private:
 
 	XMFLOAT4 clear_color;
 	CMaterial* m_pBRDFMat;
-
-	Texture2DResource* m_pAldeboMap;
-	Texture2DResource* m_pNormalMap;
-	Texture2DResource* m_pRoughnessMap;
-	Texture2DResource* m_pMetalicMap;
 };

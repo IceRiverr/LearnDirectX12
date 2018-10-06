@@ -5,5 +5,7 @@ class CSkyBox
 public:
 	void Draw();
 
+private:
+
 };
 

@@ -9,6 +9,7 @@ struct ConstantBufferAddress
 	UINT nBufferIndex;
 	ID3D12DescriptorHeap* pBufferHeap;
 	UINT nHeapOffset;
+	UINT nSRVDescriptorSize;
 };
 
 struct Texture2DResource
@@ -34,4 +35,12 @@ struct StaticSamplerStates
 {
 	std::vector<CD3DX12_STATIC_SAMPLER_DESC> Samplers;
 	void CreateStaticSamplers();
+};
+
+enum ROOT_SIGNATURE_INDEX
+{
+	FRAME_BUFFER_INDEX = 0,
+	OBJECT_BUFFER_INDEX = 1,
+	MATERIAL_BUFFER_INDEX = 2,
+	MATERIAL_TEXTURE_INDEX = 3
 };

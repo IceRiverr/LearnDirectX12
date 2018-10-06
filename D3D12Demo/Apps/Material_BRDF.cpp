@@ -21,8 +21,6 @@ CMaterialBRDFApp::CMaterialBRDFApp()
 	m_pBRDFMat = nullptr;
 
 	m_bGuiMode = false;
-
-	m_pAldeboMap = nullptr;
 }
 
 CMaterialBRDFApp::~CMaterialBRDFApp()
@@ -139,34 +137,6 @@ void CMaterialBRDFApp::DrawImgui()
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_pCommandList);
 }
 
-// https://github.com/Microsoft/DirectXTex/wiki/CreateTexture
-// https://github.com/Microsoft/DirectXTex/wiki/GenerateMipMaps
-void CMaterialBRDFApp::CreateTextureResources()
-{
-	{
-		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_A.tga");
-		m_pAldeboMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
-		m_Textures.emplace("Cerberus_A", m_pAldeboMap);
-	}
-
-	{
-		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_N.tga");
-		m_pNormalMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
-		m_Textures.emplace("Cerberus_N", m_pNormalMap);
-	}
-
-	{
-		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_R.tga");
-		m_pRoughnessMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
-		m_Textures.emplace("Cerberus_R", m_pRoughnessMap);
-	}
-
-	{
-		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_M.tga");
-		m_pMetalicMap = Graphics::CreateTexture2DResourceFromFile(m_pDevice, m_pCommandList, wImagePath);
-		m_Textures.emplace("m_pMetalicMap", m_pMetalicMap);
-	}
-}
 
 void CMaterialBRDFApp::Draw()
 {
@@ -199,59 +169,14 @@ void CMaterialBRDFApp::Draw()
 	m_pCommandList->SetDescriptorHeaps(1, pDescriptorHeap);
 	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature);
 
+	auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+	handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
+	m_pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::FRAME_BUFFER_INDEX, handle);
+
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
 		CRenderObject* pObj = m_RenderObjects[i];
-
-		if (pObj->m_pStaticMesh->m_pMaterial->m_sName == "BRDF_Color")
-		{
-			m_pCommandList->SetPipelineState(m_PSOs["Light_PSO"]);
-			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
-			{
-				pObj->m_pStaticMesh->m_PositionBufferView,
-				pObj->m_pStaticMesh->m_NormalBufferView,
-			};
-
-			m_pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
-		}
-		else if (pObj->m_pStaticMesh->m_pMaterial->m_sName == "BRDF_Texture")
-		{
-			m_pCommandList->SetPipelineState(m_PSOs["Material_PSO"]);
-			D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
-			{
-				pObj->m_pStaticMesh->m_PositionBufferView,
-				pObj->m_pStaticMesh->m_NormalBufferView,
-				pObj->m_pStaticMesh->m_TangentBufferView,
-				pObj->m_pStaticMesh->m_UVBufferView,
-			};
-
-			m_pCommandList->IASetVertexBuffers(0, 4, &VertexBufferViews[0]);
-
-			auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-			handle.Offset(m_pAldeboMap->m_TextureAddress.nHeapOffset, m_nSRVDescriptorSize);
-			m_pCommandList->SetGraphicsRootDescriptorTable(3, handle);
-		}
-		
-		m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
-		m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-		handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
-		m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
-
-		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-		handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
-		m_pCommandList->SetGraphicsRootDescriptorTable(1, handle);
-
-		auto handle2 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-		handle2.Offset(pObj->m_pStaticMesh->m_pMaterial->m_MaterialAddress.nHeapOffset, m_nSRVDescriptorSize);
-		m_pCommandList->SetGraphicsRootDescriptorTable(2, handle2);
-
-		for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
-		{
-			SubMesh subMesh = it.second;
-			m_pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
-		}
+		pObj->Render(m_pCommandList);
 	}
 
 	// Imgui
@@ -304,12 +229,24 @@ void CMaterialBRDFApp::InitRenderResource()
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 	// 所有初始化命令都放到该命令之后
 
-	CreateTextureResources();
+	BuildRootSignature();
+	BuildPSOs(m_pDevice);
+	BuildTextureResources(m_pDevice, m_pCommandList);
 	BuildMaterials();
 	BuildStaticMeshes(m_pDevice, m_pCommandList);
 	BuildScene();
 	BuildHeapDescriptors();
 
+	m_pCommandList->Close();
+
+	// flush command
+	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
+	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
+	FlushCommandQueue();
+}
+
+void CMaterialBRDFApp::BuildRootSignature()
+{
 	// create root signature
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
 	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -348,35 +285,95 @@ void CMaterialBRDFApp::InitRenderResource()
 	{
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
+}
 
-	m_PositionNormalInputLayout =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
+void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
+{
 	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
 	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
-
-	m_PositionNomralUVInputLayout =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",	  0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",	  1, DXGI_FORMAT_R32G32B32A32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0}
-	};
-
 	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
 	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
 
-	BuildPSOs(m_pDevice);
+	{
+		ID3D12PipelineState* pOpaquePSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
+		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3);
+		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
+		OpaquePSODesc.pRootSignature = m_pRootSignature;
+		OpaquePSODesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
+		OpaquePSODesc.PS = { m_pPSShaderCode_Light->GetBufferPointer(), m_pPSShaderCode_Light->GetBufferSize() };
+		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.SampleMask = UINT_MAX;
+		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		OpaquePSODesc.NumRenderTargets = 1;
+		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
+		OpaquePSODesc.SampleDesc.Count = 1;
+		OpaquePSODesc.SampleDesc.Quality = 0;
+		OpaquePSODesc.DSVFormat = m_DSVFormat;
+		//OpaquePSODesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		//OpaquePSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
-	m_pCommandList->Close();
+		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
+		m_PSOs.emplace("Light_PSO", pOpaquePSO);
+	}
 
-	// flush command
-	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
-	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
-	FlushCommandQueue();
+	{
+		ID3D12PipelineState* pOpaquePSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
+		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3T4UV2);
+		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
+		OpaquePSODesc.pRootSignature = m_pRootSignature;
+		OpaquePSODesc.VS = { m_pVSShaderCode_Material->GetBufferPointer(), m_pVSShaderCode_Material->GetBufferSize() };
+		OpaquePSODesc.PS = { m_pPSShaderCode_Material->GetBufferPointer(), m_pPSShaderCode_Material->GetBufferSize() };
+		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.SampleMask = UINT_MAX;
+		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		OpaquePSODesc.NumRenderTargets = 1;
+		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
+		OpaquePSODesc.SampleDesc.Count = 1;
+		OpaquePSODesc.SampleDesc.Quality = 0;
+		OpaquePSODesc.DSVFormat = m_DSVFormat;
+
+		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
+		m_PSOs.emplace("Material_PSO", pOpaquePSO);
+	}
+}
+
+void CMaterialBRDFApp::BuildTextureResources(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+{
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_A.tga");
+		Texture2DResource* pTexture = Graphics::CreateTexture2DResourceFromFile(pDevice, cmdList, wImagePath);
+		m_Textures.emplace("Cerberus_A", pTexture);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_N.tga");
+		Texture2DResource* pTexture = Graphics::CreateTexture2DResourceFromFile(pDevice, cmdList, wImagePath, true);
+		m_Textures.emplace("Cerberus_N", pTexture);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_R.tga");
+		Texture2DResource* pTexture = Graphics::CreateTexture2DResourceFromFile(pDevice, cmdList, wImagePath, true);
+		m_Textures.emplace("Cerberus_R", pTexture);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Gun\\Textures\\Cerberus_M.tga");
+		Texture2DResource* pTexture = Graphics::CreateTexture2DResourceFromFile(pDevice, cmdList, wImagePath, true);
+		m_Textures.emplace("Cerberus_M", pTexture);
+	}
+
+	{
+		std::wstring wImagePath = StringToWString(m_ContentRootPath + "Corn_field.exr");
+		Texture2DResource* pTexture = Graphics::CreateTexture2DResourceFromFile(pDevice, cmdList, wImagePath);
+		m_Textures.emplace("Corn_field_EXR", pTexture);
+	}
 }
 
 void CMaterialBRDFApp::BuildMaterials()
@@ -384,6 +381,8 @@ void CMaterialBRDFApp::BuildMaterials()
 	{
 		m_pBRDFMat = new CMaterial();
 		m_pBRDFMat->m_sName = "BRDF_Color";
+		m_pBRDFMat->m_pPSO = m_PSOs["Light_PSO"];
+		m_pBRDFMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3;
 		m_pBRDFMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		m_pBRDFMat->m_fSmoothness = 0.2f;
 		m_pBRDFMat->m_fMetalMask = 0.0f;
@@ -394,13 +393,19 @@ void CMaterialBRDFApp::BuildMaterials()
 	{
 		CMaterial* pMat = new CMaterial();
 		pMat->m_sName = "BRDF_Texture";
+		pMat->m_pPSO = m_PSOs["Material_PSO"];
+		pMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3T4UV2;
 		pMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		pMat->m_fSmoothness = 0.2f;
 		pMat->m_fMetalMask = 0.0f;
 		pMat->m_fReflectance = 0.8f;
-		m_Materials.emplace(pMat->m_sName, pMat);
 
-		
+		pMat->m_pAldeboMap = m_Textures["Cerberus_A"];
+		pMat->m_pNormalMap = m_Textures["Cerberus_N"];
+		pMat->m_pRoughnessMap = m_Textures["Cerberus_R"];
+		pMat->m_pMetalicMap = m_Textures["Cerberus_M"];
+
+		m_Materials.emplace(pMat->m_sName, pMat);
 	}
 }
 
@@ -513,6 +518,7 @@ void CMaterialBRDFApp::BuildHeapDescriptors()
 		m_RenderObjects[i]->m_ObjectAddress.nBufferIndex = i;
 		m_RenderObjects[i]->m_ObjectAddress.pBuffer = m_ObjectBuffer.m_pUploadeConstBuffer;
 		m_RenderObjects[i]->m_ObjectAddress.pBufferHeap = m_pCBVHeap;
+		m_RenderObjects[i]->m_ObjectAddress.nSRVDescriptorSize = m_nSRVDescriptorSize;
 		m_RenderObjects[i]->m_ObjectAddress.nHeapOffset = nDescriptorIndex;
 
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
@@ -529,6 +535,7 @@ void CMaterialBRDFApp::BuildHeapDescriptors()
 		it->second->m_MaterialAddress.nBufferIndex = nMaterialIndex;
 		it->second->m_MaterialAddress.pBuffer = m_MaterialBuffer.m_pUploadeConstBuffer;
 		it->second->m_MaterialAddress.pBufferHeap = m_pCBVHeap;
+		it->second->m_MaterialAddress.nSRVDescriptorSize = m_nSRVDescriptorSize;
 		it->second->m_MaterialAddress.nHeapOffset = nDescriptorIndex;
 
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
@@ -543,6 +550,7 @@ void CMaterialBRDFApp::BuildHeapDescriptors()
 	{
 		Texture2DResource* pResource = it->second;
 		pResource->m_TextureAddress.pBufferHeap = m_pCBVHeap;
+		pResource->m_TextureAddress.nSRVDescriptorSize = m_nSRVDescriptorSize;
 		pResource->m_TextureAddress.nHeapOffset = nDescriptorIndex;
 
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
@@ -568,55 +576,6 @@ void CMaterialBRDFApp::BuildHeapDescriptors()
 	m_FrameBuffer.CreateBufferView(m_pDevice, handle);
 
 	m_imguiDescriptorIndex = nDescriptorIndex;
-}
-
-void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
-{
-	{
-		ID3D12PipelineState* pOpaquePSO = nullptr;
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		OpaquePSODesc.InputLayout = { m_PositionNormalInputLayout.data(), (UINT)m_PositionNormalInputLayout.size() };
-		OpaquePSODesc.pRootSignature = m_pRootSignature;
-		OpaquePSODesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
-		OpaquePSODesc.PS = { m_pPSShaderCode_Light->GetBufferPointer(), m_pPSShaderCode_Light->GetBufferSize() };
-		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.SampleMask = UINT_MAX;
-		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		OpaquePSODesc.NumRenderTargets = 1;
-		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
-		OpaquePSODesc.SampleDesc.Count = 1;
-		OpaquePSODesc.SampleDesc.Quality = 0;
-		OpaquePSODesc.DSVFormat = m_DSVFormat;
-		//OpaquePSODesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-		//OpaquePSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-
-		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
-		m_PSOs.emplace("Light_PSO", pOpaquePSO);
-	}
-	
-	{
-		ID3D12PipelineState* pOpaquePSO = nullptr;
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		OpaquePSODesc.InputLayout = { m_PositionNomralUVInputLayout.data(), (UINT)m_PositionNomralUVInputLayout.size() };
-		OpaquePSODesc.pRootSignature = m_pRootSignature;
-		OpaquePSODesc.VS = { m_pVSShaderCode_Material->GetBufferPointer(), m_pVSShaderCode_Material->GetBufferSize() };
-		OpaquePSODesc.PS = { m_pPSShaderCode_Material->GetBufferPointer(), m_pPSShaderCode_Material->GetBufferSize() };
-		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.SampleMask = UINT_MAX;
-		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		OpaquePSODesc.NumRenderTargets = 1;
-		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
-		OpaquePSODesc.SampleDesc.Count = 1;
-		OpaquePSODesc.SampleDesc.Quality = 0;
-		OpaquePSODesc.DSVFormat = m_DSVFormat;
-		
-		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
-		m_PSOs.emplace("Material_PSO", pOpaquePSO);
-	}
 }
 
 void CMaterialBRDFApp::InitImgui()

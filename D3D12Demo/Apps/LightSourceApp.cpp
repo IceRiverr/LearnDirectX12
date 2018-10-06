@@ -338,7 +338,7 @@ void CLightSourceApp::Draw()
 
 	auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 	handle.Offset(m_FrameBuffer.m_nDescriptorIndex, m_nSRVDescriptorSize);
-	m_pCommandList->SetGraphicsRootDescriptorTable(1, handle);
+	m_pCommandList->SetGraphicsRootDescriptorTable(0, handle);
 
 	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
@@ -358,7 +358,7 @@ void CLightSourceApp::Draw()
 
 			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
-			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+			m_pCommandList->SetGraphicsRootDescriptorTable(1, handle1);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
 			{
@@ -381,7 +381,7 @@ void CLightSourceApp::Draw()
 
 			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
-			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+			m_pCommandList->SetGraphicsRootDescriptorTable(1, handle1);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
 			{
@@ -403,7 +403,7 @@ void CLightSourceApp::Draw()
 
 			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
 			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
-			m_pCommandList->SetGraphicsRootDescriptorTable(0, handle1);
+			m_pCommandList->SetGraphicsRootDescriptorTable(1, handle1);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
 			{

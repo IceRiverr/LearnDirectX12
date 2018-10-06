@@ -48,7 +48,7 @@ float4 PSMain(VertexOut pin) : SV_Target
     float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
   
     float3 BaseColor = g_AldeboMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
-    BaseColor = pow(BaseColor, 2.2f);
+    BaseColor = pow(abs(BaseColor), 2.2f);
 
     float3 BumpNormal = g_NormalMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
     BumpNormal = BumpNormal * 2.0f - 1.0f;
