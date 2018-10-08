@@ -8,7 +8,7 @@ struct VertexIn
 {
     float3 PosL : POSITION;
     float3 Normal : NORMAL0;
-    float4 Tangent : NORMAL1;
+    float4 Tangent : TANGENT;
     float2 UV : TEXCOORD;
 };
 

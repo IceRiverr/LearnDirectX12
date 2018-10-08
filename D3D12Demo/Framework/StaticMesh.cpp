@@ -4,69 +4,13 @@
 #include "MathLib.h"
 
 
-void CStaticMesh::AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc)
-{
-	SubMesh subMesh;
-	subMesh.nIndexCount = nIndexCount;
-	subMesh.nStartIndexLocation = nStartIndexLoc;
-	subMesh.nBaseVertexLocation = nBaseVertexLoc;
-	m_SubMeshes.emplace(name, subMesh);
-}
-
-void CStaticMesh::ImportFromFile(std::string filePath, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
-{
-	if (pDevice && cmdList)
-	{
-		CImportor_Obj impoortor;
-		impoortor.SetPath(filePath); // smooth_box plane  scene_simple
-
-		if (impoortor.Import())
-		{
-			MeshData* pMeshData = impoortor.m_MeshObjs[0]; 
-			CalcTangents(*pMeshData);
-
-			if (pMeshData->Positions.size() > 0)
-			{
-				this->m_pPositionBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3), &this->m_pPositionBufferUpload);
-				this->m_PositionBufferView = Graphics::CreateVertexBufferView(this->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-			}
-
-			if (pMeshData->Normals.size() > 0)
-			{
-				this->m_pNormalBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Normals[0], pMeshData->Normals.size() * sizeof(XMFLOAT3), &this->m_pNormalBufferUpload);
-				this->m_NormalBufferView = Graphics::CreateVertexBufferView(this->m_pNormalBufferGPU, (UINT)pMeshData->Normals.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-			}
-
-			if (pMeshData->Tangents.size() > 0)
-			{
-				this->m_pTangentBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Tangents[0], pMeshData->Tangents.size() * sizeof(XMFLOAT4), &this->m_pTangentBufferUpload);
-				this->m_TangentBufferView = Graphics::CreateVertexBufferView(this->m_pTangentBufferGPU, (UINT)pMeshData->Tangents.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
-			}
-
-			if (pMeshData->UVs.size() > 0)
-			{
-				this->m_pUVBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->UVs[0], pMeshData->UVs.size() * sizeof(XMFLOAT2), &this->m_pUVBufferUpload);
-				this->m_UVBufferView = Graphics::CreateVertexBufferView(this->m_pUVBufferGPU, (UINT)pMeshData->UVs.size() * sizeof(XMFLOAT2), sizeof(XMFLOAT2));
-			}
-			
-			if (pMeshData->Indices.size() > 0)
-			{
-				this->m_pIndexBuferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT), &this->m_pIndexBufferUpload);
-				this->m_IndexBufferView = Graphics::CreateIndexBufferView(this->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
-			}
-
-			this->AddSubMesh("Sub0", (UINT)pMeshData->Indices.size(), 0, 0);
-		}
-	}
-}
-
-void CStaticMesh::CalcTangents(MeshData& mesh)
+void Mesh::CalcTangents(MeshData & mesh)
 {
 	if (mesh.Positions.size() == mesh.UVs.size())
 	{
 		mesh.Tangents.resize(mesh.Positions.size());
 
-		std::vector<XMFLOAT3> Tangents; 
+		std::vector<XMFLOAT3> Tangents;
 		Tangents.resize(mesh.Positions.size());
 
 		std::vector<XMFLOAT3> BiNormals;
@@ -100,8 +44,8 @@ void CStaticMesh::CalcTangents(MeshData& mesh)
 
 			float r = 1.0f / (s1 * t2 - s2 * t1);
 
-			XMFLOAT3 T = XMFLOAT3(r * (t2 * x1 - t1 *x2), r * (t2 * y1 - t1 * y2),	r * (t2 * z1 - t1 * z2));
-			XMFLOAT3 B = XMFLOAT3(r * (-s2 * x1 + s1 *x2), r * (-s2 * y1 + s1 * y2), r * (-s2 * z1 + s1 * z2));
+			XMFLOAT3 T = XMFLOAT3(r * (t2 * x1 - t1 * x2), r * (t2 * y1 - t1 * y2), r * (t2 * z1 - t1 * z2));
+			XMFLOAT3 B = XMFLOAT3(r * (-s2 * x1 + s1 * x2), r * (-s2 * y1 + s1 * y2), r * (-s2 * z1 + s1 * z2));
 
 			Tangents[i0] = MathLib::XMFloat3Add(Tangents[i0], T);
 			Tangents[i1] = MathLib::XMFloat3Add(Tangents[i1], T);
@@ -117,7 +61,7 @@ void CStaticMesh::CalcTangents(MeshData& mesh)
 			XMVECTOR N = XMLoadFloat3(&mesh.Normals[i]);
 			XMVECTOR T = XMLoadFloat3(&Tangents[i]);
 			XMVECTOR B = XMLoadFloat3(&BiNormals[i]);
-			
+
 			// T = normalize(T - dot(T, N) * N);
 			// 举证做一个初等变换，相当于normalize，随意不会对矩阵的乘积产生影响
 			T = XMVectorSubtract(T, XMVector3Dot(T, N) * N);
@@ -134,6 +78,53 @@ void CStaticMesh::CalcTangents(MeshData& mesh)
 
 			mesh.Tangents[i] = mT;
 		}
+	}
+}
+
+void CStaticMesh::AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc)
+{
+	SubMesh subMesh;
+	subMesh.nIndexCount = nIndexCount;
+	subMesh.nStartIndexLocation = nStartIndexLoc;
+	subMesh.nBaseVertexLocation = nBaseVertexLoc;
+	m_SubMeshes.emplace(name, subMesh);
+}
+
+void CStaticMesh::CreateBuffer(MeshData* pMeshData, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+{
+	if (pMeshData && pDevice && cmdList)
+	{
+		if (pMeshData->Positions.size() > 0)
+		{
+			this->m_pPositionBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3), &this->m_pPositionBufferUpload);
+			this->m_PositionBufferView = Graphics::CreateVertexBufferView(this->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		}
+
+		if (pMeshData->Normals.size() > 0)
+		{
+			this->m_pNormalBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Normals[0], pMeshData->Normals.size() * sizeof(XMFLOAT3), &this->m_pNormalBufferUpload);
+			this->m_NormalBufferView = Graphics::CreateVertexBufferView(this->m_pNormalBufferGPU, (UINT)pMeshData->Normals.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		}
+
+		if (pMeshData->Tangents.size() > 0)
+		{
+			this->m_pTangentBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Tangents[0], pMeshData->Tangents.size() * sizeof(XMFLOAT4), &this->m_pTangentBufferUpload);
+			this->m_TangentBufferView = Graphics::CreateVertexBufferView(this->m_pTangentBufferGPU, (UINT)pMeshData->Tangents.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
+		}
+
+		if (pMeshData->UVs.size() > 0)
+		{
+			this->m_pUVBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->UVs[0], pMeshData->UVs.size() * sizeof(XMFLOAT2), &this->m_pUVBufferUpload);
+			this->m_UVBufferView = Graphics::CreateVertexBufferView(this->m_pUVBufferGPU, (UINT)pMeshData->UVs.size() * sizeof(XMFLOAT2), sizeof(XMFLOAT2));
+		}
+
+		if (pMeshData->Indices.size() > 0)
+		{
+			this->m_pIndexBuferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT), &this->m_pIndexBufferUpload);
+			this->m_IndexBufferView = Graphics::CreateIndexBufferView(this->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
+		}
+
+		this->AddSubMesh("Sub0", (UINT)pMeshData->Indices.size(), 0, 0);
 	}
 }
 
@@ -191,20 +182,14 @@ void CRenderObject::Render(ID3D12GraphicsCommandList * pCommandList)
 	pCommandList->IASetIndexBuffer(&m_pStaticMesh->m_IndexBufferView);
 	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
-	auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_ObjectAddress.pBufferHeap->GetGPUDescriptorHandleForHeapStart());
-	handle1.Offset(m_ObjectAddress.nHeapOffset, m_ObjectAddress.nSRVDescriptorSize);
-	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, handle1);
+	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, m_ObjectAddress.GPUHandle);
 
 	// Bind Material
-	auto handle2 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pStaticMesh->m_pMaterial->m_MaterialAddress.pBufferHeap->GetGPUDescriptorHandleForHeapStart());
-	handle2.Offset(m_pStaticMesh->m_pMaterial->m_MaterialAddress.nHeapOffset, m_pStaticMesh->m_pMaterial->m_MaterialAddress.nSRVDescriptorSize);
-	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_BUFFER_INDEX, handle2);
+	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_BUFFER_INDEX, m_pStaticMesh->m_pMaterial->m_MaterialAddress.GPUHandle);
 
 	if (m_pStaticMesh->m_pMaterial->m_pAldeboMap)
 	{
-		auto handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.pBufferHeap->GetGPUDescriptorHandleForHeapStart());
-		handle.Offset(m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.nHeapOffset, m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.nSRVDescriptorSize);
-		pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, handle);
+		pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.GPUHandle);
 	}
 
 	// Draw

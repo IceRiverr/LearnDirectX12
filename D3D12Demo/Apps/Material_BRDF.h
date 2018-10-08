@@ -9,7 +9,7 @@
 #include "InputManager.h"
 #include "Light.h"
 #include "Material.h"
-
+#include "SkySphere.h"
 
 class CMaterialBRDFApp :
 	public WinApp
@@ -43,6 +43,8 @@ private:
 
 	void DrawImgui();
 
+	void TEST_AREA();
+
 private:
 	std::string m_ContentRootPath;
 	std::string m_ShaderRootPath;
@@ -60,7 +62,7 @@ private:
 	
 	ID3DBlob* m_pVSShaderCode_Material;
 	ID3DBlob* m_pPSShaderCode_Material;
-	
+
 	std::vector<CRenderObject*> m_RenderObjects;
 	std::vector<CDirectionalLight*> m_DirLights;
 	std::vector<CPointLight*> m_PointLights;
@@ -79,4 +81,6 @@ private:
 
 	XMFLOAT4 clear_color;
 	CMaterial* m_pBRDFMat;
+
+	CSkySphere* m_pSkySphere;
 };

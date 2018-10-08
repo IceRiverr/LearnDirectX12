@@ -18,6 +18,7 @@ struct MaterialShaderBlock
 enum INPUT_LAYOUT_TYPE
 {
 	P3,
+	P3UV2,
 	P3N3,
 	P3N3T4UV2,
 };

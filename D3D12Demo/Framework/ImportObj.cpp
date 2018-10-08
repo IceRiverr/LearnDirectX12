@@ -1,4 +1,6 @@
 #include "ImportObj.h"
+#include "MathLib.h"
+
 #include <fstream>
 #include <regex>
 #include <map>
@@ -40,6 +42,10 @@ bool CImportor_Obj::Import()
 	if(ImportObjMesh_v2())
 	{
 		ProcessObjData();
+		for (int i = 0; i < m_MeshObjs.size(); ++i)
+		{
+			Mesh::CalcTangents(*m_MeshObjs[i]);
+		}
 		return true;
 	}
 	return false;

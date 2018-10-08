@@ -56,11 +56,16 @@ void TestInputLayoutApp::InitRenderResource()
 		m_RenderObjects[i]->m_ObjectAddress.nBufferIndex = i;
 		m_RenderObjects[i]->m_ObjectAddress.pBuffer = m_ConstBuffer.m_pUploadeConstBuffer;
 		m_RenderObjects[i]->m_ObjectAddress.pBufferHeap = m_pCBVHeap;
-		m_RenderObjects[i]->m_ObjectAddress.nHeapOffset = nDescriptorIndex;
 
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetCPUDescriptorHandleForHeapStart());
 		handle.Offset(nDescriptorIndex, m_nSRVDescriptorSize);
 		m_ConstBuffer.CreateBufferView(m_pDevice, handle, i);
+
+		auto ghandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
+		ghandle.Offset(nDescriptorIndex, m_nSRVDescriptorSize);
+
+		m_RenderObjects[i]->m_ObjectAddress.CPUHandle = handle;
+		m_RenderObjects[i]->m_ObjectAddress.GPUHandle = ghandle;
 
 		nDescriptorIndex++;
 	}
@@ -289,9 +294,7 @@ void TestInputLayoutApp::Draw()
 			m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
 			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
-			m_pCommandList->SetGraphicsRootDescriptorTable(1, handle1);
+			m_pCommandList->SetGraphicsRootDescriptorTable(1, pObj->m_ObjectAddress.GPUHandle);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
 			{
@@ -311,9 +314,7 @@ void TestInputLayoutApp::Draw()
 			m_pCommandList->IASetIndexBuffer(&pObj->m_pStaticMesh->m_IndexBufferView);
 			m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-			auto handle1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_pCBVHeap->GetGPUDescriptorHandleForHeapStart());
-			handle1.Offset(pObj->m_ObjectAddress.nHeapOffset, m_nSRVDescriptorSize);
-			m_pCommandList->SetGraphicsRootDescriptorTable(1, handle1);
+			m_pCommandList->SetGraphicsRootDescriptorTable(1, pObj->m_ObjectAddress.GPUHandle);
 
 			for (auto it : pObj->m_pStaticMesh->m_SubMeshes)
 			{

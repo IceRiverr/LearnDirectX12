@@ -113,7 +113,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxguid.lib;d3dcompiler.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -150,7 +150,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dcompiler.lib;dxguid.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -167,7 +167,7 @@
     <ClInclude Include="..\..\Framework\GPUResource.h" />
     <ClInclude Include="..\..\Framework\Material.h" />
     <ClInclude Include="..\..\Framework\MathLib.h" />
-    <ClInclude Include="..\..\Framework\SkyBox.h" />
+    <ClInclude Include="..\..\Framework\SkySphere.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\imgui-master\imgui_internal.h" />
@@ -203,7 +203,7 @@
     <ClCompile Include="..\..\Framework\GPUResource.cpp" />
     <ClCompile Include="..\..\Framework\Material.cpp" />
     <ClCompile Include="..\..\Framework\MathLib.cpp" />
-    <ClCompile Include="..\..\Framework\SkyBox.cpp" />
+    <ClCompile Include="..\..\Framework\SkySphere.cpp" />
     <ClCompile Include="..\..\Framework\StaticMesh.cpp" />
     <ClCompile Include="..\..\Framework\WinApp.cpp" />
     <ClCompile Include="..\..\Framework\stdafx.cpp" />
@@ -274,7 +274,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Shaders\SkyBoxShader.fx">
+    <None Include="..\..\Shaders\SkySphereShader.fx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

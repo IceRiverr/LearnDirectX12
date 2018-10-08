@@ -178,7 +178,7 @@ void WinApp::InitD3D12()
 
 	// Create Swap chain
 	DXGI_SWAP_CHAIN_DESC scDesc;
-	scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	scDesc.BufferDesc.Format = m_BackBufferFromat;
 	scDesc.BufferDesc.Height = m_nClientWindowHeight;
 	scDesc.BufferDesc.Width = m_nClientWindowWidth;
 	scDesc.BufferDesc.RefreshRate.Numerator = 60;

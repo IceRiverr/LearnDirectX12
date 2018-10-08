@@ -129,7 +129,7 @@
     <ClInclude Include="..\..\Framework\MathLib.h">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Framework\SkyBox.h">
+    <ClInclude Include="..\..\Framework\SkySphere.h">
       <Filter>Framework</Filter>
     </ClInclude>
   </ItemGroup>
@@ -209,7 +209,7 @@
     <ClCompile Include="..\..\Framework\MathLib.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Framework\SkyBox.cpp">
+    <ClCompile Include="..\..\Framework\SkySphere.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>
@@ -260,7 +260,7 @@
     <None Include="..\..\Shaders\position_color.fx">
       <Filter>Shaders\sfx</Filter>
     </None>
-    <None Include="..\..\Shaders\SkyBoxShader.fx">
+    <None Include="..\..\Shaders\SkySphereShader.fx">
       <Filter>Shaders\sfx</Filter>
     </None>
   </ItemGroup>

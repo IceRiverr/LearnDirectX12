@@ -75,6 +75,10 @@ Texture2DResource* Graphics::CreateTexture2DResourceFromFile(
 		{
 			hr = LoadFromEXRFile(imagePath.c_str(), nullptr, *baseImage);
 		}
+		else if (imageType == L"hdr" || imageType == L"HDR")
+		{
+			hr = LoadFromHDRFile(imagePath.c_str(), nullptr, *baseImage);
+		}
 		if (hr == S_OK)
 		{
 			auto mipmapImage = std::make_unique<ScratchImage>();

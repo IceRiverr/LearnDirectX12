@@ -23,6 +23,11 @@ struct MeshData
 	std::vector<UINT> Indices;
 };
 
+namespace Mesh
+{
+	void CalcTangents(MeshData& mesh); // TBN 切线空间是 右手坐标系
+}
+
 struct SubMesh
 {
 	UINT nIndexCount;
@@ -34,8 +39,7 @@ class CStaticMesh
 {
 public:
 	void AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc);
-	void ImportFromFile(std::string filePath, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
-	void CalcTangents(MeshData& mesh); // TBN 切线空间是 右手坐标系
+	void CreateBuffer(MeshData* pMeshData, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 
 public:
 	ID3D12Resource* m_pPositionBufferGPU = nullptr;

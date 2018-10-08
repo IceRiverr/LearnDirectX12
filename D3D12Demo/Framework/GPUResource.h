@@ -2,14 +2,15 @@
 
 #include "stdafx.h"
 #include <vector>
+#include <d3dx12.h>
 
 struct ConstantBufferAddress
 {
 	ID3D12Resource* pBuffer;
 	UINT nBufferIndex;
 	ID3D12DescriptorHeap* pBufferHeap;
-	UINT nHeapOffset;
-	UINT nSRVDescriptorSize;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
 };
 
 struct Texture2DResource
