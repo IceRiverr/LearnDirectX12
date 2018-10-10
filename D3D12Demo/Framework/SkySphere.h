@@ -1,12 +1,13 @@
 #pragma once
 #include "StaticMesh.h"
-
+#include "GraphicContext.h"
 
 class CSkySphere
 {
 public:
-	void SetMesh(CRenderObject* pRender, Texture2DResource* pBGMap);
-	void Init(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* pRootSignature);
+	void SetBGPath(const std::string& imagePath);
+	void SetMesh(CRenderObject* pRender);
+	void Init(CGraphicContext* pContext);
 	void Draw(ID3D12GraphicsCommandList* cmdList);
 
 private:
@@ -17,6 +18,7 @@ private:
 
 	ID3D12PipelineState* m_PSO;
 
+	std::string m_BackGroundMapPath;
 	Texture2DResource* m_pBackGroundMap;
 };
 

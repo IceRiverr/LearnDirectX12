@@ -84,7 +84,7 @@ class CRenderObject
 public:
 	CRenderObject();
 	void Update();
-	void Render(ID3D12GraphicsCommandList* pCommandList);
+	void Draw(ID3D12GraphicsCommandList* pCommandList);
 
 	ObjectShaderBlock CreateShaderBlock() const;
 	

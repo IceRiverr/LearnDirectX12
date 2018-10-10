@@ -132,6 +132,9 @@
     <ClInclude Include="..\..\Framework\SkySphere.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Framework\GraphicContext.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\stdafx.cpp">
@@ -210,6 +213,9 @@
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Framework\SkySphere.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Framework\GraphicContext.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>

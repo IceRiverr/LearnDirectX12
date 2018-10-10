@@ -3,6 +3,7 @@
 #include "Utility.h"
 #include <unordered_map>
 #include "GPUResource.h"
+#include "GraphicContext.h"
 
 struct MaterialShaderBlock
 {
@@ -25,10 +26,21 @@ enum INPUT_LAYOUT_TYPE
 
 std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(INPUT_LAYOUT_TYPE type);
 
+struct MaterialResource
+{
+	MaterialShaderBlock ShaderBlock;
+
+	Texture2DResource* pAldeboMap;
+	Texture2DResource* pNormalMap;
+	Texture2DResource* pRoughnessMap;
+	Texture2DResource* pMetalicMap;
+};
+
 class CMaterial
 {
 public:
 	MaterialShaderBlock CreateShaderBlock() const;
+	void Init(CGraphicContext* pContext);
 
 public:
 	std::string m_sName;
@@ -39,11 +51,12 @@ public:
 	float m_fMetalMask;
 	float m_fReflectance;
 
-	Texture2DResource* m_pAldeboMap;
-	Texture2DResource* m_pNormalMap;
-	Texture2DResource* m_pRoughnessMap;
-	Texture2DResource* m_pMetalicMap;
+	std::string m_sAldeboPath;
+	std::string m_sNormalPath;
+	std::string m_sRoughnessPath;
+	std::string m_sMetalicPath;
 
+	MaterialResource m_MaterialResource;
 	ConstantBufferAddress m_MaterialAddress;
 	INPUT_LAYOUT_TYPE m_InputLayoutType;
 	ID3D12PipelineState* m_pPSO;

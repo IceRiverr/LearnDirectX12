@@ -5,8 +5,7 @@
 CBaseCamera::CBaseCamera()
 {
 	m_vEyePositon = XMFLOAT3(0.0f, 10.0f, -10.0f);
-	m_vTarget = XMFLOAT3(0.0f, 0.0f, 0.0f);
-
+	
 	m_fFovAngleY = 90.0f;
 	m_fAspectRatio = 16.0f/9.0f;
 	m_fNearZ = 1.0f;
@@ -124,28 +123,18 @@ void CRotateCamera::OnUpdate(double dt, CInputManager & InputMgr)
 
 CFPSCamera::CFPSCamera()
 {
-	m_fRotateRadius = 5.0f;
 	m_fTheta = 0.0f;
 	m_fPhi = 0.0f;
-	m_fMouseIntensity = 0.5f;
-	m_fSmooth = 0.01f;
+	m_fRotateIntensity = 0.5f;
 }
 
 void CFPSCamera::OnUpdate(double dt, CInputManager & InputMgr)
 {
 	XMINT2 moveDelta;
-	if (InputMgr.m_nMouseZDelta != 0)
-	{
-		m_fRotateRadius += -m_fSmooth * InputMgr.m_nMouseZDelta;
-		m_fRotateRadius = m_fRotateRadius < 0.1f ? 0.1f : m_fRotateRadius;
-
-		m_bDirty = true;
-	}
-
 	if (InputMgr.GetMouseDelta(moveDelta))
 	{
-		m_fTheta -= moveDelta.x * m_fMouseIntensity;
-		m_fPhi += moveDelta.y * m_fMouseIntensity;
+		m_fTheta -= moveDelta.x * m_fRotateIntensity;
+		m_fPhi += moveDelta.y * m_fRotateIntensity;
 
 		m_fPhi = MathUtility::Clamp<float>(m_fPhi, 5.0f, 175.0f);
 		m_bDirty = true;
@@ -180,29 +169,25 @@ void CFPSCamera::OnUpdate(double dt, CInputManager & InputMgr)
 		float thetaRadian = m_fTheta / 180.0f * XM_PI;
 		float phiRadian = m_fPhi / 180.0f * XM_PI;
 
-		XMFLOAT3 RotatePosition;
-		RotatePosition.x = m_fRotateRadius * std::sinf(phiRadian) * std::cosf(thetaRadian);
-		RotatePosition.y = m_fRotateRadius * std::cosf(phiRadian);
-		RotatePosition.z = m_fRotateRadius * std::sinf(phiRadian) * std::sinf(thetaRadian);
+		XMFLOAT3 EyeDir;
+		EyeDir.x = std::sinf(phiRadian) * std::cosf(thetaRadian);
+		EyeDir.y = std::cosf(phiRadian);
+		EyeDir.z = std::sinf(phiRadian) * std::sinf(thetaRadian);
 
-		XMVECTOR EyeRotate = XMLoadFloat3(&RotatePosition);
-		XMVECTOR target = XMLoadFloat3(&m_vTarget);
-		XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-		XMVECTOR eyePos = XMVectorAdd(EyeRotate, target);
-
-		XMVECTOR dir = XMVectorSubtract(target, eyePos);	dir = XMVector3Normalize(dir);
-		XMVECTOR Right = XMVector3Cross(upDir, dir);		Right = XMVector3Normalize(Right);
-
-		target = XMVectorAdd(target, dir * fMoveDelta);
-		target = XMVectorAdd(target, Right * fRightMoveDelta);
+		XMVECTOR vEyeDir = XMLoadFloat3(&EyeDir);
+		vEyeDir = XMVector3Normalize(vEyeDir);
+		XMVECTOR vUpDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		
-		XMVECTOR NewEyePos = XMVectorAdd(EyeRotate, target);
+		XMVECTOR Right = XMVector3Cross(vUpDir, vEyeDir);		
+		Right = XMVector3Normalize(Right);
 
-		XMStoreFloat3(&m_vTarget, target);
-		XMStoreFloat3(&m_vEyePositon, NewEyePos);
+		XMVECTOR vEyePos = XMLoadFloat3(&m_vEyePositon);
+		vEyePos = XMVectorAdd(vEyePos, vEyeDir * fMoveDelta);
+		vEyePos = XMVectorAdd(vEyePos, Right * fRightMoveDelta);
 
-		m_mViewMatrix = XMMatrixLookAtLH(NewEyePos, target, upDir);
+		XMStoreFloat3(&m_vEyePositon, vEyePos);
+
+		m_mViewMatrix = XMMatrixLookToLH(vEyePos, vEyeDir, vUpDir);
 		m_mProjMatrix = XMMatrixPerspectiveFovLH(m_fFovAngleY / 180.0f * XM_PI, m_fAspectRatio, m_fNearZ, m_fFarZ);
 		m_mViewProjMatrix = XMMatrixMultiply(m_mViewMatrix, m_mProjMatrix);
 	}

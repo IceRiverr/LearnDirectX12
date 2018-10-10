@@ -15,7 +15,7 @@ struct VertexOut
 };
 
 //TextureCube g_CubeMap : register(t0);
-Texture2D g_LightMap : register(t0);
+Texture2D g_LightMap : register(t10);
 
 VertexOut VSMain(VertexIn vin)
 {

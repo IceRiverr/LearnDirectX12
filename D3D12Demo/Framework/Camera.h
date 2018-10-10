@@ -44,7 +44,6 @@ protected:
 	float m_fFarZ;
 
 	XMFLOAT3 m_vEyePositon;
-	XMFLOAT3 m_vTarget;
 
 	XMMATRIX m_mViewMatrix;
 	XMMATRIX m_mProjMatrix;
@@ -82,8 +81,7 @@ public:
 
 	virtual void OnUpdate(double dt, CInputManager& InputMgr);
 public:
-	float m_fRotateRadius;
-	float m_fMouseIntensity;
+	float m_fRotateIntensity;
 
 	float m_fTheta;
 	float m_fPhi;

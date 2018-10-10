@@ -162,6 +162,7 @@
     <ClInclude Include="..\..\Apps\Material_BRDF.h" />
     <ClInclude Include="..\..\Apps\TestInputLayout.h" />
     <ClInclude Include="..\..\Framework\BufferManager.h" />
+    <ClInclude Include="..\..\Framework\GraphicContext.h" />
     <ClInclude Include="..\..\Framework\GraphicPipeline.h" />
     <ClInclude Include="..\..\Framework\Light.h" />
     <ClInclude Include="..\..\Framework\GPUResource.h" />
@@ -195,6 +196,7 @@
     <ClCompile Include="..\..\Apps\TestInputLayout.cpp" />
     <ClCompile Include="..\..\Framework\BufferManager.cpp" />
     <ClCompile Include="..\..\Framework\Camera.cpp" />
+    <ClCompile Include="..\..\Framework\GraphicContext.cpp" />
     <ClCompile Include="..\..\Framework\GraphicPipeline.cpp" />
     <ClCompile Include="..\..\Framework\GraphicsUtility.cpp" />
     <ClCompile Include="..\..\Framework\ImportObj.cpp" />

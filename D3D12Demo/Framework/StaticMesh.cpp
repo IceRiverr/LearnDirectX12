@@ -151,7 +151,7 @@ void CRenderObject::Update()
 	}
 }
 
-void CRenderObject::Render(ID3D12GraphicsCommandList * pCommandList)
+void CRenderObject::Draw(ID3D12GraphicsCommandList * pCommandList)
 {
 	pCommandList->SetPipelineState(m_pStaticMesh->m_pMaterial->m_pPSO);
 	
@@ -182,14 +182,14 @@ void CRenderObject::Render(ID3D12GraphicsCommandList * pCommandList)
 	pCommandList->IASetIndexBuffer(&m_pStaticMesh->m_IndexBufferView);
 	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
-	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, m_ObjectAddress.GPUHandle);
-
+	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, m_ObjectAddress.GPUHandle);
+	
 	// Bind Material
-	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_BUFFER_INDEX, m_pStaticMesh->m_pMaterial->m_MaterialAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::MATERIAL_BUFFER_INDEX, m_pStaticMesh->m_pMaterial->m_MaterialAddress.GPUHandle);
 
-	if (m_pStaticMesh->m_pMaterial->m_pAldeboMap)
+	if (m_pStaticMesh->m_pMaterial->m_MaterialResource.pAldeboMap)
 	{
-		pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, m_pStaticMesh->m_pMaterial->m_pAldeboMap->m_TextureAddress.GPUHandle);
+		pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, m_pStaticMesh->m_pMaterial->m_MaterialResource.pAldeboMap->m_TextureAddress.GPUHandle);
 	}
 
 	// Draw

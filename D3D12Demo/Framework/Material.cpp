@@ -12,6 +12,26 @@ MaterialShaderBlock CMaterial::CreateShaderBlock() const
 	return ShaderBlock;
 }
 
+void CMaterial::Init(CGraphicContext * pContext)
+{
+	if (m_sAldeboPath.size())
+	{
+		m_MaterialResource.pAldeboMap = pContext->CreateTexture(m_sAldeboPath);
+	}
+	if (m_sNormalPath.size())
+	{
+		m_MaterialResource.pNormalMap = pContext->CreateTexture(m_sNormalPath);
+	}
+	if (m_sRoughnessPath.size())
+	{
+		m_MaterialResource.pRoughnessMap = pContext->CreateTexture(m_sRoughnessPath);
+	}
+	if (m_sMetalicPath.size())
+	{
+		m_MaterialResource.pMetalicMap = pContext->CreateTexture(m_sMetalicPath);
+	}
+}
+
 std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(INPUT_LAYOUT_TYPE type)
 {
 	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayuot;

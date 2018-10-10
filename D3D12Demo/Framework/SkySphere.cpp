@@ -1,17 +1,22 @@
 #include "SkySphere.h"
 #include "GraphicsUtility.h"
 
-void CSkySphere::SetMesh(CRenderObject* pRender, Texture2DResource* pBGMap)
+
+void CSkySphere::SetBGPath(const std::string & imagePath)
 {
-	m_pRenderObj = pRender;
-	m_pBackGroundMap = pBGMap;
+	m_BackGroundMapPath = imagePath;
 }
 
-void CSkySphere::Init(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* pRootSignature)
+void CSkySphere::SetMesh(CRenderObject* pRender)
 {
-	if (pDevice && cmdList)
+	m_pRenderObj = pRender;
+}
+
+void CSkySphere::Init(CGraphicContext* pContext)
+{
+	if (pContext)
 	{
-		std::string m_ContentRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\";
+		// Shader
 		std::string m_ShaderRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\";
 
 		m_pVSShaderCode_SkySphere = Graphics::CompileShader(m_ShaderRootPath + "SkySphereShader.fx", "VSMain", "vs_5_0");
@@ -20,7 +25,7 @@ void CSkySphere::Init(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList,
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
 		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3UV2);
 		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
-		OpaquePSODesc.pRootSignature = pRootSignature;
+		OpaquePSODesc.pRootSignature = pContext->m_pRootSignature;
 		OpaquePSODesc.VS = { m_pVSShaderCode_SkySphere->GetBufferPointer(), m_pVSShaderCode_SkySphere->GetBufferSize() };
 		OpaquePSODesc.PS = { m_pPSShaderCode_SkySphere->GetBufferPointer(), m_pPSShaderCode_SkySphere->GetBufferSize() };
 		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -36,7 +41,10 @@ void CSkySphere::Init(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList,
 		OpaquePSODesc.SampleDesc.Quality = 0;
 		OpaquePSODesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&m_PSO));
+		pContext->m_pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&m_PSO));
+
+		// Texture
+		m_pBackGroundMap = pContext->CreateTexture(m_BackGroundMapPath);
 	}
 }
 
@@ -54,8 +62,8 @@ void CSkySphere::Draw(ID3D12GraphicsCommandList* pCommandList)
 	pCommandList->IASetIndexBuffer(&m_pRenderObj->m_pStaticMesh->m_IndexBufferView);
 	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, m_pRenderObj->m_ObjectAddress.GPUHandle);
-	pCommandList->SetGraphicsRootDescriptorTable(ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, m_pBackGroundMap->m_TextureAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, m_pRenderObj->m_ObjectAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::SKY_SPHERE_BACKGROUND_INDEX, m_pBackGroundMap->m_TextureAddress.GPUHandle);
 
 	// Draw
 	for (auto it : m_pRenderObj->m_pStaticMesh->m_SubMeshes)

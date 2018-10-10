@@ -10,6 +10,7 @@
 #include "Light.h"
 #include "Material.h"
 #include "SkySphere.h"
+#include "GraphicContext.h"
 
 class CMaterialBRDFApp :
 	public WinApp
@@ -27,11 +28,8 @@ public:
 	virtual LRESULT WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-	void InitRenderResource();
-
 	void BuildRootSignature();
 	void BuildPSOs(ID3D12Device* pDevice);
-	void BuildTextureResources(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildMaterials();
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildScene();
@@ -49,8 +47,6 @@ private:
 	std::string m_ContentRootPath;
 	std::string m_ShaderRootPath;
 
-	ID3D12DescriptorHeap * m_pCBVHeap;
-	UINT m_CBVHeapSize;
 	ID3D12RootSignature* m_pRootSignature;
 
 	CObjectConstantBuffer m_ObjectBuffer;
@@ -71,16 +67,16 @@ private:
 	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
 	std::unordered_map<std::string, CMaterial*> m_Materials;
 	std::unordered_map<std::string, CStaticMesh*> m_StaticMeshes;
-	std::unordered_map<std::string, Texture2DResource*> m_Textures;
 
 	CFPSCamera* m_pCamera;
 	CInputManager m_InputMgr;
 
-	UINT m_imguiDescriptorIndex;
 	bool m_bGuiMode;
 
 	XMFLOAT4 clear_color;
 	CMaterial* m_pBRDFMat;
 
 	CSkySphere* m_pSkySphere;
+
+	CGraphicContext* m_pGraphicContext;
 };

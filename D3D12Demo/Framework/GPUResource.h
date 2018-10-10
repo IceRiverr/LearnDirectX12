@@ -13,6 +13,14 @@ struct ConstantBufferAddress
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
 };
 
+struct DescriptorAddress
+{
+	ID3D12DescriptorHeap* pHeap;
+	UINT nOffset;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CpuHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GpuHandle;
+};
+
 struct Texture2DResource
 {
 	ID3D12Resource* pTexture;
@@ -38,10 +46,12 @@ struct StaticSamplerStates
 	void CreateStaticSamplers();
 };
 
-enum ROOT_SIGNATURE_INDEX
+enum class ROOT_SIGNATURE_INDEX
 {
 	FRAME_BUFFER_INDEX = 0,
 	OBJECT_BUFFER_INDEX = 1,
 	MATERIAL_BUFFER_INDEX = 2,
-	MATERIAL_TEXTURE_INDEX = 3
+	MATERIAL_TEXTURE_INDEX = 3,
+
+	SKY_SPHERE_BACKGROUND_INDEX = 4,
 };
