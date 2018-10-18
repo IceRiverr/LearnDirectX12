@@ -10,7 +10,6 @@ struct VertexIn
 {
     float3 PosL : POSITION;
     float3 Normal : NORMAL;
-    float2 UV : TEXCOORD;
 };
 
 struct VertexOut
@@ -18,12 +17,12 @@ struct VertexOut
     float4 PosH : SV_POSITION;
     float4 PosW : POSITION1;
     float3 NormalW : NORMAL;
-    float2 UV : TEXCOORD;
 };
 
 #if USE_HDRI_LIGHTING
 Texture2D g_EnvironmentEnvMap : register(t4);
 Texture2D g_EnvironmentRefMap : register(t5);
+Texture2D g_EnvironmentBGMap : register(t6);
 #endif
 
 VertexOut VSMain(VertexIn vin)
@@ -34,7 +33,6 @@ VertexOut VSMain(VertexIn vin)
     vout.PosH = mul(vout.PosW, g_mViewProj);
     vout.NormalW = mul(vin.Normal, (float3x3) g_mWorldMat);
     vout.NormalW = normalize(vout.NormalW);
-    vout.UV = vin.UV;
     return vout;
 }
 
@@ -49,7 +47,7 @@ float2 EnvironmentDirectionToEquirectangular(float3 dir)
 
 float4 PSMain(VertexOut pin) : SV_Target
 {
-    float3 resultColor;
+    float3 resultColor = float3(0.0f, 0.0f, 0.0f);
 
     float3 V = normalize(g_vEyePosition - pin.PosW.xyz);
     float3 N = pin.NormalW;
@@ -102,18 +100,36 @@ float4 PSMain(VertexOut pin) : SV_Target
 
 	#if USE_HDRI_LIGHTING
 	{
-        float2 ambientUV = EnvironmentDirectionToEquirectangular(N);
-        float3 ambientColor = g_EnvironmentEnvMap.Sample(g_LinearWrapSampler, ambientUV).xyz;
-        float3 brdf = Default_ShadeModel(N, V, N, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
-        resultColor += brdf * ambientColor;
-    }
+        const float EnvIntensity = 5.0f;
+        const float RefIntensity = 2.0f;
 
-	{
-        float3 R = dot(V, N) * N - V;
+        float3 R = 2.0f * dot(V, N) * N - V;
+        float3 L = R;
+
+        float3 H = normalize(L + V);
+
+        float NdotV = abs(dot(N, V)) + 1e-5f;
+        float LdotH = saturate(dot(L, H));
+        float NdotL = saturate(dot(N, L));
+        float NdotH = saturate(dot(N, H));
+		
+        float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, g_Material.Roughness);
+		
+        float3 f0 = lerp(float3(g_Material.F0, g_Material.F0, g_Material.F0), g_Material.BaseColor.xyz, g_Material.MetalMask);
+        float3 f90 = float3(1.0f, 1.0f, 1.0f);
+        float3 F = F_Schick(f0, f90, LdotH);
+        float3 Fr = Fr_Specular(NdotV, NdotL, NdotH, g_Material.Roughness, F);
+		
+        float3 diffuseWeight = float3(1.0f, 1.0f, 1.0f) - F;
+        diffuseWeight *= 1.0f - g_Material.MetalMask;
+		
+        float2 ambientUV = EnvironmentDirectionToEquirectangular(R);
+        float3 ambientColor = g_EnvironmentEnvMap.Sample(g_LinearWrapSampler, ambientUV).xyz;
         float2 refUV = EnvironmentDirectionToEquirectangular(R);
         float3 refColor = g_EnvironmentRefMap.Sample(g_LinearWrapSampler, refUV).xyz;
-        float3 brdf = Default_ShadeModel(N, V, R, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
-        resultColor += brdf * refColor * dot(R, N);
+
+        resultColor += ambientColor * g_Material.BaseColor.xyz * diffuseWeight * Fd * XM_1DIVPI * EnvIntensity;
+        resultColor += refColor * Fr * XM_1DIVPI * RefIntensity;
     }
 	#endif
     

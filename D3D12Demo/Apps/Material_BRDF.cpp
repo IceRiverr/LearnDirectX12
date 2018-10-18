@@ -214,6 +214,7 @@ void CMaterialBRDFApp::Draw()
 
 	m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
 	m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
+	m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
 
 	for (int i = 0; i < m_RenderObjects.size() - 1; ++i)
 	{
@@ -289,19 +290,23 @@ void CMaterialBRDFApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE HDRRefTable;
 	HDRRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[7];
+	CD3DX12_DESCRIPTOR_RANGE HDRBGRefTable;
+	HDRBGRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[8];
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
 	slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
 	slotRootParameter[4].InitAsDescriptorTable(1, &range1, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[5].InitAsDescriptorTable(1, &HDREnvTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
-	slotRootParameter[6].InitAsDescriptorTable(1, &HDRRefTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
+	slotRootParameter[5].InitAsDescriptorTable(1, &HDREnvTable, D3D12_SHADER_VISIBILITY_PIXEL); 
+	slotRootParameter[6].InitAsDescriptorTable(1, &HDRRefTable, D3D12_SHADER_VISIBILITY_PIXEL); 
+	slotRootParameter[7].InitAsDescriptorTable(1, &HDRBGRefTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	StaticSamplerStates StaticSamplers;
 	StaticSamplers.CreateStaticSamplers();
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(7, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(8, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ID3DBlob* serializedRootSig = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -357,7 +362,7 @@ void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 	{
 		ID3D12PipelineState* pOpaquePSO = nullptr;
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3UV2);
+		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3);
 		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
 		OpaquePSODesc.pRootSignature = m_pRootSignature;
 		OpaquePSODesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
@@ -410,9 +415,9 @@ void CMaterialBRDFApp::BuildMaterials()
 		m_pBRDFMat->m_sName = "BRDF_Color";
 		m_pBRDFMat->m_pPSO = m_PSOs["Light_PSO"];
 		m_pBRDFMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3;
-		m_pBRDFMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_pBRDFMat->m_fSmoothness = 0.9f;
-		m_pBRDFMat->m_fMetalMask = 1.0f;
+		m_pBRDFMat->m_cBaseColor = XMFLOAT4(244.0f/255.0f, 159.0f/255.0f, 8.0f / 255.0f, 1.0f);
+		m_pBRDFMat->m_fSmoothness = 0.2f;
+		m_pBRDFMat->m_fMetalMask = 0.7f;
 		m_pBRDFMat->m_fReflectance = 0.8f;
 		m_Materials.emplace(m_pBRDFMat->m_sName, m_pBRDFMat);
 	}
@@ -465,22 +470,22 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		CStaticMesh* pMesh = new CStaticMesh();
 		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
-		pMesh->m_pMaterial = m_Materials["Metal_Mat"];
+		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
 	
 	{
-		std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
+		//std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
 		std::string smooth_box_path = m_ContentRootPath + "smooth_box.obj";
 
 		CImportor_Obj impoortor;
-		impoortor.SetPath(gun_model_path);
+		impoortor.SetPath(smooth_box_path);
 		impoortor.Import();
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
 		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
 		m_StaticMeshes.emplace("Smooth_box", pMesh);
-		pMesh->m_pMaterial = m_Materials["BRDF_Texture"];
+		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
 
 	{
@@ -537,7 +542,7 @@ void CMaterialBRDFApp::BuildScene()
 	}
 
 	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
+		/*CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
 		if (pSphereMesh)
 		{
 			CRenderObject* pObj = new CRenderObject();
@@ -546,7 +551,7 @@ void CMaterialBRDFApp::BuildScene()
 			pObj->m_Transform.Scale = XMFLOAT3(5.0f, 5.0f, 5.0f);
 
 			m_RenderObjects.push_back(pObj);
-		}
+		}*/
 	}
 
 	{
@@ -555,8 +560,8 @@ void CMaterialBRDFApp::BuildScene()
 		{
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
-			pObj->m_Transform.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
-
+			pObj->m_Transform.Position = XMFLOAT3(0.0f, 2.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(2.0f, 2.0f, 2.0f);
 			m_RenderObjects.push_back(pObj);
 		}
 	}
@@ -588,25 +593,25 @@ void CMaterialBRDFApp::BuildScene()
 		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
 	}
 
-	{
-		CPointLight* pLight0 = new CPointLight();
-		m_PointLights.push_back(pLight0);
-		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		pLight0->m_fIntensity = 50.0f; //3.14f;
-		pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
-		pLight0->m_fMaxRadius = 10.0f;
-		pLight0->m_fRefDist = 1.0f;
-	}
+	//{
+	//	CPointLight* pLight0 = new CPointLight();
+	//	m_PointLights.push_back(pLight0);
+	//	pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	//	pLight0->m_fIntensity = 50.0f; //3.14f;
+	//	pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
+	//	pLight0->m_fMaxRadius = 10.0f;
+	//	pLight0->m_fRefDist = 1.0f;
+	//}
 
-	{
-		CPointLight* pLight0 = new CPointLight();
-		m_PointLights.push_back(pLight0);
-		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		pLight0->m_fIntensity = 50.0f; //3.14f;
-		pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
-		pLight0->m_fMaxRadius = 10.0f;
-		pLight0->m_fRefDist = 1.0f;
-	}
+	//{
+	//	CPointLight* pLight0 = new CPointLight();
+	//	m_PointLights.push_back(pLight0);
+	//	pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	//	pLight0->m_fIntensity = 50.0f; //3.14f;
+	//	pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
+	//	pLight0->m_fMaxRadius = 10.0f;
+	//	pLight0->m_fRefDist = 1.0f;
+	//}
 }
 
 void CMaterialBRDFApp::BuildHeapDescriptors()
