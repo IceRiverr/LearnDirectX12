@@ -2,11 +2,6 @@
 #include "GraphicsUtility.h"
 
 
-void CSkySphere::SetBGPath(const std::string & imagePath)
-{
-	m_BackGroundMapPath = imagePath;
-}
-
 void CSkySphere::SetMesh(CRenderObject* pRender)
 {
 	m_pRenderObj = pRender;
@@ -23,7 +18,7 @@ void CSkySphere::Init(CGraphicContext* pContext)
 		m_pPSShaderCode_SkySphere = Graphics::CompileShader(m_ShaderRootPath + "SkySphereShader.fx", "PSMain", "ps_5_0");
 		
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3UV2);
+		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3);
 		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
 		OpaquePSODesc.pRootSignature = pContext->m_pRootSignature;
 		OpaquePSODesc.VS = { m_pVSShaderCode_SkySphere->GetBufferPointer(), m_pVSShaderCode_SkySphere->GetBufferSize() };
@@ -43,8 +38,16 @@ void CSkySphere::Init(CGraphicContext* pContext)
 
 		pContext->m_pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&m_PSO));
 
-		// Texture
-		m_pBackGroundMap = pContext->CreateTexture(m_BackGroundMapPath);
+		// Background Image
+		std::string  sContentRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\";
+		
+		std::string backgroundPath = sContentRootPath + "WellesleyGreenhouse3\\Greenhouse3_Bg.tga";
+		std::string enviromnentPath = sContentRootPath + "WellesleyGreenhouse3\\Greenhouse3_Env.hdr";
+		std::string reflectionPath = sContentRootPath + "WellesleyGreenhouse3\\Greenhouse3_Ref.hdr";
+		
+		m_pBackGroundMap = pContext->CreateTexture(backgroundPath);
+		m_pEnvironmentMap = pContext->CreateTexture(enviromnentPath);
+		m_pReflectionMap = pContext->CreateTexture(reflectionPath);
 	}
 }
 

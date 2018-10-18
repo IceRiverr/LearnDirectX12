@@ -1,8 +1,7 @@
 #ifndef _BRDF_LIB_H_
 #define _BRDF_LIB_H_
 
-#define XM_PI 3.141592654f
-#define XM_1DIVPI 0.318309886f
+#include "Common_Define.hlsl"
 
 // Fresnel ½üËÆ
 float3 F_Schick(in float3 f0, in float3 f90, in float u)

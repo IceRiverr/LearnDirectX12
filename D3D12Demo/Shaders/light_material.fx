@@ -4,10 +4,13 @@
 #include "Light_Lib.hlsl"
 #include "Common_Function.hlsl"
 
+#define USE_HDRI_LIGHTING 1
+
 struct VertexIn
 {
     float3 PosL : POSITION;
     float3 Normal : NORMAL;
+    float2 UV : TEXCOORD;
 };
 
 struct VertexOut
@@ -15,7 +18,13 @@ struct VertexOut
     float4 PosH : SV_POSITION;
     float4 PosW : POSITION1;
     float3 NormalW : NORMAL;
+    float2 UV : TEXCOORD;
 };
+
+#if USE_HDRI_LIGHTING
+Texture2D g_EnvironmentEnvMap : register(t4);
+Texture2D g_EnvironmentRefMap : register(t5);
+#endif
 
 VertexOut VSMain(VertexIn vin)
 {
@@ -25,7 +34,17 @@ VertexOut VSMain(VertexIn vin)
     vout.PosH = mul(vout.PosW, g_mViewProj);
     vout.NormalW = mul(vin.Normal, (float3x3) g_mWorldMat);
     vout.NormalW = normalize(vout.NormalW);
+    vout.UV = vin.UV;
     return vout;
+}
+
+float2 EnvironmentDirectionToEquirectangular(float3 dir)
+{
+    float u = atan2(dir.z, dir.x) * XM_1DIVPI;
+    u = (u + 1.0f) * 0.5f;
+    float v = acos(dir.y) * XM_1DIVPI;
+    
+    return float2(u, v);
 }
 
 float4 PSMain(VertexOut pin) : SV_Target
@@ -80,6 +99,23 @@ float4 PSMain(VertexOut pin) : SV_Target
 
         resultColor += brdf * light.LightColor.rgb * light.Intensity * fallOff * NdotL;
     }
+
+	#if USE_HDRI_LIGHTING
+	{
+        float2 ambientUV = EnvironmentDirectionToEquirectangular(N);
+        float3 ambientColor = g_EnvironmentEnvMap.Sample(g_LinearWrapSampler, ambientUV).xyz;
+        float3 brdf = Default_ShadeModel(N, V, N, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
+        resultColor += brdf * ambientColor;
+    }
+
+	{
+        float3 R = dot(V, N) * N - V;
+        float2 refUV = EnvironmentDirectionToEquirectangular(R);
+        float3 refColor = g_EnvironmentRefMap.Sample(g_LinearWrapSampler, refUV).xyz;
+        float3 brdf = Default_ShadeModel(N, V, R, g_Material.BaseColor.xyz, g_Material.Roughness, g_Material.MetalMask, g_Material.F0);
+        resultColor += brdf * refColor * dot(R, N);
+    }
+	#endif
     
     resultColor = linearColorToSRGB(resultColor);
     return float4(resultColor, 1.0f);

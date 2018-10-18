@@ -1,6 +1,9 @@
 #ifndef _COMMON_DEFINE_H_
 #define _COMMON_DEFINE_H_
 
+#define XM_PI 3.141592654f
+#define XM_1DIVPI 0.318309886f
+
 struct LightInfo
 {
     float3 LightColor;

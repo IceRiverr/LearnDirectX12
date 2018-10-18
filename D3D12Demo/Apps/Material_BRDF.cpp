@@ -212,6 +212,9 @@ void CMaterialBRDFApp::Draw()
 
 	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
+	m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
+	m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
+
 	for (int i = 0; i < m_RenderObjects.size() - 1; ++i)
 	{
 		CRenderObject* pObj = m_RenderObjects[i];
@@ -280,17 +283,25 @@ void CMaterialBRDFApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE range1;
 	range1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 10);
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
+	CD3DX12_DESCRIPTOR_RANGE HDREnvTable;
+	HDREnvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
+
+	CD3DX12_DESCRIPTOR_RANGE HDRRefTable;
+	HDRRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[7];
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
 	slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
 	slotRootParameter[4].InitAsDescriptorTable(1, &range1, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[5].InitAsDescriptorTable(1, &HDREnvTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
+	slotRootParameter[6].InitAsDescriptorTable(1, &HDRRefTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
 
 	StaticSamplerStates StaticSamplers;
 	StaticSamplers.CreateStaticSamplers();
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(7, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ID3DBlob* serializedRootSig = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -346,7 +357,7 @@ void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 	{
 		ID3D12PipelineState* pOpaquePSO = nullptr;
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3);
+		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3UV2);
 		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
 		OpaquePSODesc.pRootSignature = m_pRootSignature;
 		OpaquePSODesc.VS = { m_pVSShaderCode_Light->GetBufferPointer(), m_pVSShaderCode_Light->GetBufferSize() };
@@ -400,9 +411,9 @@ void CMaterialBRDFApp::BuildMaterials()
 		m_pBRDFMat->m_pPSO = m_PSOs["Light_PSO"];
 		m_pBRDFMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3;
 		m_pBRDFMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_pBRDFMat->m_fSmoothness = 0.2f;
-		m_pBRDFMat->m_fMetalMask = 0.0f;
-		m_pBRDFMat->m_fReflectance = 0.2f;
+		m_pBRDFMat->m_fSmoothness = 0.9f;
+		m_pBRDFMat->m_fMetalMask = 1.0f;
+		m_pBRDFMat->m_fReflectance = 0.8f;
 		m_Materials.emplace(m_pBRDFMat->m_sName, m_pBRDFMat);
 	}
 
@@ -423,6 +434,24 @@ void CMaterialBRDFApp::BuildMaterials()
 
 		m_Materials.emplace(pMat->m_sName, pMat);
 	}
+
+	{
+		CMaterial* pMat = new CMaterial();
+		pMat->m_sName = "Metal_Mat";
+		pMat->m_pPSO = m_PSOs["Material_PSO"];
+		pMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3T4UV2;
+		pMat->m_cBaseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		pMat->m_fSmoothness = 0.2f;
+		pMat->m_fMetalMask = 0.0f;
+		pMat->m_fReflectance = 0.8f;
+		pMat->m_sAldeboPath =    m_ContentRootPath + "MetalSpottyDiscoloration001\\SPECULAR\\4K\\MetalGoldBrushed001_REFL_3K_SPECULAR.jpg";
+		pMat->m_sNormalPath =    m_ContentRootPath + "MetalSpottyDiscoloration001\\SPECULAR\\4K\\MetalGoldBrushed001_NRM_3K_SPECULAR.jpg";
+		pMat->m_sRoughnessPath = m_ContentRootPath + "MetalSpottyDiscoloration001\\SPECULAR\\4K\\MetalGoldBrushed001_GLOSS_3K_SPECULAR.jpg";
+		pMat->m_sMetalicPath =   m_ContentRootPath + "MetalSpottyDiscoloration001\\SPECULAR\\4K\\MetalGoldBrushed001_GLOSS_3K_SPECULAR.jpg";
+		pMat->Init(m_pGraphicContext);
+
+		m_Materials.emplace(pMat->m_sName, pMat);
+	}
 }
 
 void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
@@ -436,7 +465,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		CStaticMesh* pMesh = new CStaticMesh();
 		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
-		pMesh->m_pMaterial = m_Materials["BRDF_Texture"];
+		pMesh->m_pMaterial = m_Materials["Metal_Mat"];
 	}
 	
 	{
@@ -464,6 +493,29 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
 		m_StaticMeshes.emplace("UVSphere", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+	}
+
+	{
+		
+		MeshData meshData;
+		std::vector<XMFLOAT3> positions;
+		std::vector<UINT16> indices;
+		Graphics::CreateUVSphereMesh(64, 32, positions, indices);
+
+		for (int i = 0; i < positions.size(); ++i)
+		{
+			meshData.Positions.push_back(positions[i]);
+		}
+		for (int i = 0; i < indices.size(); ++i)
+		{
+			meshData.Indices.push_back(indices[i]);
+		}
+
+		CStaticMesh* pSphereMesh = new CStaticMesh();
+		pSphereMesh->CreateBuffer(&meshData, pDevice, cmdList);
+		m_StaticMeshes.emplace("SphereMesh", pSphereMesh);
+		
+		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
 	}
 }
 
@@ -510,7 +562,7 @@ void CMaterialBRDFApp::BuildScene()
 	}
 
 	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["UVSphere"];
+		CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
 		if (pSphereMesh)
 		{
 			CRenderObject* pObj = new CRenderObject();
@@ -523,21 +575,17 @@ void CMaterialBRDFApp::BuildScene()
 			// 整个系统还没有处理好，应该SkySphere可以作为一个整体来用
 			// 需要有一个中央的资源分配器，方便进行查询，以及资源的重复创建
 			m_pSkySphere = new CSkySphere();
-			std::string bgImage = m_ContentRootPath + "WellesleyGreenhouse3\\Greenhouse3_Bg.tga";
-			std::string bgImage1 = m_ContentRootPath + "Corn_field.exr";
-			std::string bgImage2 = m_ContentRootPath + "PaperMill_Ruins_E\\PaperMill_E_8k.tga";
-			m_pSkySphere->SetBGPath(bgImage);
 			m_pSkySphere->SetMesh(pObj);
 			m_pSkySphere->Init(m_pGraphicContext);
 		}
 	}
 
 	{
-		CDirectionalLight* pLight = new CDirectionalLight();
+		/*CDirectionalLight* pLight = new CDirectionalLight();
 		m_DirLights.push_back(pLight);
 		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		pLight->m_fIntensity = 3.14f;
-		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);
+		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
 	}
 
 	{
@@ -546,6 +594,16 @@ void CMaterialBRDFApp::BuildScene()
 		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		pLight0->m_fIntensity = 50.0f; //3.14f;
 		pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 1.0f;
+	}
+
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 50.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
 		pLight0->m_fMaxRadius = 10.0f;
 		pLight0->m_fRefDist = 1.0f;
 	}

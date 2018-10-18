@@ -4,6 +4,8 @@
 #include "Light_Lib.hlsl"
 #include "Common_Function.hlsl"
 
+#define USE_HDRI_LIGHTING 1
+
 struct VertexIn
 {
     float3 PosL : POSITION;
@@ -25,6 +27,11 @@ Texture2D g_NormalMap : register(t1);
 Texture2D g_RoughnessMap : register(t2);
 Texture2D g_MetalMaskMap : register(t3);
 
+#if USE_HDRI_LIGHTING
+Texture2D g_EnvironmentEnvMap : register(t4);
+Texture2D g_EnvironmentRefMap : register(t5);
+#endif
+
 VertexOut VSMain(VertexIn vin)
 {
     VertexOut vout;
@@ -39,6 +46,15 @@ VertexOut VSMain(VertexIn vin)
 
     vout.UV = vin.UV;
     return vout;
+}
+
+float2 EnvironmentDirectionToEquirectangular(float3 dir)
+{
+    float u = atan2(dir.z, dir.x) * XM_1DIVPI;
+    u = (u + 1.0f) * 0.5f;
+    float v = acos(dir.y) * XM_1DIVPI;
+    
+    return float2(u, v);
 }
 
 float4 PSMain(VertexOut pin) : SV_Target
@@ -102,6 +118,23 @@ float4 PSMain(VertexOut pin) : SV_Target
 
         resultColor += brdf * light.LightColor.rgb * light.Intensity * fallOff * NdotL;
     }
+
+	#if USE_HDRI_LIGHTING
+	{
+        float2 ambientUV = EnvironmentDirectionToEquirectangular(N);
+        float3 ambientColor = g_EnvironmentEnvMap.Sample(g_LinearWrapSampler, ambientUV).xyz;
+        float3 brdf = Default_ShadeModel(N, V, N, BaseColor, Roughness, MetalMask, g_Material.F0);
+        resultColor += brdf * ambientColor;
+    }
+
+	{
+        float3 R = dot(V, N) * N - V;
+        float2 refUV = EnvironmentDirectionToEquirectangular(R);
+        float3 refColor = g_EnvironmentRefMap.Sample(g_LinearWrapSampler, refUV).xyz;
+        float3 brdf = Default_ShadeModel(N, V, R, BaseColor, Roughness, MetalMask, g_Material.F0);
+        resultColor += brdf * refColor * dot(R, N);
+    }
+	#endif
     
     resultColor = linearColorToSRGB(resultColor);
     return float4(resultColor, 1.0f);

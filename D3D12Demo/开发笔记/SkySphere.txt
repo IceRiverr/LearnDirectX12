@@ -1,0 +1,19 @@
+
+SkySphere
+使用的映射方式是基于经纬度的球面环境映射；
+u = atan2(dir.z, dir.x) * XM_1DIVPI;
+u = (u + 1.0f) * 0.5f;
+v = acos(dir.y) * XM_1DIVPI;
+
+注意这个网站的部分资源；
+
+
+在一组HDR纹理中，每张纹理都代表的意思；
+https://www.daz3d.com/forums/discussion/189361/hdr-packages-which-image-to-use-for-the-dome-environment-map
+BK.HDR 天空背景
+Env.hdr 用于环境光的计算，或者说漫反射贴图；
+Ref.hdr 作为高光反射的属性；
+
+
+sIBL 免费的HDRI资源站；
+https://hdri-skies.com/

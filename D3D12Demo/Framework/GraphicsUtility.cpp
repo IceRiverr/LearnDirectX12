@@ -79,6 +79,10 @@ Texture2DResource* Graphics::CreateTexture2DResourceFromFile(
 		{
 			hr = LoadFromHDRFile(imagePath.c_str(), nullptr, *baseImage);
 		}
+		else
+		{
+			hr = LoadFromWICFile(imagePath.c_str(), WIC_FLAGS_NONE,nullptr, *baseImage);
+		}
 		if (hr == S_OK)
 		{
 			auto mipmapImage = std::make_unique<ScratchImage>();
@@ -206,23 +210,35 @@ void Graphics::CreateUVSphereMesh(int segments, int rings, std::vector<XMFLOAT3>
 		}
 
 		int top = (int)positions.size() - 2;
-		for (int j = 0; j < segments - 1; ++j)
+		for (int j = 0; j < segments; ++j)
 		{
 			indees.push_back(top);
 			indees.push_back(j);
-			indees.push_back(j + 1);
-		}
-		indees.push_back(top);
-		indees.push_back(segments);
-		indees.push_back(0);
 
+			if (j == segments - 1)
+			{
+				indees.push_back(0);
+			}
+			else
+			{
+				indees.push_back(j + 1);
+			}
+		}
+		
 		int bottom = (int)positions.size() - 1;
 		int bottomUp = segments * (rings - 2);
-		for (int j = 0; j < segments - 1; ++j)
+		for (int j = 0; j < segments; ++j)
 		{
 			indees.push_back(bottom);
-			indees.push_back(bottomUp + j + 1);
 			indees.push_back(bottomUp + j);
+			if (j == segments - 1)
+			{
+				indees.push_back(bottomUp);
+			}
+			else
+			{
+				indees.push_back(bottomUp + j + 1);
+			}
 		}
 	}
 }
