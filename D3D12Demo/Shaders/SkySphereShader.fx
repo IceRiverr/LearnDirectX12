@@ -44,6 +44,6 @@ float4 PSMain(VertexOut pin) : SV_Target
 {
     float2 uv = EnvironmentDirectionToEquirectangular(pin.PosL);
     float3 color = g_EnvironmentMap.Sample(g_LinearWrapSampler, uv).xyz;
-    color = pow(color, 1.0f/2.2f);
+    color = pow(abs(color), 1.0f / 2.2f);
     return float4(color, 1.0f);
 }

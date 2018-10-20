@@ -37,10 +37,11 @@
 *.app
 
 # Proj
-D3D12Demo/VisualStudio/D3D12Demo/Debug/
 D3D12Demo/VisualStudio/D3D12Demo/x64/
 D3D12Demo/VisualStudio/Test/x64/
-D3D12Demo/x64/
+D3D12Demo/VisualStudio/Example_BasicGraphic/x64/
 D3D12Demo/Content/
 D3D12Demo/.vs/
-D3D12Demo/ThirdParty/
+*.ilk
+*.iobj
+*.idb
