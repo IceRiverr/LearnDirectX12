@@ -107,6 +107,10 @@
     <None Include="..\..\Shaders\SkySphereShader.fx">
       <Filter>Shaders\sfx</Filter>
     </None>
+    <None Include="..\..\Shaders\SkyBoxShader.fx" />
+    <None Include="..\..\Shaders\Mat_PBRMetallicRoughness.hlsl">
+      <Filter>Shaders\sfx</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Framework\source\BufferManager.cpp">
@@ -157,10 +161,5 @@
     <ClCompile Include="..\..\Framework\source\SkyBox.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="..\..\Shaders\SkyBoxShader.fx">
-      <Filter>Shaders\sfx</Filter>
-    </FxCompile>
   </ItemGroup>
 </Project>
