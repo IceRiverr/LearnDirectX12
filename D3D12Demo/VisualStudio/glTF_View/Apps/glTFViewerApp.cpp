@@ -1,4 +1,6 @@
-#include "Material_BRDF.h"
+#define _CRT_SECURE_NO_WARNINGS
+
+#include "glTFViewerApp.h"
 #include "ImportObj.h"
 
 #include "imgui.h"
@@ -8,7 +10,15 @@
 #include "DirectXTex.h"
 #include <d3d12shader.h>
 
-CMaterialBRDFApp::CMaterialBRDFApp()
+
+// Define these only in *one* .cc file.
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
+#include "tiny_gltf.h"
+
+CGLTFViewerApp::CGLTFViewerApp()
 {
 	m_ContentRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\";
 	m_ShaderRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\";
@@ -23,14 +33,14 @@ CMaterialBRDFApp::CMaterialBRDFApp()
 	m_bGuiMode = false;
 }
 
-CMaterialBRDFApp::~CMaterialBRDFApp()
+CGLTFViewerApp::~CGLTFViewerApp()
 {
 	// 内存析构都没有做，需要完善
 
 
 }
 
-void CMaterialBRDFApp::Init()
+void CGLTFViewerApp::Init()
 {
 	WinApp::Init();
 
@@ -67,7 +77,7 @@ void CMaterialBRDFApp::Init()
 	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 0.01f, 2000.0f);
 }
 
-void CMaterialBRDFApp::Update(double deltaTime)
+void CGLTFViewerApp::Update(double deltaTime)
 {
 	static double dTotalTime = 0.0f;
 	dTotalTime += deltaTime;
@@ -112,7 +122,7 @@ void CMaterialBRDFApp::Update(double deltaTime)
 	m_InputMgr.ResetInputInfos();
 }
 
-void CMaterialBRDFApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
+void CGLTFViewerApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 {
 	m_FrameBuffer.m_FrameData = {};
 
@@ -158,14 +168,14 @@ void CMaterialBRDFApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
-void CMaterialBRDFApp::DrawImgui()
+void CGLTFViewerApp::DrawImgui()
 {
 	ImGui::Render();
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_pCommandList);
 }
 
 
-void CMaterialBRDFApp::TEST_AREA()
+void CGLTFViewerApp::TEST_AREA()
 {
 	CD3DX12_RESOURCE_DESC descs[] =
 	{
@@ -179,7 +189,7 @@ void CMaterialBRDFApp::TEST_AREA()
 	int a = 1;
 }
 
-void CMaterialBRDFApp::Draw()
+void CGLTFViewerApp::Draw()
 {
 	m_pCommandAllocator->Reset();
 
@@ -212,9 +222,9 @@ void CMaterialBRDFApp::Draw()
 
 	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
-	m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
-	m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
-	m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
+	//m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
+	//m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
+	//m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
 
 	for (int i = 0; i < m_RenderObjects.size() - 1; ++i)
 	{
@@ -222,7 +232,8 @@ void CMaterialBRDFApp::Draw()
 		pObj->Draw(m_pCommandList);
 	}
 
-	m_pSkySphere->Draw(m_pCommandList);
+	//m_pSkySphere->Draw(m_pCommandList);
+	m_pSkyBox->Draw(m_pCommandList);
 
 	// Imgui
 	DrawImgui();
@@ -247,7 +258,7 @@ void CMaterialBRDFApp::Draw()
 	FlushCommandQueue();
 }
 
-void CMaterialBRDFApp::OnResize()
+void CGLTFViewerApp::OnResize()
 {
 	WinApp::OnResize();
 	ImGui_ImplDX12_InvalidateDeviceObjects();
@@ -259,7 +270,7 @@ void CMaterialBRDFApp::OnResize()
 	}
 }
 
-void CMaterialBRDFApp::Destroy()
+void CGLTFViewerApp::Destroy()
 {
 	WinApp::Destroy();
 	FlushCommandQueue();
@@ -269,7 +280,7 @@ void CMaterialBRDFApp::Destroy()
 	ImGui::DestroyContext();
 }
 
-void CMaterialBRDFApp::BuildRootSignature()
+void CGLTFViewerApp::BuildRootSignature()
 {
 	// create root signature
 	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
@@ -324,7 +335,7 @@ void CMaterialBRDFApp::BuildRootSignature()
 	}
 }
 
-void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
+void CGLTFViewerApp::BuildPSOs(ID3D12Device* pDevice)
 {
 	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
 	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
@@ -408,7 +419,7 @@ void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 	}
 }
 
-void CMaterialBRDFApp::BuildMaterials()
+void CGLTFViewerApp::BuildMaterials()
 {
 	{
 		m_pBRDFMat = new CMaterial();
@@ -459,7 +470,7 @@ void CMaterialBRDFApp::BuildMaterials()
 	}
 }
 
-void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
 	{
 		CImportor_Obj impoortor;
@@ -472,7 +483,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
-	
+
 	{
 		//std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
 		std::string smooth_box_path = m_ContentRootPath + "smooth_box.obj";
@@ -501,7 +512,18 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 	}
 
 	{
-		
+		CImportor_Obj impoortor;
+		impoortor.SetPath(m_ContentRootPath + "CubeBox.obj");
+		impoortor.Import();
+		MeshData* pMeshData = impoortor.m_MeshObjs[0];
+
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		m_StaticMeshes.emplace("CubeBoxMesh", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+	}
+
+	{
 		MeshData meshData;
 		std::vector<XMFLOAT3> positions;
 		std::vector<UINT16> indices;
@@ -522,9 +544,117 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		
 		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
 	}
+
+	{
+		MeshData meshData;
+		tinygltf::Model model;
+		tinygltf::TinyGLTF loader;
+		std::string err;
+		std::string warn;
+
+		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\Cube\\Cube.gltf";
+		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\blender\\test.gltf";
+		std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\SciFiHelmet\\glTF\\SciFiHelmet.gltf";
+
+		bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, fileName);
+		if (!warn.empty()) {
+			printf("Warn: %s\n", warn.c_str());
+		}
+
+		if (!err.empty()) {
+			printf("Err: %s\n", err.c_str());
+		}
+
+		if (!ret) {
+			printf("Failed to parse glTF\n");
+		}
+
+		for (int i = 0; i < model.meshes.size(); ++i)
+		{
+			const tinygltf::Mesh& mesh = model.meshes[i];
+			for (int pri = 0; pri < mesh.primitives.size(); ++pri)
+			{
+				const tinygltf::Primitive &primitive = mesh.primitives[pri];
+				if (primitive.indices < 0) return;
+
+				{
+					const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
+					const tinygltf::BufferView& indexBufferView = model.bufferViews[indexAccessor.bufferView];
+					tinygltf::Buffer& buffer = model.buffers[indexBufferView.buffer];
+
+					if (indexAccessor.type == TINYGLTF_TYPE_SCALAR)
+					{
+						if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+						{
+							std::vector<UINT16> indices;
+							indices.resize(indexAccessor.count);
+
+							UCHAR* pBufferData = buffer.data.data() + indexAccessor.byteOffset + indexBufferView.byteOffset;
+							std::memcpy(indices.data(), pBufferData, indexBufferView.byteLength);
+							for (int i = 0; i < indices.size(); ++i)
+							{
+								meshData.Indices.push_back(indices[i]);
+							}
+						}
+						else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+						{
+							std::vector<UINT> indices;
+							indices.resize(indexAccessor.count);
+
+							UCHAR* pBufferData = buffer.data.data() + indexAccessor.byteOffset + indexBufferView.byteOffset;
+							std::memcpy(indices.data(), pBufferData, indexBufferView.byteLength);
+							for (int i = 0; i < indices.size(); ++i)
+							{
+								meshData.Indices.push_back(indices[i]);
+							}
+						}
+					}
+				}
+
+				for (auto attrIt = primitive.attributes.begin(); attrIt != primitive.attributes.end(); ++attrIt)
+				{
+					const tinygltf::Accessor &accessor = model.accessors[attrIt->second];
+					const tinygltf::BufferView &bufferView = model.bufferViews[accessor.bufferView];
+					tinygltf::Buffer &buffer = model.buffers[bufferView.buffer];
+
+					if (attrIt->first == "POSITION" && accessor.type == TINYGLTF_TYPE_VEC3 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+					{
+						meshData.Positions.resize(accessor.count);
+						UCHAR* pBufferData = buffer.data.data() + accessor.byteOffset + bufferView.byteOffset;
+						std::memcpy(meshData.Positions.data(), pBufferData, bufferView.byteLength);
+					}
+					else if (attrIt->first == "NORMAL" && accessor.type == TINYGLTF_TYPE_VEC3 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+					{
+						meshData.Normals.resize(accessor.count);
+						UCHAR* pBufferData = buffer.data.data() + accessor.byteOffset + bufferView.byteOffset;
+						std::memcpy(meshData.Normals.data(), pBufferData, bufferView.byteLength);
+					}
+					else if (attrIt->first == "TEXCOORD_0" && accessor.type == TINYGLTF_TYPE_VEC2 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+					{
+						meshData.UVs.resize(accessor.count);
+						UCHAR* pBufferData = buffer.data.data() + accessor.byteOffset + bufferView.byteOffset;
+						std::memcpy(meshData.UVs.data(), pBufferData, bufferView.byteLength);
+					}
+					else if (attrIt->first == "TANGENT" && accessor.type == TINYGLTF_TYPE_VEC4 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+					{
+						meshData.Tangents.resize(accessor.count);
+						UCHAR* pBufferData = buffer.data.data() + accessor.byteOffset + bufferView.byteOffset;
+						std::memcpy(meshData.Tangents.data(), pBufferData, bufferView.byteLength);
+					}
+				}
+			}
+		}
+		
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->CreateBuffer(&meshData, pDevice, cmdList);
+		m_StaticMeshes.emplace("glTFMesh", pMesh);
+
+		pMesh->AddSubMesh("Sub0", (UINT)meshData.Indices.size(), 0, 0);
+		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+	}
 }
 
-void CMaterialBRDFApp::BuildScene()
+void CGLTFViewerApp::BuildScene()
 {
 	
 	{
@@ -561,13 +691,56 @@ void CMaterialBRDFApp::BuildScene()
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
 			pObj->m_Transform.Position = XMFLOAT3(0.0f, 2.0f, 0.0f);
-			pObj->m_Transform.Scale = XMFLOAT3(2.0f, 2.0f, 2.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 			m_RenderObjects.push_back(pObj);
 		}
 	}
 
 	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
+		CStaticMesh* pCubeMesh = m_StaticMeshes["CubeBoxMesh"];
+		if (pCubeMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pCubeMesh;
+			pObj->m_Transform.Position = XMFLOAT3(3.0f, 2.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		CStaticMesh* pCubeMesh = m_StaticMeshes["glTFMesh"];
+		if (pCubeMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pCubeMesh;
+			pObj->m_Transform.Position = XMFLOAT3(6.0f, 2.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		//CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
+		//if (pSphereMesh)
+		//{
+		//	CRenderObject* pObj = new CRenderObject();
+		//	pObj->m_pStaticMesh = pSphereMesh;
+		//	pObj->m_Transform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		//	pObj->m_Transform.Scale = XMFLOAT3(1000.0f, 1000.0f, 1000.0f);
+
+		//	m_RenderObjects.push_back(pObj);
+		//	
+		//	// 整个系统还没有处理好，应该SkySphere可以作为一个整体来用
+		//	// 需要有一个中央的资源分配器，方便进行查询，以及资源的重复创建
+		//	m_pSkySphere = new CSkySphere();
+		//	m_pSkySphere->SetMesh(pObj);
+		//	m_pSkySphere->Init(m_pGraphicContext);
+		//}
+	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["CubeBoxMesh"];
 		if (pSphereMesh)
 		{
 			CRenderObject* pObj = new CRenderObject();
@@ -579,9 +752,9 @@ void CMaterialBRDFApp::BuildScene()
 			
 			// 整个系统还没有处理好，应该SkySphere可以作为一个整体来用
 			// 需要有一个中央的资源分配器，方便进行查询，以及资源的重复创建
-			m_pSkySphere = new CSkySphere();
-			m_pSkySphere->SetMesh(pObj);
-			m_pSkySphere->Init(m_pGraphicContext);
+			m_pSkyBox = new CSkyBox();
+			m_pSkyBox->SetMesh(pObj);
+			m_pSkyBox->Init(m_pGraphicContext);
 		}
 	}
 
@@ -593,28 +766,28 @@ void CMaterialBRDFApp::BuildScene()
 		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
 	}
 
-	//{
-	//	CPointLight* pLight0 = new CPointLight();
-	//	m_PointLights.push_back(pLight0);
-	//	pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	//	pLight0->m_fIntensity = 50.0f; //3.14f;
-	//	pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
-	//	pLight0->m_fMaxRadius = 10.0f;
-	//	pLight0->m_fRefDist = 1.0f;
-	//}
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 50.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 1.0f;
+	}
 
-	//{
-	//	CPointLight* pLight0 = new CPointLight();
-	//	m_PointLights.push_back(pLight0);
-	//	pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	//	pLight0->m_fIntensity = 50.0f; //3.14f;
-	//	pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
-	//	pLight0->m_fMaxRadius = 10.0f;
-	//	pLight0->m_fRefDist = 1.0f;
-	//}
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 50.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 1.0f;
+	}
 }
 
-void CMaterialBRDFApp::BuildHeapDescriptors()
+void CGLTFViewerApp::BuildHeapDescriptors()
 {
 	m_ObjectBuffer.CreateBuffer(m_pDevice, (UINT)m_RenderObjects.size());
 
@@ -654,7 +827,7 @@ void CMaterialBRDFApp::BuildHeapDescriptors()
 	m_FrameBuffer.CreateBufferView(m_pDevice, address.CpuHandle);
 }
 
-void CMaterialBRDFApp::InitImgui()
+void CGLTFViewerApp::InitImgui()
 {
 	// Setup Dear ImGui binding
 	IMGUI_CHECKVERSION();
@@ -670,7 +843,7 @@ void CMaterialBRDFApp::InitImgui()
 	ImGui::StyleColorsDark();
 }
 
-void CMaterialBRDFApp::UpdateImgui()
+void CGLTFViewerApp::UpdateImgui()
 {
 	// Start the Dear ImGui frame
 	ImGui_ImplDX12_NewFrame();
@@ -694,7 +867,7 @@ void CMaterialBRDFApp::UpdateImgui()
 }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CMaterialBRDFApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CGLTFViewerApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 		return true;

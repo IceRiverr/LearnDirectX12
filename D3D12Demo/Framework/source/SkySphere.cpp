@@ -1,6 +1,15 @@
 #include "SkySphere.h"
 #include "GraphicsUtility.h"
 
+void convert_xyz_to_equirectangular_uv(float x, float y, float z, float * u, float * v)
+{
+	float uc = std::atan2f(z, x) * XM_1DIVPI;
+	uc = (uc + 1.0f) * 0.5f;
+	float vc = acos(y) * XM_1DIVPI;
+
+	*u = uc;
+	*v = vc;
+}
 
 void CSkySphere::SetMesh(CRenderObject* pRender)
 {
@@ -45,9 +54,9 @@ void CSkySphere::Init(CGraphicContext* pContext)
 		std::string enviromnentPath = sContentRootPath + "WellesleyGreenhouse3\\Greenhouse3_Env.hdr";
 		std::string reflectionPath = sContentRootPath + "WellesleyGreenhouse3\\Greenhouse3_Ref.hdr";
 		
-		m_pBackGroundMap = pContext->CreateTexture(backgroundPath);
-		m_pEnvironmentMap = pContext->CreateTexture(enviromnentPath);
-		m_pReflectionMap = pContext->CreateTexture(reflectionPath);
+		m_pBackGroundMap = pContext->CreateTexture2D(backgroundPath);
+		m_pEnvironmentMap = pContext->CreateTexture2D(enviromnentPath);
+		m_pReflectionMap = pContext->CreateTexture2D(reflectionPath);
 	}
 }
 

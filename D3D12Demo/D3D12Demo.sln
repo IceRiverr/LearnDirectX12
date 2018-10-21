@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "VisualStudio\Test\T
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Example_BasicGraphic", "VisualStudio\Example_BasicGraphic\Example_BasicGraphic.vcxproj", "{CEC8D8D5-3110-417F-86E4-114F9FD2E642}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glTF_View", "VisualStudio\glTF_View\glTF_View.vcxproj", "{81759C9A-0358-439A-9894-3443C99412DA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{CEC8D8D5-3110-417F-86E4-114F9FD2E642}.Release|x64.Build.0 = Release|x64
 		{CEC8D8D5-3110-417F-86E4-114F9FD2E642}.Release|x86.ActiveCfg = Release|Win32
 		{CEC8D8D5-3110-417F-86E4-114F9FD2E642}.Release|x86.Build.0 = Release|Win32
+		{81759C9A-0358-439A-9894-3443C99412DA}.Debug|x64.ActiveCfg = Debug|x64
+		{81759C9A-0358-439A-9894-3443C99412DA}.Debug|x64.Build.0 = Debug|x64
+		{81759C9A-0358-439A-9894-3443C99412DA}.Debug|x86.ActiveCfg = Debug|Win32
+		{81759C9A-0358-439A-9894-3443C99412DA}.Debug|x86.Build.0 = Debug|Win32
+		{81759C9A-0358-439A-9894-3443C99412DA}.Release|x64.ActiveCfg = Release|x64
+		{81759C9A-0358-439A-9894-3443C99412DA}.Release|x64.Build.0 = Release|x64
+		{81759C9A-0358-439A-9894-3443C99412DA}.Release|x86.ActiveCfg = Release|Win32
+		{81759C9A-0358-439A-9894-3443C99412DA}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

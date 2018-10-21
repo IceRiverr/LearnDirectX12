@@ -16,19 +16,19 @@ void CMaterial::Init(CGraphicContext * pContext)
 {
 	if (m_sAldeboPath.size())
 	{
-		m_MaterialResource.pAldeboMap = pContext->CreateTexture(m_sAldeboPath);
+		m_MaterialResource.pAldeboMap = pContext->CreateTexture2D(m_sAldeboPath);
 	}
 	if (m_sNormalPath.size())
 	{
-		m_MaterialResource.pNormalMap = pContext->CreateTexture(m_sNormalPath);
+		m_MaterialResource.pNormalMap = pContext->CreateTexture2D(m_sNormalPath);
 	}
 	if (m_sRoughnessPath.size())
 	{
-		m_MaterialResource.pRoughnessMap = pContext->CreateTexture(m_sRoughnessPath);
+		m_MaterialResource.pRoughnessMap = pContext->CreateTexture2D(m_sRoughnessPath);
 	}
 	if (m_sMetalicPath.size())
 	{
-		m_MaterialResource.pMetalicMap = pContext->CreateTexture(m_sMetalicPath);
+		m_MaterialResource.pMetalicMap = pContext->CreateTexture2D(m_sMetalicPath);
 	}
 }
 

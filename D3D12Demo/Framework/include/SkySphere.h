@@ -2,6 +2,11 @@
 #include "StaticMesh.h"
 #include "GraphicContext.h"
 
+// Equirectangular mapping
+// https://en.wikipedia.org/wiki/Equirectangular_projection
+
+void convert_xyz_to_equirectangular_uv(float x, float y, float z, float* u, float* v);
+
 class CSkySphere
 {
 public:

@@ -4,7 +4,7 @@
 #include "Light_Lib.hlsl"
 #include "Common_Function.hlsl"
 
-#define USE_HDRI_LIGHTING 1
+#define USE_HDRI_LIGHTING 0
 
 struct VertexIn
 {

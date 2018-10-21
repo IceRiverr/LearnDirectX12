@@ -1,4 +1,4 @@
-#include "Material_BRDF.h"
+#include "SkyBoxApp.h"
 #include "ImportObj.h"
 
 #include "imgui.h"
@@ -8,7 +8,7 @@
 #include "DirectXTex.h"
 #include <d3d12shader.h>
 
-CMaterialBRDFApp::CMaterialBRDFApp()
+CSkyBoxApp::CSkyBoxApp()
 {
 	m_ContentRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\";
 	m_ShaderRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\";
@@ -23,14 +23,14 @@ CMaterialBRDFApp::CMaterialBRDFApp()
 	m_bGuiMode = false;
 }
 
-CMaterialBRDFApp::~CMaterialBRDFApp()
+CSkyBoxApp::~CSkyBoxApp()
 {
 	// 内存析构都没有做，需要完善
 
 
 }
 
-void CMaterialBRDFApp::Init()
+void CSkyBoxApp::Init()
 {
 	WinApp::Init();
 
@@ -67,7 +67,7 @@ void CMaterialBRDFApp::Init()
 	m_pCamera->Init(90.0f, m_nClientWindowWidth * 1.0f / m_nClientWindowHeight, 0.01f, 2000.0f);
 }
 
-void CMaterialBRDFApp::Update(double deltaTime)
+void CSkyBoxApp::Update(double deltaTime)
 {
 	static double dTotalTime = 0.0f;
 	dTotalTime += deltaTime;
@@ -112,7 +112,7 @@ void CMaterialBRDFApp::Update(double deltaTime)
 	m_InputMgr.ResetInputInfos();
 }
 
-void CMaterialBRDFApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
+void CSkyBoxApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 {
 	m_FrameBuffer.m_FrameData = {};
 
@@ -158,14 +158,14 @@ void CMaterialBRDFApp::UpdateFrameBuffer(float fDeltaTime, float fTotalTime)
 	memcpy(m_FrameBuffer.m_pCbvDataBegin, &m_FrameBuffer.m_FrameData, m_FrameBuffer.m_nConstantBufferSizeAligned);
 }
 
-void CMaterialBRDFApp::DrawImgui()
+void CSkyBoxApp::DrawImgui()
 {
 	ImGui::Render();
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_pCommandList);
 }
 
 
-void CMaterialBRDFApp::TEST_AREA()
+void CSkyBoxApp::TEST_AREA()
 {
 	CD3DX12_RESOURCE_DESC descs[] =
 	{
@@ -179,7 +179,7 @@ void CMaterialBRDFApp::TEST_AREA()
 	int a = 1;
 }
 
-void CMaterialBRDFApp::Draw()
+void CSkyBoxApp::Draw()
 {
 	m_pCommandAllocator->Reset();
 
@@ -212,9 +212,9 @@ void CMaterialBRDFApp::Draw()
 
 	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
-	m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
-	m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
-	m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
+	//m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
+	//m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
+	//m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
 
 	for (int i = 0; i < m_RenderObjects.size() - 1; ++i)
 	{
@@ -222,7 +222,8 @@ void CMaterialBRDFApp::Draw()
 		pObj->Draw(m_pCommandList);
 	}
 
-	m_pSkySphere->Draw(m_pCommandList);
+	//m_pSkySphere->Draw(m_pCommandList);
+	m_pSkyBox->Draw(m_pCommandList);
 
 	// Imgui
 	DrawImgui();
@@ -247,7 +248,7 @@ void CMaterialBRDFApp::Draw()
 	FlushCommandQueue();
 }
 
-void CMaterialBRDFApp::OnResize()
+void CSkyBoxApp::OnResize()
 {
 	WinApp::OnResize();
 	ImGui_ImplDX12_InvalidateDeviceObjects();
@@ -259,7 +260,7 @@ void CMaterialBRDFApp::OnResize()
 	}
 }
 
-void CMaterialBRDFApp::Destroy()
+void CSkyBoxApp::Destroy()
 {
 	WinApp::Destroy();
 	FlushCommandQueue();
@@ -269,7 +270,7 @@ void CMaterialBRDFApp::Destroy()
 	ImGui::DestroyContext();
 }
 
-void CMaterialBRDFApp::BuildRootSignature()
+void CSkyBoxApp::BuildRootSignature()
 {
 	// create root signature
 	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
@@ -324,7 +325,7 @@ void CMaterialBRDFApp::BuildRootSignature()
 	}
 }
 
-void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
+void CSkyBoxApp::BuildPSOs(ID3D12Device* pDevice)
 {
 	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
 	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
@@ -408,7 +409,7 @@ void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 	}
 }
 
-void CMaterialBRDFApp::BuildMaterials()
+void CSkyBoxApp::BuildMaterials()
 {
 	{
 		m_pBRDFMat = new CMaterial();
@@ -459,7 +460,7 @@ void CMaterialBRDFApp::BuildMaterials()
 	}
 }
 
-void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
 {
 	{
 		CImportor_Obj impoortor;
@@ -472,7 +473,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
-	
+
 	{
 		//std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
 		std::string smooth_box_path = m_ContentRootPath + "smooth_box.obj";
@@ -501,6 +502,18 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 	}
 
 	{
+		CImportor_Obj impoortor;
+		impoortor.SetPath(m_ContentRootPath + "CubeBox.obj");
+		impoortor.Import();
+		MeshData* pMeshData = impoortor.m_MeshObjs[0];
+
+		CStaticMesh* pMesh = new CStaticMesh();
+		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		m_StaticMeshes.emplace("CubeBoxMesh", pMesh);
+		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+	}
+
+	{
 		
 		MeshData meshData;
 		std::vector<XMFLOAT3> positions;
@@ -524,7 +537,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 	}
 }
 
-void CMaterialBRDFApp::BuildScene()
+void CSkyBoxApp::BuildScene()
 {
 	
 	{
@@ -561,13 +574,44 @@ void CMaterialBRDFApp::BuildScene()
 			CRenderObject* pObj = new CRenderObject();
 			pObj->m_pStaticMesh = pSphereMesh;
 			pObj->m_Transform.Position = XMFLOAT3(0.0f, 2.0f, 0.0f);
-			pObj->m_Transform.Scale = XMFLOAT3(2.0f, 2.0f, 2.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 			m_RenderObjects.push_back(pObj);
 		}
 	}
 
 	{
-		CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
+		CStaticMesh* pCubeMesh = m_StaticMeshes["CubeBoxMesh"];
+		if (pCubeMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pCubeMesh;
+			pObj->m_Transform.Position = XMFLOAT3(3.0f, 2.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
+		//CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
+		//if (pSphereMesh)
+		//{
+		//	CRenderObject* pObj = new CRenderObject();
+		//	pObj->m_pStaticMesh = pSphereMesh;
+		//	pObj->m_Transform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		//	pObj->m_Transform.Scale = XMFLOAT3(1000.0f, 1000.0f, 1000.0f);
+
+		//	m_RenderObjects.push_back(pObj);
+		//	
+		//	// 整个系统还没有处理好，应该SkySphere可以作为一个整体来用
+		//	// 需要有一个中央的资源分配器，方便进行查询，以及资源的重复创建
+		//	m_pSkySphere = new CSkySphere();
+		//	m_pSkySphere->SetMesh(pObj);
+		//	m_pSkySphere->Init(m_pGraphicContext);
+		//}
+	}
+
+	{
+		CStaticMesh* pSphereMesh = m_StaticMeshes["CubeBoxMesh"];
 		if (pSphereMesh)
 		{
 			CRenderObject* pObj = new CRenderObject();
@@ -579,9 +623,9 @@ void CMaterialBRDFApp::BuildScene()
 			
 			// 整个系统还没有处理好，应该SkySphere可以作为一个整体来用
 			// 需要有一个中央的资源分配器，方便进行查询，以及资源的重复创建
-			m_pSkySphere = new CSkySphere();
-			m_pSkySphere->SetMesh(pObj);
-			m_pSkySphere->Init(m_pGraphicContext);
+			m_pSkyBox = new CSkyBox();
+			m_pSkyBox->SetMesh(pObj);
+			m_pSkyBox->Init(m_pGraphicContext);
 		}
 	}
 
@@ -593,28 +637,28 @@ void CMaterialBRDFApp::BuildScene()
 		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
 	}
 
-	//{
-	//	CPointLight* pLight0 = new CPointLight();
-	//	m_PointLights.push_back(pLight0);
-	//	pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	//	pLight0->m_fIntensity = 50.0f; //3.14f;
-	//	pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
-	//	pLight0->m_fMaxRadius = 10.0f;
-	//	pLight0->m_fRefDist = 1.0f;
-	//}
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 50.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(10.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 1.0f;
+	}
 
-	//{
-	//	CPointLight* pLight0 = new CPointLight();
-	//	m_PointLights.push_back(pLight0);
-	//	pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	//	pLight0->m_fIntensity = 50.0f; //3.14f;
-	//	pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
-	//	pLight0->m_fMaxRadius = 10.0f;
-	//	pLight0->m_fRefDist = 1.0f;
-	//}
+	{
+		CPointLight* pLight0 = new CPointLight();
+		m_PointLights.push_back(pLight0);
+		pLight0->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		pLight0->m_fIntensity = 50.0f; //3.14f;
+		pLight0->m_vPosition = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
+		pLight0->m_fMaxRadius = 10.0f;
+		pLight0->m_fRefDist = 1.0f;
+	}
 }
 
-void CMaterialBRDFApp::BuildHeapDescriptors()
+void CSkyBoxApp::BuildHeapDescriptors()
 {
 	m_ObjectBuffer.CreateBuffer(m_pDevice, (UINT)m_RenderObjects.size());
 
@@ -654,7 +698,7 @@ void CMaterialBRDFApp::BuildHeapDescriptors()
 	m_FrameBuffer.CreateBufferView(m_pDevice, address.CpuHandle);
 }
 
-void CMaterialBRDFApp::InitImgui()
+void CSkyBoxApp::InitImgui()
 {
 	// Setup Dear ImGui binding
 	IMGUI_CHECKVERSION();
@@ -670,7 +714,7 @@ void CMaterialBRDFApp::InitImgui()
 	ImGui::StyleColorsDark();
 }
 
-void CMaterialBRDFApp::UpdateImgui()
+void CSkyBoxApp::UpdateImgui()
 {
 	// Start the Dear ImGui frame
 	ImGui_ImplDX12_NewFrame();
@@ -694,7 +738,7 @@ void CMaterialBRDFApp::UpdateImgui()
 }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CMaterialBRDFApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CSkyBoxApp::WndMsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 		return true;

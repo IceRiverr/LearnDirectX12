@@ -99,7 +99,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>DirectXTex.lib;imgui_dx12.lib;D3D12Demo.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>DirectXTex.lib;imgui_dx12.lib;D3D12Demo.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -150,7 +150,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>DirectXTex.lib;imgui_dx12.lib;D3D12Demo.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>DirectXTex.lib;imgui_dx12.lib;D3D12Demo.lib;d3dcompiler.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -158,6 +158,7 @@
     <ClInclude Include="Apps\DrawBoxArrayApp.h" />
     <ClInclude Include="Apps\LightSourceApp.h" />
     <ClInclude Include="Apps\Material_BRDF.h" />
+    <ClInclude Include="Apps\SkyBoxApp.h" />
     <ClInclude Include="Apps\TestInputLayout.h" />
     <ClInclude Include="D3D12Demo.h" />
     <ClInclude Include="Resource.h" />
@@ -167,6 +168,7 @@
     <ClCompile Include="Apps\DrawBoxArrayApp.cpp" />
     <ClCompile Include="Apps\LightSourceApp.cpp" />
     <ClCompile Include="Apps\Material_BRDF.cpp" />
+    <ClCompile Include="Apps\SkyBoxApp.cpp" />
     <ClCompile Include="Apps\TestInputLayout.cpp" />
     <ClCompile Include="D3D12Demo.cpp" />
   </ItemGroup>

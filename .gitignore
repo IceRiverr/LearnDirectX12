@@ -45,3 +45,5 @@ D3D12Demo/.vs/
 *.ilk
 *.iobj
 *.idb
+D3D12Demo/ThirdParty/tinygltf-master/
+D3D12Demo/VisualStudio/glTF_View/x64/

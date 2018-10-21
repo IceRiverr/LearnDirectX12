@@ -33,8 +33,8 @@ public:
 	CGraphicContext();
 
 	void Init();
-	Texture2DResource* CreateTexture(const std::string& path, bool bCreateSRV = true);
-	void CreateTextureSRV(ID3D12Resource* pResource, D3D12_CPU_DESCRIPTOR_HANDLE handle);
+	Texture2DResource* CreateTexture2D(const std::string& path, bool bCreateSRV = true);
+	void CreateTexture2DSRV(ID3D12Resource* pResource, D3D12_CPU_DESCRIPTOR_HANDLE handle);
 
 public:
 	ID3D12Device* m_pDevice;

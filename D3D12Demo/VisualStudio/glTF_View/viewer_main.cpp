@@ -1,38 +1,21 @@
-//D3D12Demo.cpp: 定义应用程序的入口点。
-//
-
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <iostream>
 #include <stdlib.h>
 #include <io.h>
 #include <fcntl.h>
 
-#include "D3D12Demo.h"
 #include "ImportObj.h"
 #include <map>
 
-
 #include "WinApp.h"
-#include "DrawBoxApp.h"
-#include "DrawBoxArrayApp.h"
-#include "TestInputLayout.h"
-#include "LightSourceApp.h"
-#include "Material_BRDF.h"
-#include "SkyBoxApp.h"
+#include "glTFViewerApp.h"
 
 #define MAX_LOADSTRING 100
-
-// 全局变量: 
-WCHAR szTitle[MAX_LOADSTRING] = L"BRDF Demo";                  // 标题栏文本
+WCHAR szTitle[MAX_LOADSTRING] = L"glTF Viewer";                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING] = L"DirextX12 Demo";            // 主窗口类名
 
-//DrawBoxApp app;
-//DrawBoxArrayApp app;
-//TestInputLayoutApp app;
-//CLightSourceApp app;
-//CMaterialBRDFApp app;
-CSkyBoxApp app;
+CGLTFViewerApp app;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -51,19 +34,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	app.InitConsoleWindow();
 	app.ParseCommandLineArguments();
 	
-    // 初始化全局字符串
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-  //  LoadStringW(hInstance, IDC_D3D12DEMO, szWindowClass, MAX_LOADSTRING);
+    
     MyRegisterClass(hInstance);
-
-    // 执行应用程序初始化: 
     if (!InitInstance (hInstance, nCmdShow, app))
     {
         return FALSE;
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_D3D12DEMO));
-	
 	app.Init();
 
 	__int64 _countsPerSecend = 0;

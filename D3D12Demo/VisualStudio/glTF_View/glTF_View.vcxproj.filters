@@ -21,49 +21,16 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Demo.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Apps\DrawBoxApp.h">
-      <Filter>Apps</Filter>
-    </ClInclude>
-    <ClInclude Include="Apps\DrawBoxArrayApp.h">
-      <Filter>Apps</Filter>
-    </ClInclude>
-    <ClInclude Include="Apps\LightSourceApp.h">
-      <Filter>Apps</Filter>
-    </ClInclude>
-    <ClInclude Include="Apps\Material_BRDF.h">
-      <Filter>Apps</Filter>
-    </ClInclude>
-    <ClInclude Include="Apps\TestInputLayout.h">
-      <Filter>Apps</Filter>
-    </ClInclude>
-    <ClInclude Include="Apps\SkyBoxApp.h">
+    <ClInclude Include="Apps\glTFViewerApp.h">
       <Filter>Apps</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="D3D12Demo.cpp">
+    <ClCompile Include="Apps\glTFViewerApp.cpp">
+      <Filter>Apps</Filter>
+    </ClCompile>
+    <ClCompile Include="viewer_main.cpp">
       <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Apps\DrawBoxApp.cpp">
-      <Filter>Apps</Filter>
-    </ClCompile>
-    <ClCompile Include="Apps\DrawBoxArrayApp.cpp">
-      <Filter>Apps</Filter>
-    </ClCompile>
-    <ClCompile Include="Apps\LightSourceApp.cpp">
-      <Filter>Apps</Filter>
-    </ClCompile>
-    <ClCompile Include="Apps\Material_BRDF.cpp">
-      <Filter>Apps</Filter>
-    </ClCompile>
-    <ClCompile Include="Apps\TestInputLayout.cpp">
-      <Filter>Apps</Filter>
-    </ClCompile>
-    <ClCompile Include="Apps\SkyBoxApp.cpp">
-      <Filter>Apps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

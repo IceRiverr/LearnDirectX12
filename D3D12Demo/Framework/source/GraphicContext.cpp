@@ -58,7 +58,7 @@ void CGraphicContext::Init()
 	m_pSRVAllocator = new CDescriptorAlloctor(256);
 }
 
-Texture2DResource* CGraphicContext::CreateTexture(const std::string& path, bool bCreateSRV /*= true*/)
+Texture2DResource* CGraphicContext::CreateTexture2D(const std::string& path, bool bCreateSRV /*= true*/)
 {
 	auto it = m_Textures.find(path);
 	if (it != m_Textures.end())
@@ -74,14 +74,14 @@ Texture2DResource* CGraphicContext::CreateTexture(const std::string& path, bool 
 		pTexture->m_TextureAddress.CPUHandle = address.CpuHandle;
 		pTexture->m_TextureAddress.GPUHandle = address.GpuHandle;
 
-		CreateTextureSRV(pTexture->pTexture, address.CpuHandle);
+		CreateTexture2DSRV(pTexture->pTexture, address.CpuHandle);
 	}
 
 	m_Textures.emplace(path, pTexture);
 	return pTexture;
 }
 
-void CGraphicContext::CreateTextureSRV(ID3D12Resource * pResource, D3D12_CPU_DESCRIPTOR_HANDLE handle)
+void CGraphicContext::CreateTexture2DSRV(ID3D12Resource * pResource, D3D12_CPU_DESCRIPTOR_HANDLE handle)
 {
 	// Create SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};

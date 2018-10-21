@@ -66,6 +66,9 @@
     <ClInclude Include="..\..\Framework\include\WinApp.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Framework\include\SkyBox.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Shaders\BRDF_Lib.hlsl">
@@ -151,5 +154,13 @@
     <ClCompile Include="..\..\Framework\source\WinApp.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Framework\source\SkyBox.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\Shaders\SkyBoxShader.fx">
+      <Filter>Shaders\sfx</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
