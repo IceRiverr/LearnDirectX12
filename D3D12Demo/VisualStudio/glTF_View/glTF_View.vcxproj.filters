@@ -24,6 +24,9 @@
     <ClInclude Include="Apps\glTFViewerApp.h">
       <Filter>Apps</Filter>
     </ClInclude>
+    <ClInclude Include="Apps\PBRMaterial.h">
+      <Filter>Apps</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Apps\glTFViewerApp.cpp">
@@ -31,6 +34,9 @@
     </ClCompile>
     <ClCompile Include="viewer_main.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Apps\PBRMaterial.cpp">
+      <Filter>Apps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

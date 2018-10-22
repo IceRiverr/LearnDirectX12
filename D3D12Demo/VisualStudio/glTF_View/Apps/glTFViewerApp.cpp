@@ -115,6 +115,12 @@ void CGLTFViewerApp::Update(double deltaTime)
 		m_MaterialBuffer.UpdateBuffer((UINT8*)&shaderBlock, sizeof(shaderBlock), pMat->m_MaterialAddress.nBufferIndex);
 	}
 
+	for (auto it = m_PBRMaterials.begin(); it != m_PBRMaterials.end(); ++it)
+	{
+		CPBRMaterial* pMat = it->second;
+		m_PBRMaterialBuffer.UpdateBuffer((UINT8*)&pMat->m_ShaderBlock, sizeof(pMat->m_ShaderBlock), pMat->m_BufferAddress.nBufferIndex);
+	}
+
 	UpdateFrameBuffer((float)deltaTime, (float)dTotalTime);
 
 	UpdateImgui();
@@ -218,15 +224,15 @@ void CGLTFViewerApp::Draw()
 
 	auto DescriptorHeaps = m_pGraphicContext->m_pSRVAllocator->GetHeaps();
 	m_pCommandList->SetDescriptorHeaps((UINT)DescriptorHeaps.size() , DescriptorHeaps.data());
+	
 	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature);
-
 	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
 	//m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
 	//m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
 	//m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
 
-	for (int i = 0; i < m_RenderObjects.size() - 1; ++i)
+	for (int i = 0; i < m_RenderObjects.size() - 2; ++i)
 	{
 		CRenderObject* pObj = m_RenderObjects[i];
 		pObj->Draw(m_pCommandList);
@@ -234,6 +240,9 @@ void CGLTFViewerApp::Draw()
 
 	//m_pSkySphere->Draw(m_pCommandList);
 	m_pSkyBox->Draw(m_pCommandList);
+
+	CRenderObject* pObj = m_RenderObjects[m_RenderObjects.size() - 1];
+	TESTDrawPBR(pObj);
 
 	// Imgui
 	DrawImgui();
@@ -256,6 +265,51 @@ void CGLTFViewerApp::Draw()
 	m_nCurrentSwapChainIndex = (m_nCurrentSwapChainIndex + 1) % m_nSwapChainBufferCount;
 
 	FlushCommandQueue();
+}
+
+void CGLTFViewerApp::TESTDrawPBR(CRenderObject* obj)
+{
+	m_pCommandList->SetGraphicsRootSignature(m_pPBRRootSignature);
+	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
+
+	CPBRMaterial* pMat = m_PBRMaterials["PBR_Base_Mat"];
+
+	m_pCommandList->SetPipelineState(m_pPBREffect->m_pPSO);
+
+	ID3D12GraphicsCommandList* pCommandList = m_pCommandList;
+	CStaticMesh* pStaticMesh = obj->m_pStaticMesh;
+
+	// Bind Mesh
+	
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+	{
+		pStaticMesh->m_PositionBufferView,
+		pStaticMesh->m_NormalBufferView,
+		pStaticMesh->m_TangentBufferView,
+		pStaticMesh->m_UVBufferView
+	};
+
+	pCommandList->IASetVertexBuffers(0, 4, &VertexBufferViews[0]);
+
+	pCommandList->IASetIndexBuffer(&pStaticMesh->m_IndexBufferView);
+	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	pCommandList->SetGraphicsRootDescriptorTable(1, obj->m_ObjectAddress.GPUHandle);
+
+	// Bind Material
+	pCommandList->SetGraphicsRootDescriptorTable(2, pMat->m_BufferAddress.GPUHandle);
+
+	pCommandList->SetGraphicsRootDescriptorTable(4, pBaseColorMap->m_TextureAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable(5, pNormalMap->m_TextureAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable(7, pRoughnessMetallicMap->m_TextureAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable(8, pAoMap->m_TextureAddress.GPUHandle);
+
+	// Draw
+	for (auto it : pStaticMesh->m_SubMeshes)
+	{
+		SubMesh subMesh = it.second;
+		pCommandList->DrawIndexedInstanced(subMesh.nIndexCount, 1, subMesh.nStartIndexLocation, subMesh.nBaseVertexLocation, 0);
+	}
 }
 
 void CGLTFViewerApp::OnResize()
@@ -282,57 +336,121 @@ void CGLTFViewerApp::Destroy()
 
 void CGLTFViewerApp::BuildRootSignature()
 {
-	// create root signature
-	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
-	cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
-
-	CD3DX12_DESCRIPTOR_RANGE textureTable;
-	textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE range1;
-	range1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 10);
-
-	CD3DX12_DESCRIPTOR_RANGE HDREnvTable;
-	HDREnvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
-
-	CD3DX12_DESCRIPTOR_RANGE HDRRefTable;
-	HDRRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
-
-	CD3DX12_DESCRIPTOR_RANGE HDRBGRefTable;
-	HDRBGRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6);
-
-	CD3DX12_ROOT_PARAMETER slotRootParameter[8];
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
-	slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
-	slotRootParameter[4].InitAsDescriptorTable(1, &range1, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[5].InitAsDescriptorTable(1, &HDREnvTable, D3D12_SHADER_VISIBILITY_PIXEL); 
-	slotRootParameter[6].InitAsDescriptorTable(1, &HDRRefTable, D3D12_SHADER_VISIBILITY_PIXEL); 
-	slotRootParameter[7].InitAsDescriptorTable(1, &HDRBGRefTable, D3D12_SHADER_VISIBILITY_PIXEL);
-
-	StaticSamplerStates StaticSamplers;
-	StaticSamplers.CreateStaticSamplers();
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(8, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	ID3DBlob* serializedRootSig = nullptr;
-	ID3DBlob* errorBlob = nullptr;
-	D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
-
-	m_pDevice->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&m_pRootSignature));
-
-	if (serializedRootSig)
 	{
-		serializedRootSig->Release(); serializedRootSig = nullptr;
+		// create root signature
+		CD3DX12_DESCRIPTOR_RANGE cbvTable1;
+		cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+		CD3DX12_DESCRIPTOR_RANGE cbvTable2;
+		cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+
+		CD3DX12_DESCRIPTOR_RANGE textureTable;
+		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
+
+		CD3DX12_DESCRIPTOR_RANGE range1;
+		range1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 10);
+
+		CD3DX12_DESCRIPTOR_RANGE HDREnvTable;
+		HDREnvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
+
+		CD3DX12_DESCRIPTOR_RANGE HDRRefTable;
+		HDRRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);
+
+		CD3DX12_DESCRIPTOR_RANGE HDRBGRefTable;
+		HDRBGRefTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6);
+
+		CD3DX12_ROOT_PARAMETER slotRootParameter[8];
+		slotRootParameter[0].InitAsConstantBufferView(0);
+		slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+		slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
+		slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
+		slotRootParameter[4].InitAsDescriptorTable(1, &range1, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[5].InitAsDescriptorTable(1, &HDREnvTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[6].InitAsDescriptorTable(1, &HDRRefTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[7].InitAsDescriptorTable(1, &HDRBGRefTable, D3D12_SHADER_VISIBILITY_PIXEL);
+
+		StaticSamplerStates StaticSamplers;
+		StaticSamplers.CreateStaticSamplers();
+
+		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(8, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ID3DBlob* serializedRootSig = nullptr;
+		ID3DBlob* errorBlob = nullptr;
+		D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
+
+		m_pDevice->CreateRootSignature(
+			0,
+			serializedRootSig->GetBufferPointer(),
+			serializedRootSig->GetBufferSize(),
+			IID_PPV_ARGS(&m_pRootSignature));
+
+		if (serializedRootSig)
+		{
+			serializedRootSig->Release(); serializedRootSig = nullptr;
+		}
 	}
+
+	{
+		CD3DX12_DESCRIPTOR_RANGE PerObjTable;
+		PerObjTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+		
+		CD3DX12_DESCRIPTOR_RANGE PerMatTable;
+		PerMatTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+
+		CD3DX12_DESCRIPTOR_RANGE PerLight;
+		PerLight.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 3);
+
+		CD3DX12_DESCRIPTOR_RANGE BaseColorTable;
+		BaseColorTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+		CD3DX12_DESCRIPTOR_RANGE NormalMapTable;
+		NormalMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
+		CD3DX12_DESCRIPTOR_RANGE EmissiveMapTable;
+		EmissiveMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+
+		CD3DX12_DESCRIPTOR_RANGE MetallicRoughnessMapTable;
+		MetallicRoughnessMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
+
+		CD3DX12_DESCRIPTOR_RANGE OcclusionMapTable;
+		OcclusionMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
+
+		CD3DX12_DESCRIPTOR_RANGE EnvMapTable;
+		EnvMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 10);
+
+		CD3DX12_ROOT_PARAMETER slotRootParameter[10];
+		slotRootParameter[0].InitAsConstantBufferView(0); // PassBuffer
+		slotRootParameter[1].InitAsDescriptorTable(1, &PerObjTable);
+		slotRootParameter[2].InitAsDescriptorTable(1, &PerMatTable);
+		slotRootParameter[3].InitAsDescriptorTable(1, &PerLight);
+		slotRootParameter[4].InitAsDescriptorTable(1, &BaseColorTable, D3D12_SHADER_VISIBILITY_PIXEL); // 如果一个Material中有些有texutre，有些没有纹理，应该怎么处理
+		slotRootParameter[5].InitAsDescriptorTable(1, &NormalMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[6].InitAsDescriptorTable(1, &EmissiveMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[7].InitAsDescriptorTable(1, &MetallicRoughnessMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[8].InitAsDescriptorTable(1, &OcclusionMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		slotRootParameter[9].InitAsDescriptorTable(1, &EnvMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+
+		StaticSamplerStates StaticSamplers;
+		StaticSamplers.CreateStaticSamplers();
+
+		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(10, slotRootParameter, STATIC_SAMPLER_TYPE::SAMPLER_COUNT, StaticSamplers.Samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ID3DBlob* serializedRootSig = nullptr;
+		ID3DBlob* errorBlob = nullptr;
+		D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
+
+		m_pDevice->CreateRootSignature(
+			0,
+			serializedRootSig->GetBufferPointer(),
+			serializedRootSig->GetBufferSize(),
+			IID_PPV_ARGS(&m_pPBRRootSignature));
+
+		if (serializedRootSig)
+		{
+			serializedRootSig->Release(); serializedRootSig = nullptr;
+		}
+	}
+	
 }
 
 void CGLTFViewerApp::BuildPSOs(ID3D12Device* pDevice)
@@ -417,6 +535,34 @@ void CGLTFViewerApp::BuildPSOs(ID3D12Device* pDevice)
 		pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
 		m_PSOs.emplace("Material_PSO", pOpaquePSO);
 	}
+
+	{
+		m_pPBREffect = new CRenderEffect();
+		m_pPBREffect->m_pVSShaderCode = Graphics::CompileShader(m_ShaderRootPath + "Mat_PBRMetallicRoughness.fx", "VSMain", "vs_5_0");
+		m_pPBREffect->m_pPSShaderCode = Graphics::CompileShader(m_ShaderRootPath + "Mat_PBRMetallicRoughness.fx", "PSMain", "ps_5_0");
+
+		ID3D12PipelineState* pOpaquePSO = nullptr;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
+		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3T4UV2);
+		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
+		OpaquePSODesc.pRootSignature = m_pPBRRootSignature;
+		OpaquePSODesc.VS = { m_pPBREffect->m_pVSShaderCode->GetBufferPointer(), m_pPBREffect->m_pVSShaderCode->GetBufferSize() };
+		OpaquePSODesc.PS = { m_pPBREffect->m_pPSShaderCode->GetBufferPointer(), m_pPBREffect->m_pPSShaderCode->GetBufferSize() };
+		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		OpaquePSODesc.SampleMask = UINT_MAX;
+		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		OpaquePSODesc.NumRenderTargets = 1;
+		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
+		OpaquePSODesc.SampleDesc.Count = 1;
+		OpaquePSODesc.SampleDesc.Quality = 0;
+		OpaquePSODesc.DSVFormat = m_DSVFormat;
+
+		HRESULT hr = pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
+		m_PSOs.emplace("PBRMaterial_PSO", pOpaquePSO);
+		m_pPBREffect->m_pPSO = pOpaquePSO;
+	}
 }
 
 void CGLTFViewerApp::BuildMaterials()
@@ -434,7 +580,7 @@ void CGLTFViewerApp::BuildMaterials()
 	}
 
 	{
-		CMaterial* pMat = new CMaterial();
+		/*CMaterial* pMat = new CMaterial();
 		pMat->m_sName = "BRDF_Texture";
 		pMat->m_pPSO = m_PSOs["Material_PSO"];
 		pMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3T4UV2;
@@ -448,11 +594,11 @@ void CGLTFViewerApp::BuildMaterials()
 		pMat->m_sMetalicPath = m_ContentRootPath + "Gun\\Textures\\Cerberus_M.tga";
 		pMat->Init(m_pGraphicContext);
 
-		m_Materials.emplace(pMat->m_sName, pMat);
+		m_Materials.emplace(pMat->m_sName, pMat);*/
 	}
 
 	{
-		CMaterial* pMat = new CMaterial();
+		/*CMaterial* pMat = new CMaterial();
 		pMat->m_sName = "Metal_Mat";
 		pMat->m_pPSO = m_PSOs["Material_PSO"];
 		pMat->m_InputLayoutType = INPUT_LAYOUT_TYPE::P3N3T4UV2;
@@ -466,7 +612,18 @@ void CGLTFViewerApp::BuildMaterials()
 		pMat->m_sMetalicPath =   m_ContentRootPath + "MetalSpottyDiscoloration001\\SPECULAR\\4K\\MetalGoldBrushed001_GLOSS_3K_SPECULAR.jpg";
 		pMat->Init(m_pGraphicContext);
 
-		m_Materials.emplace(pMat->m_sName, pMat);
+		m_Materials.emplace(pMat->m_sName, pMat);*/
+	}
+
+	{
+		CPBRMaterial* pMat = new CPBRMaterial();
+		pMat->m_Name = "PBR_Base_Mat";
+		m_PBRMaterials.emplace(pMat->m_Name, pMat);
+
+		pBaseColorMap			= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_BaseColor.png");
+		pNormalMap				= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_Normal.png");
+		pRoughnessMetallicMap	= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_MetallicRoughness.png");
+		pAoMap					= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_AmbientOcclusion.png");
 	}
 }
 
@@ -709,18 +866,6 @@ void CGLTFViewerApp::BuildScene()
 	}
 
 	{
-		CStaticMesh* pCubeMesh = m_StaticMeshes["glTFMesh"];
-		if (pCubeMesh)
-		{
-			CRenderObject* pObj = new CRenderObject();
-			pObj->m_pStaticMesh = pCubeMesh;
-			pObj->m_Transform.Position = XMFLOAT3(6.0f, 2.0f, 0.0f);
-			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
-			m_RenderObjects.push_back(pObj);
-		}
-	}
-
-	{
 		//CStaticMesh* pSphereMesh = m_StaticMeshes["SphereMesh"];
 		//if (pSphereMesh)
 		//{
@@ -759,6 +904,18 @@ void CGLTFViewerApp::BuildScene()
 	}
 
 	{
+		CStaticMesh* pCubeMesh = m_StaticMeshes["glTFMesh"];
+		if (pCubeMesh)
+		{
+			CRenderObject* pObj = new CRenderObject();
+			pObj->m_pStaticMesh = pCubeMesh;
+			pObj->m_Transform.Position = XMFLOAT3(6.0f, 2.0f, 0.0f);
+			pObj->m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+			m_RenderObjects.push_back(pObj);
+		}
+	}
+
+	{
 		/*CDirectionalLight* pLight = new CDirectionalLight();
 		m_DirLights.push_back(pLight);
 		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
@@ -793,33 +950,56 @@ void CGLTFViewerApp::BuildHeapDescriptors()
 
 	auto DescriptorAlloctor = m_pGraphicContext->m_pSRVAllocator;
 
-	for (int i = 0; i < m_RenderObjects.size(); ++i)
 	{
-		DescriptorAddress address = DescriptorAlloctor->Allocate(1, m_pGraphicContext->m_pDevice);
+		for (int i = 0; i < m_RenderObjects.size(); ++i)
+		{
+			DescriptorAddress address = DescriptorAlloctor->Allocate(1, m_pGraphicContext->m_pDevice);
 
-		m_RenderObjects[i]->m_ObjectAddress.nBufferIndex = i;
-		m_RenderObjects[i]->m_ObjectAddress.pBuffer = m_ObjectBuffer.m_pUploadeConstBuffer;
-		m_RenderObjects[i]->m_ObjectAddress.pBufferHeap = address.pHeap;
-		m_RenderObjects[i]->m_ObjectAddress.CPUHandle = address.CpuHandle;
-		m_RenderObjects[i]->m_ObjectAddress.GPUHandle = address.GpuHandle;
-		
-		m_ObjectBuffer.CreateBufferView(m_pDevice, address.CpuHandle, i);
+			m_RenderObjects[i]->m_ObjectAddress.nBufferIndex = i;
+			m_RenderObjects[i]->m_ObjectAddress.pBuffer = m_ObjectBuffer.m_pUploadeConstBuffer;
+			m_RenderObjects[i]->m_ObjectAddress.pBufferHeap = address.pHeap;
+			m_RenderObjects[i]->m_ObjectAddress.CPUHandle = address.CpuHandle;
+			m_RenderObjects[i]->m_ObjectAddress.GPUHandle = address.GpuHandle;
+
+			m_ObjectBuffer.CreateBufferView(m_pDevice, address.CpuHandle, i);
+		}
 	}
 
-	m_MaterialBuffer.CreateBuffer(m_pDevice, (UINT)m_Materials.size());
-	int nMaterialIndex = 0;
-	for (auto it = m_Materials.begin(); it != m_Materials.end(); ++it)
 	{
-		DescriptorAddress address = DescriptorAlloctor->Allocate(1, m_pGraphicContext->m_pDevice);
+		m_MaterialBuffer.CreateBuffer(m_pDevice, (UINT)m_Materials.size());
+		int nMaterialIndex = 0;
+		for (auto it = m_Materials.begin(); it != m_Materials.end(); ++it)
+		{
+			DescriptorAddress address = DescriptorAlloctor->Allocate(1, m_pGraphicContext->m_pDevice);
 
-		it->second->m_MaterialAddress.nBufferIndex = nMaterialIndex;
-		it->second->m_MaterialAddress.pBuffer = m_MaterialBuffer.m_pUploadeConstBuffer;
-		it->second->m_MaterialAddress.pBufferHeap = address.pHeap;
-		it->second->m_MaterialAddress.CPUHandle = address.CpuHandle;
-		it->second->m_MaterialAddress.GPUHandle = address.GpuHandle;
-		
-		m_MaterialBuffer.CreateBufferView(m_pDevice, address.CpuHandle, nMaterialIndex);
-		nMaterialIndex++;
+			it->second->m_MaterialAddress.nBufferIndex = nMaterialIndex;
+			it->second->m_MaterialAddress.pBuffer = m_MaterialBuffer.m_pUploadeConstBuffer;
+			it->second->m_MaterialAddress.pBufferHeap = address.pHeap;
+			it->second->m_MaterialAddress.CPUHandle = address.CpuHandle;
+			it->second->m_MaterialAddress.GPUHandle = address.GpuHandle;
+
+			m_MaterialBuffer.CreateBufferView(m_pDevice, address.CpuHandle, nMaterialIndex);
+			nMaterialIndex++;
+		}
+	}
+
+	{
+		m_PBRMaterialBuffer.CreateBuffer(m_pDevice, (UINT)m_PBRMaterials.size());
+		int nPBRMaterialIndex = 0;
+		for (auto it = m_PBRMaterials.begin(); it != m_PBRMaterials.end(); ++it)
+		{
+			DescriptorAddress address = DescriptorAlloctor->Allocate(1, m_pGraphicContext->m_pDevice);
+
+			it->second->m_BufferAddress.nBufferIndex = nPBRMaterialIndex;
+			it->second->m_BufferAddress.pBuffer = m_PBRMaterialBuffer.m_pUploadeConstBuffer;
+			it->second->m_BufferAddress.pBufferHeap = address.pHeap;
+			it->second->m_BufferAddress.CPUHandle = address.CpuHandle;
+			it->second->m_BufferAddress.GPUHandle = address.GpuHandle;
+			
+			m_PBRMaterialBuffer.CreateBufferView(m_pDevice, address.CpuHandle, nPBRMaterialIndex);
+			
+			nPBRMaterialIndex++;
+		}
 	}
 
 	DescriptorAddress address = DescriptorAlloctor->Allocate(1, m_pGraphicContext->m_pDevice);

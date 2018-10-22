@@ -144,35 +144,35 @@ VertexOut VSMain(VertexIn vin)
 //     https://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
 
 
-#define USE_IBL
-#define HAS_BASE_COLOR_MAP
-#define HAS_NORMAL_MAP
-#define HAS_EMISSIVE_MAP
-#define HAS_METAL_ROUGHNESS_MAP
-#define HAS_OCCLUSION_MAP
+#define USE_IBL 0
+#define HAS_BASE_COLOR_MAP 1
+#define HAS_NORMAL_MAP 1
+#define HAS_EMISSIVE_MAP 0
+#define HAS_METAL_ROUGHNESS_MAP 1
+#define HAS_OCCLUSION_MAP 1
 
-
-#ifdef USE_IBL
-TextureCube g_DiffuseEnvMap;
-TextureCube g_SpecularEnvMap;
-Texture2D g_BrdfLUT;
+#if HAS_BASE_COLOR_MAP
+Texture2D g_BaseColorMap : register(t0);
+#endif
+#if HAS_NORMAL_MAP
+Texture2D g_NormalMap : register(t1);
+#endif
+#if HAS_EMISSIVE_MAP
+Texture2D g_EmissiveMap : register(t2);
+#endif
+#if HAS_METAL_ROUGHNESS_MAP
+Texture2D g_MetallicRoughnessMap : register(t3);
+#endif
+#if HAS_OCCLUSION_MAP
+Texture2D g_OcclusionMap : register(t4);
 #endif
 
-#ifdef HAS_BASE_COLOR_MAP
-Texture2D g_BaseColorMap;
+#if USE_IBL
+TextureCube g_DiffuseEnvMap : register(t10);
+TextureCube g_SpecularEnvMap : register(t11);
+Texture2D g_BrdfLUT : register(t12);
 #endif
-#ifdef HAS_NORMAL_MAP
-Texture2D g_NormalMap;
-#endif
-#ifdef HAS_EMISSIVE_MAP
-Texture2D g_EmissiveMap;
-#endif
-#ifdef HAS_METAL_ROUGHNESS_MAP
-Texture2D g_MetallicRoughnessMap;
-#endif
-#ifdef HAS_OCCLUSION_MAP
-Texture2D g_OcclusionMap;
-#endif
+
 
 float c_MinRoughness = 0.04f;
 
@@ -191,15 +191,6 @@ float4 SRGBToLinear(float4 srgbIn)
     return float4(linearOut.rgb, srgbIn.a);
 #endif
     return srgbIn;
-}
-
-float3 GetNormal(Texture2D normalMap, float normalScale, float3x3 TBN, float2 uv)
-{
-    float3 BumpNormal = normalMap.Sample(g_LinearWrapSampler, uv).rgb;
-    BumpNormal = BumpNormal * 2.0f - 1.0f;
-    float3 N = mul(BumpNormal, TBN) * float3(normalScale, normalScale, 1.0f);
-    N = normalize(N);
-    return N;
 }
 
 float3 Fd_LambertDiffuse(float3 diffuseColor)
@@ -234,10 +225,14 @@ float D_GGX(float NdotH, float m)
 
 float4 PSMain(VertexOut pin) : SV_Target
 {
+	// DO TEST
+    float3 LightDir = float3(0.0f, 1.0f, 1.0f);
+    float3 LightColor = 1.0f;
+
     float perceptualRoughness = g_PBRMat.RoughnessFactor;
     float metallic = g_PBRMat.MetallicFactor;
 
-#ifdef HAS_METAL_ROUGHNESS_MAP
+#if HAS_METAL_ROUGHNESS_MAP
     float4 mrSample = g_MetallicRoughnessMap.Sample(g_LinearWrapSampler, pin.UV);
     perceptualRoughness *= mrSample.g;
     metallic *= mrSample.b;
@@ -247,15 +242,15 @@ float4 PSMain(VertexOut pin) : SV_Target
 
     float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
-#ifdef HAS_BASE_COLOR_MAP
+#if HAS_BASE_COLOR_MAP
     float4 baseColor = SRGBToLinear(g_BaseColorMap.Sample(g_LinearWrapSampler, pin.UV)) * g_PBRMat.BaseColorFactor;
 #else
 	float4 baseColor = g_PBRMat.BaseColorFactor;
 #endif
 
 	// 将绝缘体的反射率固定为 0.04f，后期可以加在材质中 Reflectance
-    float3 f0 = float3(0.04f);
-    float3 diffuseColor = baseColor.rgb * (float3(1.0f) - f0);
+    float3 f0 = 0.04f;
+    float3 diffuseColor = baseColor.rgb * (1.0f - f0);
     diffuseColor *= 1.0f - metallic;
     float3 specularColor = lerp(f0, diffuseColor, metallic);
 
@@ -264,20 +259,26 @@ float4 PSMain(VertexOut pin) : SV_Target
 	float reflectance0 = max(max(g_PBRMat.SpecularColorFactor.r, g_PBRMat.SpecularColorFactor.g), g_PBRMat.SpecularColorFactor.b);
     float reflectance90 = clamp(reflectance0 * 25.0f, 0.0f, 1.0f);
     float3 specularEnvironmentR0 = g_PBRMat.SpecularColorFactor.rgb;
-    float3 specularEnvironmentR90 = float3(1.0f) * reflectance90;
+    float3 specularEnvironmentR90 = float3(1.0f, 1.0f, 1.0f) * reflectance90;
 
 	// Normal
     float3 N = float3(0.0f, 1.0f, 0.0f);
 #ifdef HAS_NORMALS
 #ifdef HAS_TANGENTS
-	N = GetNormal(g_NormalMap, g_PBRMat.NormalScale, pin.TBN, pin.UV);
+#if HAS_NORMAL_MAP
+    float3 BumpNormal = g_NormalMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
+    BumpNormal = BumpNormal * 2.0f - 1.0f;
+    N = mul(BumpNormal, pin.TBN) * float3(g_PBRMat.NormalScale, g_PBRMat.NormalScale, 1.0f);
+    N = normalize(N);
+#endif
 #else
-	N = pin.NormalW;
+    N = pin.NormalW;
 #endif
 #endif
 
     float3 V = normalize(g_vEyePosition.xyz - pin.PosW);
-    float3 L = normalize(g_LightDirection.xyz);
+   // float3 L = normalize(g_LightDirection.xyz);
+    float3 L = normalize(LightDir.xyz);
     float3 H = normalize(V + L);
     float3 R = 2.0f * dot(V, N) * N - V;
 
@@ -295,10 +296,11 @@ float4 PSMain(VertexOut pin) : SV_Target
     float3 diffuseContribute = (1.0f - F) * diffuseColor;
     float3 specularContribute = F * G * D;
 
-    float3 color = g_LightColor.rgb * (diffuseContribute + specularContribute) * NdotL;
+    //float3 color = g_LightColor.rgb * (diffuseContribute + specularContribute) * NdotL;
+    float3 color = LightColor.rgb * (diffuseContribute + specularContribute) * NdotL;
 
 	// IBL Light
-#ifdef USE_IBL
+#if USE_IBL
 	float mipCount = 9.0f; // 512x512
     float lod = perceptualRoughness * mipCount;
 	
@@ -312,14 +314,14 @@ float4 PSMain(VertexOut pin) : SV_Target
     color += diffuseEnv + specularEnv;
 #endif
 
-#ifdef HAS_OCCLUSION_MAP
-    float ao = g_OcclusionMap.Sample(g_LinearClampSampler, pin.UV);
+#if HAS_OCCLUSION_MAP
+    float ao = g_OcclusionMap.Sample(g_LinearClampSampler, pin.UV).r;
     color = lerp(color, color * ao, g_PBRMat.OcclusionStrength);
 #endif
 
-#ifdef HAS_EMISSIVE_MAP
+#if HAS_EMISSIVE_MAP
     float3 emissive = SRGBToLinear(g_EmissiveMap.Sample(g_LinearWrapSampler, pin.UV)).rgb * g_PBRMat.EmissiveColorFactor.rgb;
 #endif
-	    
-	return float4(pow(color, 1f/2.2f), baseColor.a);
+	
+	return float4(pow(color, 1.0f/2.2f), baseColor.a);
 }

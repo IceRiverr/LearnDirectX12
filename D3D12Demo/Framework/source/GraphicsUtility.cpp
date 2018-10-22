@@ -141,7 +141,7 @@ D3D12_INDEX_BUFFER_VIEW Graphics::CreateIndexBufferView(ID3D12Resource * pIndexB
 
 ID3DBlob* Graphics::CompileShader(std::string sFileName, std::string sEntrypoint, std::string sTarget, const D3D_SHADER_MACRO* pDefines)
 {
-	ID3DBlob* pShaderCode;
+	ID3DBlob* pShaderCode = nullptr;
 	// Compile Shader
 	UINT compileFlags = 0;
 #if defined(DEBUG) || defined(_DEBUG)

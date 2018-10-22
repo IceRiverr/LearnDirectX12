@@ -155,10 +155,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Apps\glTFViewerApp.h" />
+    <ClInclude Include="Apps\PBRMaterial.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Apps\glTFViewerApp.cpp" />
+    <ClCompile Include="Apps\PBRMaterial.cpp" />
     <ClCompile Include="viewer_main.cpp" />
   </ItemGroup>
   <ItemGroup>

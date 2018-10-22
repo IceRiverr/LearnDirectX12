@@ -12,6 +12,7 @@
 #include "SkySphere.h"
 #include "GraphicContext.h"
 #include "SkyBox.h"
+#include "PBRMaterial.h"
 
 class CGLTFViewerApp :
 	public WinApp
@@ -40,6 +41,7 @@ private:
 	void UpdateFrameBuffer(float fDeltaTime, float fTotalTime);
 	void UpdateImgui();
 
+	void TESTDrawPBR(CRenderObject* obj);
 	void DrawImgui();
 
 	void TEST_AREA();
@@ -81,4 +83,15 @@ private:
 	CSkyBox* m_pSkyBox;
 
 	CGraphicContext* m_pGraphicContext;
+	
+	ID3D12RootSignature* m_pPBRRootSignature;
+	std::unordered_map<std::string, CPBRMaterial*> m_PBRMaterials;
+	CPBRMaterialConstantBuffer m_PBRMaterialBuffer;
+	CRenderEffect* m_pPBREffect;
+	CRenderObject* m_TestPBR;
+
+	Texture2DResource* pBaseColorMap;
+	Texture2DResource* pNormalMap;
+	Texture2DResource* pRoughnessMetallicMap;
+	Texture2DResource* pAoMap;
 };
