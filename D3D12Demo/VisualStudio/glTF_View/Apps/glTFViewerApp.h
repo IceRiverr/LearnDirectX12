@@ -87,11 +87,6 @@ private:
 	ID3D12RootSignature* m_pPBRRootSignature;
 	std::unordered_map<std::string, CPBRMaterial*> m_PBRMaterials;
 	CPBRMaterialConstantBuffer m_PBRMaterialBuffer;
-	CRenderEffect* m_pPBREffect;
+	CPBRRenderEffect* m_pPBREffect;
 	CRenderObject* m_TestPBR;
-
-	Texture2DResource* pBaseColorMap;
-	Texture2DResource* pNormalMap;
-	Texture2DResource* pRoughnessMetallicMap;
-	Texture2DResource* pAoMap;
 };

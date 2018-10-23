@@ -15,9 +15,9 @@ public:
 	void Draw(ID3D12GraphicsCommandList* cmdList);
 
 public:
-	Texture2DResource * m_pBackGroundMap;
-	Texture2DResource* m_pEnvironmentMap;
-	Texture2DResource* m_pReflectionMap;
+	Texture2D * m_pBackGroundMap;
+	Texture2D* m_pEnvironmentMap;
+	Texture2D* m_pReflectionMap;
 
 private:
 	CRenderObject* m_pRenderObj;

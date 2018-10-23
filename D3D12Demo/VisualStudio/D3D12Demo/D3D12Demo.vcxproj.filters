@@ -30,12 +30,6 @@
     <ClInclude Include="..\..\Framework\include\GraphicContext.h">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Framework\include\GraphicPipeline.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Framework\include\GraphicsUtility.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Framework\include\ImportObj.h">
       <Filter>Framework</Filter>
     </ClInclude>
@@ -67,6 +61,9 @@
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Framework\include\SkyBox.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Framework\include\MeshFactory.h">
       <Filter>Framework</Filter>
     </ClInclude>
   </ItemGroup>
@@ -125,12 +122,6 @@
     <ClCompile Include="..\..\Framework\source\GraphicContext.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Framework\source\GraphicPipeline.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Framework\source\GraphicsUtility.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Framework\source\ImportObj.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
@@ -159,6 +150,9 @@
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Framework\source\SkyBox.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Framework\source\MeshFactory.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>

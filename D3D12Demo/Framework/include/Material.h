@@ -31,10 +31,10 @@ struct MaterialResource
 {
 	MaterialShaderBlock ShaderBlock;
 
-	Texture2DResource* pAldeboMap;
-	Texture2DResource* pNormalMap;
-	Texture2DResource* pRoughnessMap;
-	Texture2DResource* pMetalicMap;
+	Texture2D* pAldeboMap;
+	Texture2D* pNormalMap;
+	Texture2D* pRoughnessMap;
+	Texture2D* pMetalicMap;
 };
 
 class CMaterial

@@ -1,6 +1,5 @@
 
 #include "SkyBox.h"
-#include "GraphicsUtility.h"
 #include "DirectXTex.h"
 
 void CSkyBox::SetMesh(CRenderObject * pRender)
@@ -15,8 +14,8 @@ void CSkyBox::Init(CGraphicContext * pContext)
 		// Shader
 		std::string m_ShaderRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\";
 
-		m_pVSShaderCode = Graphics::CompileShader(m_ShaderRootPath + "SkyBoxShader.fx", "VSMain", "vs_5_0");
-		m_pPSShaderCode = Graphics::CompileShader(m_ShaderRootPath + "SkyBoxShader.fx", "PSMain", "ps_5_0");
+		m_pVSShaderCode = pContext->CompileShader(m_ShaderRootPath + "SkyBoxShader.fx", "VSMain", "vs_5_0");
+		m_pPSShaderCode = pContext->CompileShader(m_ShaderRootPath + "SkyBoxShader.fx", "PSMain", "ps_5_0");
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
 		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3);

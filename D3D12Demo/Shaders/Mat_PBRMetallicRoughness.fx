@@ -22,7 +22,6 @@ struct PBRMaterial
 {
     float4 BaseColorFactor;
     float4 EmissiveColorFactor;
-    float4 SpecularColorFactor;
     
     float MetallicFactor;
     float RoughnessFactor;
@@ -68,9 +67,9 @@ cbuffer cbPerLight : register(b3)
     float4 g_LightColor;
 };
 
-#define HAS_NORMALS
-#define HAS_TANGENTS
-#define HAS_UV
+//#define HAS_NORMALS
+//#define HAS_TANGENTS
+//#define HAS_UV
 
 struct VertexIn
 {
@@ -97,9 +96,7 @@ struct VertexOut
     float3 NormalW : NORMAL;
 #endif
 #endif
-#ifdef HAS_UV
 	 float2 UV : TEXCOORD;
-#endif
 };
 
 VertexOut VSMain(VertexIn vin)
@@ -144,30 +141,30 @@ VertexOut VSMain(VertexIn vin)
 //     https://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
 
 
-#define USE_IBL 0
-#define HAS_BASE_COLOR_MAP 1
-#define HAS_NORMAL_MAP 1
-#define HAS_EMISSIVE_MAP 0
-#define HAS_METAL_ROUGHNESS_MAP 1
-#define HAS_OCCLUSION_MAP 1
+//#define USE_IBL 0
+//#define HAS_BASE_COLOR_MAP 1
+//#define HAS_NORMAL_MAP 1
+//#define HAS_EMISSIVE_MAP 0
+//#define HAS_METAL_ROUGHNESS_MAP 1
+//#define HAS_OCCLUSION_MAP 1
 
-#if HAS_BASE_COLOR_MAP
+#ifdef HAS_BASE_COLOR_MAP
 Texture2D g_BaseColorMap : register(t0);
 #endif
-#if HAS_NORMAL_MAP
+#ifdef HAS_NORMAL_MAP
 Texture2D g_NormalMap : register(t1);
 #endif
-#if HAS_EMISSIVE_MAP
+#ifdef HAS_EMISSIVE_MAP
 Texture2D g_EmissiveMap : register(t2);
 #endif
-#if HAS_METAL_ROUGHNESS_MAP
+#ifdef HAS_METAL_ROUGHNESS_MAP
 Texture2D g_MetallicRoughnessMap : register(t3);
 #endif
-#if HAS_OCCLUSION_MAP
+#ifdef HAS_OCCLUSION_MAP
 Texture2D g_OcclusionMap : register(t4);
 #endif
 
-#if USE_IBL
+#ifdef USE_IBL
 TextureCube g_DiffuseEnvMap : register(t10);
 TextureCube g_SpecularEnvMap : register(t11);
 Texture2D g_BrdfLUT : register(t12);
@@ -226,13 +223,13 @@ float D_GGX(float NdotH, float m)
 float4 PSMain(VertexOut pin) : SV_Target
 {
 	// DO TEST
-    float3 LightDir = float3(0.0f, 1.0f, 1.0f);
-    float3 LightColor = 1.0f;
+    float3 LightDir = float3(0.0f, 1.0f, 0.0f);
+    float3 LightColor = 3.14f;
 
     float perceptualRoughness = g_PBRMat.RoughnessFactor;
     float metallic = g_PBRMat.MetallicFactor;
 
-#if HAS_METAL_ROUGHNESS_MAP
+#ifdef HAS_METAL_ROUGHNESS_MAP
     float4 mrSample = g_MetallicRoughnessMap.Sample(g_LinearWrapSampler, pin.UV);
     perceptualRoughness *= mrSample.g;
     metallic *= mrSample.b;
@@ -242,7 +239,7 @@ float4 PSMain(VertexOut pin) : SV_Target
 
     float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
-#if HAS_BASE_COLOR_MAP
+#ifdef HAS_BASE_COLOR_MAP
     float4 baseColor = SRGBToLinear(g_BaseColorMap.Sample(g_LinearWrapSampler, pin.UV)) * g_PBRMat.BaseColorFactor;
 #else
 	float4 baseColor = g_PBRMat.BaseColorFactor;
@@ -256,16 +253,16 @@ float4 PSMain(VertexOut pin) : SV_Target
 
 	// For typical incident reflectance range (between 4% to 100%) set the grazing reflectance to 100% for typical fresnel effect.
     // For very low reflectance range on highly diffuse objects (below 4%), incrementally reduce grazing reflecance to 0%.
-	float reflectance0 = max(max(g_PBRMat.SpecularColorFactor.r, g_PBRMat.SpecularColorFactor.g), g_PBRMat.SpecularColorFactor.b);
-    float reflectance90 = clamp(reflectance0 * 25.0f, 0.0f, 1.0f);
-    float3 specularEnvironmentR0 = g_PBRMat.SpecularColorFactor.rgb;
-    float3 specularEnvironmentR90 = float3(1.0f, 1.0f, 1.0f) * reflectance90;
+    float3 specularR0 = specularColor;
+    float3 specularR90 = 1.0f;
+    //float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
+    //float3 specularR90 = clamp(reflectance * 25.0f, 0.0f, 1.0f);
 
 	// Normal
     float3 N = float3(0.0f, 1.0f, 0.0f);
 #ifdef HAS_NORMALS
 #ifdef HAS_TANGENTS
-#if HAS_NORMAL_MAP
+#ifdef HAS_NORMAL_MAP
     float3 BumpNormal = g_NormalMap.Sample(g_LinearWrapSampler, pin.UV).rgb;
     BumpNormal = BumpNormal * 2.0f - 1.0f;
     N = mul(BumpNormal, pin.TBN) * float3(g_PBRMat.NormalScale, g_PBRMat.NormalScale, 1.0f);
@@ -289,7 +286,7 @@ float4 PSMain(VertexOut pin) : SV_Target
     float VdotH = clamp(dot(V, H), 0.0f, 1.0f);
 
 	// Direct Light
-    float3 F = F_Schick(reflectance0, reflectance90, VdotH);
+    float3 F = F_Schick(specularR0, specularR90, VdotH);
     float G = G_SmithGGXCorrelated(NdotL, NdotV, alphaRoughness);
     float D = D_GGX(NdotH, alphaRoughness);
 
@@ -300,7 +297,7 @@ float4 PSMain(VertexOut pin) : SV_Target
     float3 color = LightColor.rgb * (diffuseContribute + specularContribute) * NdotL;
 
 	// IBL Light
-#if USE_IBL
+#ifdef USE_IBL
 	float mipCount = 9.0f; // 512x512
     float lod = perceptualRoughness * mipCount;
 	
@@ -314,14 +311,17 @@ float4 PSMain(VertexOut pin) : SV_Target
     color += diffuseEnv + specularEnv;
 #endif
 
-#if HAS_OCCLUSION_MAP
+#ifdef HAS_OCCLUSION_MAP
     float ao = g_OcclusionMap.Sample(g_LinearClampSampler, pin.UV).r;
     color = lerp(color, color * ao, g_PBRMat.OcclusionStrength);
 #endif
 
-#if HAS_EMISSIVE_MAP
+#ifdef HAS_EMISSIVE_MAP
     float3 emissive = SRGBToLinear(g_EmissiveMap.Sample(g_LinearWrapSampler, pin.UV)).rgb * g_PBRMat.EmissiveColorFactor.rgb;
+#else
+    float3 emissive = g_PBRMat.EmissiveColorFactor.rgb;
 #endif
-	
+    color += emissive;
+
 	return float4(pow(color, 1.0f/2.2f), baseColor.a);
 }

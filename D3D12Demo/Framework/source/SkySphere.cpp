@@ -1,5 +1,4 @@
 #include "SkySphere.h"
-#include "GraphicsUtility.h"
 
 void convert_xyz_to_equirectangular_uv(float x, float y, float z, float * u, float * v)
 {
@@ -23,8 +22,8 @@ void CSkySphere::Init(CGraphicContext* pContext)
 		// Shader
 		std::string m_ShaderRootPath = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\";
 
-		m_pVSShaderCode_SkySphere = Graphics::CompileShader(m_ShaderRootPath + "SkySphereShader.fx", "VSMain", "vs_5_0");
-		m_pPSShaderCode_SkySphere = Graphics::CompileShader(m_ShaderRootPath + "SkySphereShader.fx", "PSMain", "ps_5_0");
+		m_pVSShaderCode_SkySphere = pContext->CompileShader(m_ShaderRootPath + "SkySphereShader.fx", "VSMain", "vs_5_0");
+		m_pPSShaderCode_SkySphere = pContext->CompileShader(m_ShaderRootPath + "SkySphereShader.fx", "PSMain", "ps_5_0");
 		
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
 		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3);
@@ -75,7 +74,7 @@ void CSkySphere::Draw(ID3D12GraphicsCommandList* pCommandList)
 	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::OBJECT_BUFFER_INDEX, m_pRenderObj->m_ObjectAddress.GPUHandle);
-	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::SKY_SPHERE_BACKGROUND_INDEX, m_pBackGroundMap->m_TextureAddress.GPUHandle);
+	pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::SKY_SPHERE_BACKGROUND_INDEX, m_pBackGroundMap->GPUHandle);
 
 	// Draw
 	for (auto it : m_pRenderObj->m_pStaticMesh->m_SubMeshes)

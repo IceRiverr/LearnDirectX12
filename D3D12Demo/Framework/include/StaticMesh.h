@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "GPUResource.h"
 #include "Material.h"
+#include "GraphicContext.h"
 
 using namespace DirectX;
 
@@ -39,31 +40,25 @@ class CStaticMesh
 {
 public:
 	void AddSubMesh(std::string name, UINT nIndexCount, UINT nStartIndexLoc, INT nBaseVertexLoc);
-	void CreateBuffer(MeshData* pMeshData, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
+	void CreateBuffer(MeshData* pMeshData, CGraphicContext& Context);
 
 public:
 	ID3D12Resource* m_pPositionBufferGPU = nullptr;
-	ID3D12Resource* m_pPositionBufferUpload = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW m_PositionBufferView;
 
 	ID3D12Resource* m_pNormalBufferGPU = nullptr;
-	ID3D12Resource* m_pNormalBufferUpload = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW m_NormalBufferView;
 
 	ID3D12Resource* m_pTangentBufferGPU = nullptr;
-	ID3D12Resource* m_pTangentBufferUpload = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW m_TangentBufferView;
 
 	ID3D12Resource* m_pUVBufferGPU = nullptr;
-	ID3D12Resource* m_pUVBufferUpload = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW m_UVBufferView;
 
 	ID3D12Resource* m_pVertexColorBufferGPU = nullptr;
-	ID3D12Resource* m_pVertexColorBufferUpload = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW m_VertexColorBufferView;
 
 	ID3D12Resource* m_pIndexBuferGPU = nullptr;
-	ID3D12Resource* m_pIndexBufferUpload = nullptr;
 	D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 
 	std::unordered_map<std::string, SubMesh> m_SubMeshes;

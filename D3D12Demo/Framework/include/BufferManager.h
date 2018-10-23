@@ -67,7 +67,7 @@ template<typename T>
 TBaseConstantBuffer<T>::TBaseConstantBuffer()
 {
 	m_nTotalConstantBuferByteSize = 0;
-	m_nConstantBufferSizeAligned = CalcConstBufferBytersAligned(sizeof(T));
+	m_nConstantBufferSizeAligned = (sizeof(T) + 255) & (~255);
 	m_pUploadeConstBuffer = 0;
 	m_pCbvDataBegin = nullptr;
 }

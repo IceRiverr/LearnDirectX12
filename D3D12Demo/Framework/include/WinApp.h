@@ -9,10 +9,8 @@
 #include <string>
 
 #include "Utility.h"
-#include "GraphicsUtility.h"
 
 using namespace DirectX;
-using namespace Graphics;
 
 class WinApp
 {

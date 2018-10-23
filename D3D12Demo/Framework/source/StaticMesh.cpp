@@ -1,6 +1,5 @@
 #include "StaticMesh.h"
 #include "ImportObj.h"
-#include "GraphicsUtility.h"
 #include "MathLib.h"
 
 
@@ -90,38 +89,38 @@ void CStaticMesh::AddSubMesh(std::string name, UINT nIndexCount, UINT nStartInde
 	m_SubMeshes.emplace(name, subMesh);
 }
 
-void CStaticMesh::CreateBuffer(MeshData* pMeshData, ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList)
+void CStaticMesh::CreateBuffer(MeshData* pMeshData, CGraphicContext& Context)
 {
-	if (pMeshData && pDevice && cmdList)
+	if (pMeshData)
 	{
 		if (pMeshData->Positions.size() > 0)
 		{
-			this->m_pPositionBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3), &this->m_pPositionBufferUpload);
-			this->m_PositionBufferView = Graphics::CreateVertexBufferView(this->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+			this->m_pPositionBufferGPU = Context.CreateDefaultBuffer(&pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3));
+			this->m_PositionBufferView = Context.CreateVertexBufferView(this->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
 		}
 
 		if (pMeshData->Normals.size() > 0)
 		{
-			this->m_pNormalBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Normals[0], pMeshData->Normals.size() * sizeof(XMFLOAT3), &this->m_pNormalBufferUpload);
-			this->m_NormalBufferView = Graphics::CreateVertexBufferView(this->m_pNormalBufferGPU, (UINT)pMeshData->Normals.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+			this->m_pNormalBufferGPU = Context.CreateDefaultBuffer(&pMeshData->Normals[0], pMeshData->Normals.size() * sizeof(XMFLOAT3));
+			this->m_NormalBufferView = Context.CreateVertexBufferView(this->m_pNormalBufferGPU, (UINT)pMeshData->Normals.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
 		}
 
 		if (pMeshData->Tangents.size() > 0)
 		{
-			this->m_pTangentBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Tangents[0], pMeshData->Tangents.size() * sizeof(XMFLOAT4), &this->m_pTangentBufferUpload);
-			this->m_TangentBufferView = Graphics::CreateVertexBufferView(this->m_pTangentBufferGPU, (UINT)pMeshData->Tangents.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
+			this->m_pTangentBufferGPU = Context.CreateDefaultBuffer( &pMeshData->Tangents[0], pMeshData->Tangents.size() * sizeof(XMFLOAT4));
+			this->m_TangentBufferView = Context.CreateVertexBufferView(this->m_pTangentBufferGPU, (UINT)pMeshData->Tangents.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
 		}
 
 		if (pMeshData->UVs.size() > 0)
 		{
-			this->m_pUVBufferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->UVs[0], pMeshData->UVs.size() * sizeof(XMFLOAT2), &this->m_pUVBufferUpload);
-			this->m_UVBufferView = Graphics::CreateVertexBufferView(this->m_pUVBufferGPU, (UINT)pMeshData->UVs.size() * sizeof(XMFLOAT2), sizeof(XMFLOAT2));
+			this->m_pUVBufferGPU = Context.CreateDefaultBuffer(&pMeshData->UVs[0], pMeshData->UVs.size() * sizeof(XMFLOAT2));
+			this->m_UVBufferView = Context.CreateVertexBufferView(this->m_pUVBufferGPU, (UINT)pMeshData->UVs.size() * sizeof(XMFLOAT2), sizeof(XMFLOAT2));
 		}
 
 		if (pMeshData->Indices.size() > 0)
 		{
-			this->m_pIndexBuferGPU = Graphics::CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT), &this->m_pIndexBufferUpload);
-			this->m_IndexBufferView = Graphics::CreateIndexBufferView(this->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
+			this->m_pIndexBuferGPU = Context.CreateDefaultBuffer( &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT));
+			this->m_IndexBufferView = Context.CreateIndexBufferView(this->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
 		}
 
 		this->AddSubMesh("Sub0", (UINT)pMeshData->Indices.size(), 0, 0);
@@ -189,7 +188,7 @@ void CRenderObject::Draw(ID3D12GraphicsCommandList * pCommandList)
 
 	if (m_pStaticMesh->m_pMaterial->m_MaterialResource.pAldeboMap)
 	{
-		pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, m_pStaticMesh->m_pMaterial->m_MaterialResource.pAldeboMap->m_TextureAddress.GPUHandle);
+		pCommandList->SetGraphicsRootDescriptorTable((UINT)ROOT_SIGNATURE_INDEX::MATERIAL_TEXTURE_INDEX, m_pStaticMesh->m_pMaterial->m_MaterialResource.pAldeboMap->GPUHandle);
 	}
 
 	// Draw

@@ -21,12 +21,13 @@ struct DescriptorAddress
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GpuHandle;
 };
 
-struct Texture2DResource
+struct Texture2D
 {
-	ID3D12Resource* pTexture;
-	ID3D12Resource* pUploadBuffer;
-
-	ConstantBufferAddress m_TextureAddress;
+	std::string Name;
+	std::string ImagePath;
+	ID3D12Resource* pResource;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
 };
 
 enum STATIC_SAMPLER_TYPE

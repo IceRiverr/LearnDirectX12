@@ -9,7 +9,7 @@
 
 #include "DirectXTex.h"
 #include <d3d12shader.h>
-
+#include "MeshFactory.h"
 
 // Define these only in *one* .cc file.
 #define TINYGLTF_IMPLEMENTATION
@@ -56,6 +56,8 @@ void CGLTFViewerApp::Init()
 	m_pGraphicContext->m_pDevice = m_pDevice;
 	m_pGraphicContext->m_pCommandList = m_pCommandList;
 	m_pGraphicContext->m_pRootSignature = m_pRootSignature;
+	m_pGraphicContext->m_BackBufferFromat = m_BackBufferFromat;
+	m_pGraphicContext->m_DSVFormat = m_DSVFormat;
 	
 	BuildMaterials();
 	BuildStaticMeshes(m_pDevice, m_pCommandList);
@@ -70,6 +72,8 @@ void CGLTFViewerApp::Init()
 	ID3D12CommandList* cmdLists[1] = { m_pCommandList };
 	m_pCommandQueue->ExecuteCommandLists(1, cmdLists);
 	FlushCommandQueue();
+
+	m_pGraphicContext->ReleaseUploadBuffers();
 
 	TEST_AREA();
 
@@ -272,24 +276,71 @@ void CGLTFViewerApp::TESTDrawPBR(CRenderObject* obj)
 	m_pCommandList->SetGraphicsRootSignature(m_pPBRRootSignature);
 	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
-	CPBRMaterial* pMat = m_PBRMaterials["PBR_Base_Mat"];
-
-	m_pCommandList->SetPipelineState(m_pPBREffect->m_pPSO);
+	CPBRMaterial* pMat = m_PBRMaterials["PBR_Red_Mat"];
+	m_pCommandList->SetPipelineState(pMat->m_pRenderPass->m_pPSO);
 
 	ID3D12GraphicsCommandList* pCommandList = m_pCommandList;
 	CStaticMesh* pStaticMesh = obj->m_pStaticMesh;
 
 	// Bind Mesh
 	
-	D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
-	{
-		pStaticMesh->m_PositionBufferView,
-		pStaticMesh->m_NormalBufferView,
-		pStaticMesh->m_TangentBufferView,
-		pStaticMesh->m_UVBufferView
-	};
+	INPUT_LAYOUT_TYPE InputLayoutType = CPBRRenderEffect::CalcInputLayoutType(pMat->m_MacroInfo);
 
-	pCommandList->IASetVertexBuffers(0, 4, &VertexBufferViews[0]);
+	switch (InputLayoutType)
+	{
+	case P3:
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			pStaticMesh->m_PositionBufferView,
+		};
+		pCommandList->IASetVertexBuffers(0, 1, &VertexBufferViews[0]);
+		break;
+	}
+	case P3UV2:
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			pStaticMesh->m_PositionBufferView,
+			pStaticMesh->m_UVBufferView
+		};
+		pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+		break;
+	}
+	case P3N3:
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			pStaticMesh->m_PositionBufferView,
+			pStaticMesh->m_NormalBufferView,
+		};
+		pCommandList->IASetVertexBuffers(0, 2, &VertexBufferViews[0]);
+		break;
+	}
+	case P3N3UV2:
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			pStaticMesh->m_PositionBufferView,
+			pStaticMesh->m_NormalBufferView,
+			pStaticMesh->m_UVBufferView
+		};
+		pCommandList->IASetVertexBuffers(0, 3, &VertexBufferViews[0]);
+		break;
+	}
+	case P3N3T4UV2:
+	{
+		D3D12_VERTEX_BUFFER_VIEW VertexBufferViews[] =
+		{
+			pStaticMesh->m_PositionBufferView,
+			pStaticMesh->m_NormalBufferView,
+			pStaticMesh->m_TangentBufferView,
+			pStaticMesh->m_UVBufferView
+		};
+		pCommandList->IASetVertexBuffers(0, 4, &VertexBufferViews[0]);
+		break;
+	}
+	}
 
 	pCommandList->IASetIndexBuffer(&pStaticMesh->m_IndexBufferView);
 	pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -299,11 +350,17 @@ void CGLTFViewerApp::TESTDrawPBR(CRenderObject* obj)
 	// Bind Material
 	pCommandList->SetGraphicsRootDescriptorTable(2, pMat->m_BufferAddress.GPUHandle);
 
-	pCommandList->SetGraphicsRootDescriptorTable(4, pBaseColorMap->m_TextureAddress.GPUHandle);
-	pCommandList->SetGraphicsRootDescriptorTable(5, pNormalMap->m_TextureAddress.GPUHandle);
-	pCommandList->SetGraphicsRootDescriptorTable(7, pRoughnessMetallicMap->m_TextureAddress.GPUHandle);
-	pCommandList->SetGraphicsRootDescriptorTable(8, pAoMap->m_TextureAddress.GPUHandle);
-
+	if(pMat->m_pBaseColorMap)
+		pCommandList->SetGraphicsRootDescriptorTable(4, pMat->m_pBaseColorMap->GPUHandle);
+	if(pMat->m_pNormalMap)
+		pCommandList->SetGraphicsRootDescriptorTable(5, pMat->m_pNormalMap->GPUHandle);
+	if (pMat->m_pEmissiveMap)
+		pCommandList->SetGraphicsRootDescriptorTable(6, pMat->m_pEmissiveMap->GPUHandle);
+	if (pMat->m_pMetallicRoughnessMap)
+		pCommandList->SetGraphicsRootDescriptorTable(7, pMat->m_pMetallicRoughnessMap->GPUHandle);
+	if (pMat->m_pOcclusionMap)
+		pCommandList->SetGraphicsRootDescriptorTable(8, pMat->m_pOcclusionMap->GPUHandle);
+	
 	// Draw
 	for (auto it : pStaticMesh->m_SubMeshes)
 	{
@@ -455,10 +512,10 @@ void CGLTFViewerApp::BuildRootSignature()
 
 void CGLTFViewerApp::BuildPSOs(ID3D12Device* pDevice)
 {
-	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
-	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
 
 	// TEST Reflection
 	ID3D12ShaderReflection* pReflector = nullptr;
@@ -537,31 +594,8 @@ void CGLTFViewerApp::BuildPSOs(ID3D12Device* pDevice)
 	}
 
 	{
-		m_pPBREffect = new CRenderEffect();
-		m_pPBREffect->m_pVSShaderCode = Graphics::CompileShader(m_ShaderRootPath + "Mat_PBRMetallicRoughness.fx", "VSMain", "vs_5_0");
-		m_pPBREffect->m_pPSShaderCode = Graphics::CompileShader(m_ShaderRootPath + "Mat_PBRMetallicRoughness.fx", "PSMain", "ps_5_0");
-
-		ID3D12PipelineState* pOpaquePSO = nullptr;
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		auto InputLayout = GetInputLayout(INPUT_LAYOUT_TYPE::P3N3T4UV2);
-		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
-		OpaquePSODesc.pRootSignature = m_pPBRRootSignature;
-		OpaquePSODesc.VS = { m_pPBREffect->m_pVSShaderCode->GetBufferPointer(), m_pPBREffect->m_pVSShaderCode->GetBufferSize() };
-		OpaquePSODesc.PS = { m_pPBREffect->m_pPSShaderCode->GetBufferPointer(), m_pPBREffect->m_pPSShaderCode->GetBufferSize() };
-		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.SampleMask = UINT_MAX;
-		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		OpaquePSODesc.NumRenderTargets = 1;
-		OpaquePSODesc.RTVFormats[0] = m_BackBufferFromat;
-		OpaquePSODesc.SampleDesc.Count = 1;
-		OpaquePSODesc.SampleDesc.Quality = 0;
-		OpaquePSODesc.DSVFormat = m_DSVFormat;
-
-		HRESULT hr = pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pOpaquePSO));
-		m_PSOs.emplace("PBRMaterial_PSO", pOpaquePSO);
-		m_pPBREffect->m_pPSO = pOpaquePSO;
+		m_pPBREffect = new CPBRRenderEffect();
+		m_pPBREffect->SetShaderPath(m_ShaderRootPath + "Mat_PBRMetallicRoughness.fx");
 	}
 }
 
@@ -616,14 +650,31 @@ void CGLTFViewerApp::BuildMaterials()
 	}
 
 	{
-		CPBRMaterial* pMat = new CPBRMaterial();
+		CPBRMaterial* pMat = new CPBRMaterial(m_pPBREffect);
 		pMat->m_Name = "PBR_Base_Mat";
 		m_PBRMaterials.emplace(pMat->m_Name, pMat);
 
-		pBaseColorMap			= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_BaseColor.png");
+		pMat->m_sBaseColorMapPath = m_ContentRootPath + "gltf\\DamagedHelmet\\glTF\\Default_albedo.jpg";
+		pMat->m_sNormalMapPath = m_ContentRootPath + "gltf\\DamagedHelmet\\glTF\\Default_normal.jpg";
+		pMat->m_sMetallicRoughnessMapPath = m_ContentRootPath + "gltf\\DamagedHelmet\\glTF\\Default_metalRoughness.jpg";
+		pMat->m_sOcclusionMapPath = m_ContentRootPath + "gltf\\DamagedHelmet\\glTF\\Default_AO.jpg";
+
+		pMat->InitResource(m_pGraphicContext);
+
+		/*pBaseColorMap			= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_BaseColor.png");
 		pNormalMap				= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_Normal.png");
 		pRoughnessMetallicMap	= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_MetallicRoughness.png");
-		pAoMap					= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_AmbientOcclusion.png");
+		pAoMap					= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_AmbientOcclusion.png");*/
+	}
+
+	{
+		CPBRMaterial* pMat = new CPBRMaterial(m_pPBREffect);
+		pMat->m_Name = "PBR_Red_Mat";
+		pMat->m_ShaderBlock.BaseColorFactor = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) ;
+		pMat->m_ShaderBlock.EmissiveColorFactor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		pMat->m_ShaderBlock.MetallicFactor = 0.9f;
+		pMat->m_ShaderBlock.RoughnessFactor = 0.1f;
+		m_PBRMaterials.emplace(pMat->m_Name, pMat);
 	}
 }
 
@@ -636,7 +687,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -651,7 +702,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("Smooth_box", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -663,7 +714,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("UVSphere", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -675,7 +726,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("CubeBoxMesh", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -684,7 +735,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		MeshData meshData;
 		std::vector<XMFLOAT3> positions;
 		std::vector<UINT16> indices;
-		Graphics::CreateUVSphereMesh(64, 32, positions, indices);
+		CMeshFactory::CreateUVSphereMesh(64, 32, positions, indices);
 
 		for (int i = 0; i < positions.size(); ++i)
 		{
@@ -696,7 +747,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		}
 
 		CStaticMesh* pSphereMesh = new CStaticMesh();
-		pSphereMesh->CreateBuffer(&meshData, pDevice, cmdList);
+		pSphereMesh->CreateBuffer(&meshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("SphereMesh", pSphereMesh);
 		
 		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
@@ -711,7 +762,8 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 
 		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\Cube\\Cube.gltf";
 		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\blender\\test.gltf";
-		std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\SciFiHelmet\\glTF\\SciFiHelmet.gltf";
+		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\SciFiHelmet\\glTF\\SciFiHelmet.gltf";
+		std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\DamagedHelmet\\glTF\\DamagedHelmet.gltf";
 
 		bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, fileName);
 		if (!warn.empty()) {
@@ -802,12 +854,17 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 			}
 		}
 		
+		// For Test
+		Mesh::CalcTangents(meshData);
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(&meshData, pDevice, cmdList);
+		pMesh->CreateBuffer(&meshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("glTFMesh", pMesh);
 
 		pMesh->AddSubMesh("Sub0", (UINT)meshData.Indices.size(), 0, 0);
-		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+		//pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+		//PBR_Red_Mat
+		//m_PBRMaterials["PBR_Base_Mat"]->AttachToMesh(pMesh, m_pGraphicContext);
+		m_PBRMaterials["PBR_Red_Mat"]->AttachToMesh(pMesh, m_pGraphicContext);
 	}
 }
 

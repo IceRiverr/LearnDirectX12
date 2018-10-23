@@ -158,8 +158,7 @@
     <ClInclude Include="..\..\Framework\include\Camera.h" />
     <ClInclude Include="..\..\Framework\include\GPUResource.h" />
     <ClInclude Include="..\..\Framework\include\GraphicContext.h" />
-    <ClInclude Include="..\..\Framework\include\GraphicPipeline.h" />
-    <ClInclude Include="..\..\Framework\include\GraphicsUtility.h" />
+    <ClInclude Include="..\..\Framework\include\MeshFactory.h" />
     <ClInclude Include="..\..\Framework\include\ImportObj.h" />
     <ClInclude Include="..\..\Framework\include\InputManager.h" />
     <ClInclude Include="..\..\Framework\include\Light.h" />
@@ -235,8 +234,7 @@
     <ClCompile Include="..\..\Framework\source\Camera.cpp" />
     <ClCompile Include="..\..\Framework\source\GPUResource.cpp" />
     <ClCompile Include="..\..\Framework\source\GraphicContext.cpp" />
-    <ClCompile Include="..\..\Framework\source\GraphicPipeline.cpp" />
-    <ClCompile Include="..\..\Framework\source\GraphicsUtility.cpp" />
+    <ClCompile Include="..\..\Framework\source\MeshFactory.cpp" />
     <ClCompile Include="..\..\Framework\source\ImportObj.cpp" />
     <ClCompile Include="..\..\Framework\source\InputManager.cpp" />
     <ClCompile Include="..\..\Framework\source\Light.cpp" />
