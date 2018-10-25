@@ -31,8 +31,8 @@ WCHAR szWindowClass[MAX_LOADSTRING] = L"DirextX12 Demo";            // Ö÷´°¿ÚÀàÃ
 //DrawBoxArrayApp app;
 //TestInputLayoutApp app;
 //CLightSourceApp app;
-//CMaterialBRDFApp app;
-CSkyBoxApp app;
+CMaterialBRDFApp app;
+//CSkyBoxApp app;
 
 // ´Ë´úÂëÄ£¿éÖĞ°üº¬µÄº¯ÊıµÄÇ°ÏòÉùÃ÷: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);

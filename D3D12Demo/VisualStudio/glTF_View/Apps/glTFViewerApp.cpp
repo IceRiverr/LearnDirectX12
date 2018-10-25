@@ -27,7 +27,7 @@ CGLTFViewerApp::CGLTFViewerApp()
 	m_pVSShaderCode_Light = nullptr;
 	m_pPSShaderCode_Light = nullptr;
 
-	clear_color = { 135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f };
+	clear_color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	m_pBRDFMat = nullptr;
 
 	m_bGuiMode = false;
@@ -273,11 +273,12 @@ void CGLTFViewerApp::Draw()
 
 void CGLTFViewerApp::TESTDrawPBR(CRenderObject* obj)
 {
-	m_pCommandList->SetGraphicsRootSignature(m_pPBRRootSignature);
-	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
+	CPBRMaterial* pMat = m_PBRMaterials["PBR_SciFiHelmet_Mat"];
 
-	CPBRMaterial* pMat = m_PBRMaterials["PBR_Red_Mat"];
+	m_pCommandList->SetGraphicsRootSignature(pMat->m_pEffect->m_pRootSignature);
 	m_pCommandList->SetPipelineState(pMat->m_pRenderPass->m_pPSO);
+
+	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
 	ID3D12GraphicsCommandList* pCommandList = m_pCommandList;
 	CStaticMesh* pStaticMesh = obj->m_pStaticMesh;
@@ -596,6 +597,7 @@ void CGLTFViewerApp::BuildPSOs(ID3D12Device* pDevice)
 	{
 		m_pPBREffect = new CPBRRenderEffect();
 		m_pPBREffect->SetShaderPath(m_ShaderRootPath + "Mat_PBRMetallicRoughness.fx");
+		m_pPBREffect->SetRootSignature(m_pPBRRootSignature);
 	}
 }
 
@@ -651,7 +653,8 @@ void CGLTFViewerApp::BuildMaterials()
 
 	{
 		CPBRMaterial* pMat = new CPBRMaterial(m_pPBREffect);
-		pMat->m_Name = "PBR_Base_Mat";
+		pMat->m_Name = "PBR_DamagedHelmet_Mat";
+		pMat->m_ShaderBlock.EmissiveColorFactor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 		m_PBRMaterials.emplace(pMat->m_Name, pMat);
 
 		pMat->m_sBaseColorMapPath = m_ContentRootPath + "gltf\\DamagedHelmet\\glTF\\Default_albedo.jpg";
@@ -665,6 +668,20 @@ void CGLTFViewerApp::BuildMaterials()
 		pNormalMap				= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_Normal.png");
 		pRoughnessMetallicMap	= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_MetallicRoughness.png");
 		pAoMap					= m_pGraphicContext->CreateTexture2D(m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_AmbientOcclusion.png");*/
+	}
+
+	{
+		CPBRMaterial* pMat = new CPBRMaterial(m_pPBREffect);
+		pMat->m_Name = "PBR_SciFiHelmet_Mat";
+		pMat->m_ShaderBlock.EmissiveColorFactor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		m_PBRMaterials.emplace(pMat->m_Name, pMat);
+
+		pMat->m_sBaseColorMapPath = m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_BaseColor.png";
+		pMat->m_sNormalMapPath = m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_Normal.png";
+		pMat->m_sMetallicRoughnessMapPath = m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_MetallicRoughness.png";
+		pMat->m_sOcclusionMapPath = m_ContentRootPath + "gltf\\SciFiHelmet\\glTF\\SciFiHelmet_AmbientOcclusion.png";
+
+		pMat->InitResource(m_pGraphicContext);
 	}
 
 	{
@@ -762,8 +779,8 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 
 		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\Cube\\Cube.gltf";
 		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\blender\\test.gltf";
-		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\SciFiHelmet\\glTF\\SciFiHelmet.gltf";
-		std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\DamagedHelmet\\glTF\\DamagedHelmet.gltf";
+		std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\SciFiHelmet\\glTF\\SciFiHelmet.gltf";
+		//std::string fileName = "D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Content\\gltf\\DamagedHelmet\\glTF\\DamagedHelmet.gltf";
 
 		bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, fileName);
 		if (!warn.empty()) {
@@ -864,7 +881,7 @@ void CGLTFViewerApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsComm
 		//pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 		//PBR_Red_Mat
 		//m_PBRMaterials["PBR_Base_Mat"]->AttachToMesh(pMesh, m_pGraphicContext);
-		m_PBRMaterials["PBR_Red_Mat"]->AttachToMesh(pMesh, m_pGraphicContext);
+		m_PBRMaterials["PBR_SciFiHelmet_Mat"]->AttachToMesh(pMesh, m_pGraphicContext);
 	}
 }
 
@@ -1074,7 +1091,7 @@ void CGLTFViewerApp::InitImgui()
 	ImGui_ImplWin32_Init(m_hWnd);
 	
 	DescriptorAddress address = m_pGraphicContext->m_pSRVAllocator->Allocate(1, m_pGraphicContext->m_pDevice);
-	ImGui_ImplDX12_Init(m_pDevice, 1, DXGI_FORMAT_R8G8B8A8_UNORM, address.CpuHandle, address.GpuHandle);
+	ImGui_ImplDX12_Init(m_pDevice, 1, m_BackBufferFromat, address.CpuHandle, address.GpuHandle);
 
 	// Setup style
 	ImGui::StyleColorsDark();

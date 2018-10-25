@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
+#include "MeshFactory.h"
 
 TestInputLayoutApp::TestInputLayoutApp()
 {
@@ -106,11 +107,19 @@ void TestInputLayoutApp::InitRenderResource()
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
 
-	m_pVSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.fx", "PSMain", "ps_5_0");
+	m_pGraphicContext = new CGraphicContext();
+	m_pGraphicContext->Init();
+	m_pGraphicContext->m_pDevice = m_pDevice;
+	m_pGraphicContext->m_pCommandList = m_pCommandList;
+	m_pGraphicContext->m_pRootSignature = m_pRootSignature;
+	m_pGraphicContext->m_BackBufferFromat = m_BackBufferFromat;
+	m_pGraphicContext->m_DSVFormat = m_DSVFormat;
 
-	m_pVSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Position = Graphics::CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode = m_pGraphicContext->CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode = m_pGraphicContext->CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\color_view_info.fx", "PSMain", "ps_5_0");
+
+	m_pVSShaderCode_Position = m_pGraphicContext->CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Position = m_pGraphicContext->CompileShader("D:\\Projects\\MyProjects\\LearnDirectX12\\D3D12Demo\\Shaders\\position_color.fx", "PSMain", "ps_5_0");
 
 	m_InputLayout =
 	{
@@ -495,7 +504,7 @@ void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12Graphics
 		std::vector<UINT16> indices;
 		std::vector<XMFLOAT4> vtxColors;
 
-		Graphics::CreateBox(positions, indices);
+		CMeshFactory::CreateBox(positions, indices);
 
 		for (int i = 0; i < positions.size(); ++i)
 		{
@@ -503,13 +512,13 @@ void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12Graphics
 			vtxColors.push_back(XMFLOAT4(r, 0.5f, 0.5f, 1.0f));
 		}
 
-		pBoxMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pBoxMesh->m_pPositionBufferUpload);
-		pBoxMesh->m_pVertexColorBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4), &pBoxMesh->m_pVertexColorBufferUpload);
-		pBoxMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pBoxMesh->m_pIndexBufferUpload);
+		pBoxMesh->m_pPositionBufferGPU = m_pGraphicContext->CreateDefaultBuffer(&positions[0], positions.size() * sizeof(XMFLOAT3));
+		pBoxMesh->m_pVertexColorBufferGPU = m_pGraphicContext->CreateDefaultBuffer( &vtxColors[0], vtxColors.size() * sizeof(XMFLOAT4));
+		pBoxMesh->m_pIndexBuferGPU = m_pGraphicContext->CreateDefaultBuffer( &indices[0], (UINT)indices.size() * sizeof(UINT16));
 
-		pBoxMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pBoxMesh->m_VertexColorBufferView = Graphics::CreateVertexBufferView(pBoxMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
-		pBoxMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
+		pBoxMesh->m_PositionBufferView = m_pGraphicContext->CreateVertexBufferView(pBoxMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		pBoxMesh->m_VertexColorBufferView = m_pGraphicContext->CreateVertexBufferView(pBoxMesh->m_pVertexColorBufferGPU, (UINT)vtxColors.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
+		pBoxMesh->m_IndexBufferView = m_pGraphicContext->CreateIndexBufferView(pBoxMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
 
 		pBoxMesh->AddSubMesh("Box1", (UINT)indices.size(), 0, 0);
 	}
@@ -521,13 +530,13 @@ void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12Graphics
 		std::vector<XMFLOAT3> positions;
 		std::vector<UINT16> indices;
 
-		Graphics::CreateUVSphereMesh(32, 16, positions, indices);
+		CMeshFactory::CreateUVSphereMesh(32, 16, positions, indices);
 
-		pSphereMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &positions[0], positions.size() * sizeof(XMFLOAT3), &pSphereMesh->m_pPositionBufferUpload);
-		pSphereMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &indices[0], (UINT)indices.size() * sizeof(UINT16), &pSphereMesh->m_pIndexBufferUpload);
+		pSphereMesh->m_pPositionBufferGPU = m_pGraphicContext->CreateDefaultBuffer(&positions[0], positions.size() * sizeof(XMFLOAT3));
+		pSphereMesh->m_pIndexBuferGPU = m_pGraphicContext->CreateDefaultBuffer(&indices[0], (UINT)indices.size() * sizeof(UINT16));
 
-		pSphereMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pSphereMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pSphereMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pSphereMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
+		pSphereMesh->m_PositionBufferView = m_pGraphicContext->CreateVertexBufferView(pSphereMesh->m_pPositionBufferGPU, (UINT)positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		pSphereMesh->m_IndexBufferView = m_pGraphicContext->CreateIndexBufferView(pSphereMesh->m_pIndexBuferGPU, (UINT)indices.size() * sizeof(UINT16), DXGI_FORMAT_R16_UINT);
 
 		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
 	}
@@ -542,11 +551,11 @@ void TestInputLayoutApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12Graphics
 
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
-		pMesh->m_pPositionBufferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3), &pMesh->m_pPositionBufferUpload);
-		pMesh->m_pIndexBuferGPU = CreateDefaultBuffer(pDevice, cmdList, &pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT), &pMesh->m_pIndexBufferUpload);
+		pMesh->m_pPositionBufferGPU = m_pGraphicContext->CreateDefaultBuffer(&pMeshData->Positions[0], pMeshData->Positions.size() * sizeof(XMFLOAT3));
+		pMesh->m_pIndexBuferGPU = m_pGraphicContext->CreateDefaultBuffer(&pMeshData->Indices[0], (UINT)pMeshData->Indices.size() * sizeof(UINT));
 
-		pMesh->m_PositionBufferView = Graphics::CreateVertexBufferView(pMesh->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
-		pMesh->m_IndexBufferView = Graphics::CreateIndexBufferView(pMesh->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
+		pMesh->m_PositionBufferView = m_pGraphicContext->CreateVertexBufferView(pMesh->m_pPositionBufferGPU, (UINT)pMeshData->Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+		pMesh->m_IndexBufferView = m_pGraphicContext->CreateIndexBufferView(pMesh->m_pIndexBuferGPU, (UINT)pMeshData->Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
 
 		pMesh->AddSubMesh("Sub0", (UINT)pMeshData->Indices.size(), 0, 0);
 

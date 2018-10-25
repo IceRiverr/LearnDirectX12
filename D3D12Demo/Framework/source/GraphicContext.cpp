@@ -114,6 +114,7 @@ Texture2D* CGraphicContext::CreateTexture2DResourceFromFile(std::wstring imagePa
 			mipmapImage = std::move(baseImage);
 		}
 
+		// 此时资源已经 转变为 D3D12_RESOURCE_STATE_COPY_DEST
 		hr = CreateTexture(m_pDevice, mipmapImage->GetMetadata(), &pTextureResource->pResource);
 
 		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
@@ -130,6 +131,12 @@ Texture2D* CGraphicContext::CreateTexture2DResourceFromFile(std::wstring imagePa
 			IID_PPV_ARGS(&pUploadResource));
 
 		UpdateSubresources(m_pCommandList, pTextureResource->pResource, pUploadResource, 0, 0, (UINT)subresources.size(), subresources.data());
+
+		m_pCommandList->ResourceBarrier(
+			1, &CD3DX12_RESOURCE_BARRIER::Transition(
+				pTextureResource->pResource,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_GENERIC_READ));
 
 		if (pUploadResource)
 		{

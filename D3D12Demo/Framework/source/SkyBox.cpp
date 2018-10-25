@@ -81,16 +81,6 @@ void CSkyBox::BuildCubeMap(CGraphicContext * pContext)
 		sContentRootPath + "WellesleyGreenhouse3\\cubemap\\nz.png"
 	};
 
-	/*std::string cubeBoxPath[6] =
-	{
-		sContentRootPath + "PaperMill_Ruins_E\\cubemap\\px.png",
-		sContentRootPath + "PaperMill_Ruins_E\\cubemap\\nx.png",
-		sContentRootPath + "PaperMill_Ruins_E\\cubemap\\py.png",
-		sContentRootPath + "PaperMill_Ruins_E\\cubemap\\ny.png",
-		sContentRootPath + "PaperMill_Ruins_E\\cubemap\\pz.png",
-		sContentRootPath + "PaperMill_Ruins_E\\cubemap\\nz.png"
-	};*/
-
 	{
 		auto baseImage = std::make_unique<ScratchImage>();
 		HRESULT hr = LoadFromWICFile(StringToWString(cubeBoxPath[0]).c_str(), WIC_FLAGS_NONE, nullptr, *baseImage);
@@ -113,7 +103,7 @@ void CSkyBox::BuildCubeMap(CGraphicContext * pContext)
 				&defaultHeapProperties,
 				D3D12_HEAP_FLAG_NONE,
 				&desc,
-				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_COMMON,
 				nullptr,
 				IID_PPV_ARGS(&m_pCubeMap));
 		}
@@ -121,6 +111,12 @@ void CSkyBox::BuildCubeMap(CGraphicContext * pContext)
 
 	if (m_pCubeMap != nullptr)
 	{
+		pContext->m_pCommandList->ResourceBarrier(
+			1, &CD3DX12_RESOURCE_BARRIER::Transition(
+				m_pCubeMap,
+				D3D12_RESOURCE_STATE_COMMON,
+				D3D12_RESOURCE_STATE_COPY_DEST));
+
 		for (int i = 0; i < 6; ++i)
 		{
 			auto baseImage = std::make_unique<ScratchImage>();
@@ -144,6 +140,12 @@ void CSkyBox::BuildCubeMap(CGraphicContext * pContext)
 				UpdateSubresources(pContext->m_pCommandList, m_pCubeMap, m_pUpdateBuffer[i], 0, i, (UINT)subresources.size(), subresources.data());
 			}
 		}
+
+		pContext->m_pCommandList->ResourceBarrier(
+			1, &CD3DX12_RESOURCE_BARRIER::Transition(
+				m_pCubeMap,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 
 	// SRV

@@ -266,7 +266,7 @@ void WinApp::OnResize()
 	dsvDesc.SampleDesc.Count = 1;
 	dsvDesc.SampleDesc.Quality = 0;
 	dsvDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	dsvDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	dsvDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
 	D3D12_CLEAR_VALUE dsvClearValue = {};
 	dsvClearValue.Format = m_DSVFormat;

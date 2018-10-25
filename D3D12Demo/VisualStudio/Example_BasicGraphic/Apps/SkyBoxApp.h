@@ -12,6 +12,7 @@
 #include "SkySphere.h"
 #include "GraphicContext.h"
 #include "SkyBox.h"
+#include "GraphicContext.h"
 
 class CSkyBoxApp :
 	public WinApp

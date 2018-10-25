@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "BufferManager.h"
 #include "StaticMesh.h"
+#include "GraphicContext.h"
 
 class DrawBoxArrayApp :
 	public WinApp
@@ -48,4 +49,5 @@ private:
 	std::unordered_map<std::string, ID3D12PipelineState*> m_PSOs;
 
 	XMFLOAT4X4A m_ProjMat;
+	CGraphicContext* m_pGraphicContext;
 };

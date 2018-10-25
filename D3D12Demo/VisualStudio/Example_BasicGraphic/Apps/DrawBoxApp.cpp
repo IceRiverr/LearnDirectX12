@@ -83,6 +83,14 @@ void DrawBoxApp::Init()
 		serializedRootSig->Release(); serializedRootSig = nullptr;
 	}
 
+	m_pGraphicContext = new CGraphicContext();
+	m_pGraphicContext->Init();
+	m_pGraphicContext->m_pDevice = m_pDevice;
+	m_pGraphicContext->m_pCommandList = m_pCommandList;
+	m_pGraphicContext->m_pRootSignature = m_pRootSignature;
+	m_pGraphicContext->m_BackBufferFromat = m_BackBufferFromat;
+	m_pGraphicContext->m_DSVFormat = m_DSVFormat;
+
 	// Compile Shader
 	UINT compileFlags = 0;
 #if defined(DEBUG) || defined(_DEBUG)
@@ -156,8 +164,8 @@ void DrawBoxApp::Init()
 
 	m_nBoxIndexCount = (UINT)indices.size();
 	
-	m_pVertexBufferGPU = CreateDefaultBuffer(m_pDevice, m_pCommandList, &vertices[0], nVBByteSize, &m_pVertexBufferUpload);
-	m_pIndexBuferGPU = CreateDefaultBuffer(m_pDevice, m_pCommandList, &indices[0], nIBByteSize, &m_pIndexBufferUpload);
+	m_pVertexBufferGPU = m_pGraphicContext->CreateDefaultBuffer(&vertices[0], nVBByteSize);
+	m_pIndexBuferGPU = m_pGraphicContext->CreateDefaultBuffer(&indices[0], nIBByteSize);
 
 	m_vbView.BufferLocation = m_pVertexBufferGPU->GetGPUVirtualAddress();
 	m_vbView.SizeInBytes = nVBByteSize;

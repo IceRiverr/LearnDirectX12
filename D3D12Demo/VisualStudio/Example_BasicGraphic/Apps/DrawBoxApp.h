@@ -2,6 +2,7 @@
 #include "WinApp.h"
 #include <DirectXMath.h>
 #include <vector>
+#include "GraphicContext.h"
 
 class DrawBoxApp :
 	public WinApp
@@ -53,5 +54,7 @@ private:
 	UINT m_nBoxIndexCount;
 	XMFLOAT4X4A m_ProjMat;
 	UINT m_nBoxCount;
+
+	CGraphicContext* m_pGraphicContext;
 };
 

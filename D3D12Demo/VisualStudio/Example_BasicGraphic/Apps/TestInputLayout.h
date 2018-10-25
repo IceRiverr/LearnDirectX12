@@ -7,6 +7,7 @@
 #include "StaticMesh.h"
 #include "Camera.h"
 #include "InputManager.h"
+#include "GraphicContext.h"
 
 class TestInputLayoutApp :
 	public WinApp
@@ -65,4 +66,6 @@ private:
 	bool show_demo_window;
 	bool show_another_window;
 	XMFLOAT4 clear_color;
+
+	CGraphicContext* m_pGraphicContext;
 };

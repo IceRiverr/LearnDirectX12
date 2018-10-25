@@ -7,6 +7,7 @@
 
 #include "DirectXTex.h"
 #include <d3d12shader.h>
+#include "MeshFactory.h"
 
 CSkyBoxApp::CSkyBoxApp()
 {
@@ -46,7 +47,9 @@ void CSkyBoxApp::Init()
 	m_pGraphicContext->m_pDevice = m_pDevice;
 	m_pGraphicContext->m_pCommandList = m_pCommandList;
 	m_pGraphicContext->m_pRootSignature = m_pRootSignature;
-	
+	m_pGraphicContext->m_BackBufferFromat = m_BackBufferFromat;
+	m_pGraphicContext->m_DSVFormat = m_DSVFormat;
+
 	BuildMaterials();
 	BuildStaticMeshes(m_pDevice, m_pCommandList);
 	BuildScene();
@@ -327,10 +330,10 @@ void CSkyBoxApp::BuildRootSignature()
 
 void CSkyBoxApp::BuildPSOs(ID3D12Device* pDevice)
 {
-	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
-	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
 
 	// TEST Reflection
 	ID3D12ShaderReflection* pReflector = nullptr;
@@ -469,7 +472,7 @@ void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandL
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -484,7 +487,7 @@ void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandL
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("Smooth_box", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -496,7 +499,7 @@ void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandL
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("UVSphere", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -508,7 +511,7 @@ void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandL
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("CubeBoxMesh", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -518,7 +521,7 @@ void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandL
 		MeshData meshData;
 		std::vector<XMFLOAT3> positions;
 		std::vector<UINT16> indices;
-		Graphics::CreateUVSphereMesh(64, 32, positions, indices);
+		CMeshFactory::CreateUVSphereMesh(64, 32, positions, indices);
 
 		for (int i = 0; i < positions.size(); ++i)
 		{
@@ -530,7 +533,7 @@ void CSkyBoxApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandL
 		}
 
 		CStaticMesh* pSphereMesh = new CStaticMesh();
-		pSphereMesh->CreateBuffer(&meshData, pDevice, cmdList);
+		pSphereMesh->CreateBuffer(&meshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("SphereMesh", pSphereMesh);
 		
 		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);

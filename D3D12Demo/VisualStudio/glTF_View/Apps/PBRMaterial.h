@@ -66,6 +66,7 @@ public:
 	};
 public:
 	void SetShaderPath(const std::string path);
+	void SetRootSignature(ID3D12RootSignature* rootSignature);
 	UINT64 CompileShader(CGraphicContext* pContext, const PBRMaterialMacroInfo& info);
 	RenderPass* GetShader(UINT64 MatId);
 
@@ -73,9 +74,10 @@ public:
 	static std::vector<std::string> CalcPBRMaterialMacro(UINT64 MatId);
 	static INPUT_LAYOUT_TYPE CalcInputLayoutType(const PBRMaterialMacroInfo& info);
 
-private:
+public:
 	std::unordered_map<UINT64, RenderPass*> m_ShaderMap;
 	std::string m_sShaderPath;
+	ID3D12RootSignature* m_pRootSignature;
 };
 
 class CPBRMaterial

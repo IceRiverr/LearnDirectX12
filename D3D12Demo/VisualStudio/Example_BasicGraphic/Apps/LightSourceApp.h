@@ -8,6 +8,7 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "Light.h"
+#include "GraphicContext.h"
 
 class CLightSourceApp :
 	public WinApp
@@ -73,4 +74,6 @@ private:
 	bool show_demo_window;
 	bool show_another_window;
 	XMFLOAT4 clear_color;
+
+	CGraphicContext* m_pGraphicContext;
 };

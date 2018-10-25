@@ -68,6 +68,11 @@ void CPBRRenderEffect::SetShaderPath(const std::string path)
 	m_sShaderPath = path;
 }
 
+void CPBRRenderEffect::SetRootSignature(ID3D12RootSignature * rootSignature)
+{
+	m_pRootSignature = rootSignature;
+}
+
 UINT64 CPBRRenderEffect::CompileShader(CGraphicContext* pContext, const PBRMaterialMacroInfo& info)
 {
 	if (pContext)
@@ -91,7 +96,7 @@ UINT64 CPBRRenderEffect::CompileShader(CGraphicContext* pContext, const PBRMater
 		INPUT_LAYOUT_TYPE IAType = CalcInputLayoutType(info);
 		auto InputLayout = GetInputLayout(IAType);
 		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
-		OpaquePSODesc.pRootSignature = pContext->m_pRootSignature;
+		OpaquePSODesc.pRootSignature = m_pRootSignature;
 		OpaquePSODesc.VS = { pPass->m_pVSShaderCode->GetBufferPointer(), pPass->m_pVSShaderCode->GetBufferSize() };
 		OpaquePSODesc.PS = { pPass->m_pPSShaderCode->GetBufferPointer(), pPass->m_pPSShaderCode->GetBufferSize() };
 		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);

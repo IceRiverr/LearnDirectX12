@@ -7,6 +7,7 @@
 
 #include "DirectXTex.h"
 #include <d3d12shader.h>
+#include "MeshFactory.h"
 
 CMaterialBRDFApp::CMaterialBRDFApp()
 {
@@ -41,11 +42,14 @@ void CMaterialBRDFApp::Init()
 	BuildPSOs(m_pDevice);
 	
 	// 这个地方不合适
+	// 这个地方不合适
 	m_pGraphicContext = new CGraphicContext();
 	m_pGraphicContext->Init();
 	m_pGraphicContext->m_pDevice = m_pDevice;
 	m_pGraphicContext->m_pCommandList = m_pCommandList;
 	m_pGraphicContext->m_pRootSignature = m_pRootSignature;
+	m_pGraphicContext->m_BackBufferFromat = m_BackBufferFromat;
+	m_pGraphicContext->m_DSVFormat = m_DSVFormat;
 	
 	BuildMaterials();
 	BuildStaticMeshes(m_pDevice, m_pCommandList);
@@ -212,9 +216,9 @@ void CMaterialBRDFApp::Draw()
 
 	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_FrameBuffer.m_pUploadeConstBuffer->GetGPUVirtualAddress());
 
-	m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->m_TextureAddress.GPUHandle);
-	m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->m_TextureAddress.GPUHandle);
-	m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->m_TextureAddress.GPUHandle);
+	m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pSkySphere->m_pEnvironmentMap->GPUHandle);
+	m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pSkySphere->m_pReflectionMap->GPUHandle);
+	m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pSkySphere->m_pBackGroundMap->GPUHandle);
 
 	for (int i = 0; i < m_RenderObjects.size() - 1; ++i)
 	{
@@ -326,10 +330,10 @@ void CMaterialBRDFApp::BuildRootSignature()
 
 void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 {
-	m_pVSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Light = Graphics::CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
-	m_pVSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
-	m_pPSShaderCode_Material = Graphics::CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
+	m_pVSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
+	m_pPSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
 
 	// TEST Reflection
 	ID3D12ShaderReflection* pReflector = nullptr;
@@ -468,24 +472,24 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("Plane_Obj", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
 	
 	{
-		//std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
-		std::string smooth_box_path = m_ContentRootPath + "smooth_box.obj";
+		std::string gun_model_path = m_ContentRootPath + "Gun\\gun.obj";
+		//std::string smooth_box_path = m_ContentRootPath + "smooth_box.obj";
 
 		CImportor_Obj impoortor;
-		impoortor.SetPath(smooth_box_path);
+		impoortor.SetPath(gun_model_path);
 		impoortor.Import();
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("Smooth_box", pMesh);
-		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
+		pMesh->m_pMaterial = m_Materials["BRDF_Texture"];
 	}
 
 	{
@@ -495,7 +499,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		MeshData* pMeshData = impoortor.m_MeshObjs[0];
 
 		CStaticMesh* pMesh = new CStaticMesh();
-		pMesh->CreateBuffer(pMeshData, pDevice, cmdList);
+		pMesh->CreateBuffer(pMeshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("UVSphere", pMesh);
 		pMesh->m_pMaterial = m_Materials["BRDF_Color"];
 	}
@@ -505,7 +509,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		MeshData meshData;
 		std::vector<XMFLOAT3> positions;
 		std::vector<UINT16> indices;
-		Graphics::CreateUVSphereMesh(64, 32, positions, indices);
+		CMeshFactory::CreateUVSphereMesh(64, 32, positions, indices);
 
 		for (int i = 0; i < positions.size(); ++i)
 		{
@@ -517,7 +521,7 @@ void CMaterialBRDFApp::BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCo
 		}
 
 		CStaticMesh* pSphereMesh = new CStaticMesh();
-		pSphereMesh->CreateBuffer(&meshData, pDevice, cmdList);
+		pSphereMesh->CreateBuffer(&meshData, *m_pGraphicContext);
 		m_StaticMeshes.emplace("SphereMesh", pSphereMesh);
 		
 		pSphereMesh->AddSubMesh("Sub0", (UINT)indices.size(), 0, 0);
@@ -542,7 +546,7 @@ void CMaterialBRDFApp::BuildScene()
 	}
 
 	{
-		/*CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
+		CStaticMesh* pSphereMesh = m_StaticMeshes["Smooth_box"];
 		if (pSphereMesh)
 		{
 			CRenderObject* pObj = new CRenderObject();
@@ -551,7 +555,7 @@ void CMaterialBRDFApp::BuildScene()
 			pObj->m_Transform.Scale = XMFLOAT3(5.0f, 5.0f, 5.0f);
 
 			m_RenderObjects.push_back(pObj);
-		}*/
+		}
 	}
 
 	{
@@ -586,11 +590,11 @@ void CMaterialBRDFApp::BuildScene()
 	}
 
 	{
-		/*CDirectionalLight* pLight = new CDirectionalLight();
+		CDirectionalLight* pLight = new CDirectionalLight();
 		m_DirLights.push_back(pLight);
 		pLight->m_Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		pLight->m_fIntensity = 3.14f;
-		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);*/
+		pLight->m_vDirection = XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);
 	}
 
 	//{
