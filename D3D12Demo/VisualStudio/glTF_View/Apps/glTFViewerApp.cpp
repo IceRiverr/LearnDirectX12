@@ -44,6 +44,9 @@ void CGLTFViewerApp::Init()
 {
 	WinApp::Init();
 
+	D3D12_FEATURE_DATA_SHADER_MODEL  shaderModel = { D3D_SHADER_MODEL_6_2 };
+	HRESULT hr = m_pDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
+
 	m_pCommandList->Reset(m_pCommandAllocator, nullptr);
 	// 所有初始化命令都放到该命令之后
 

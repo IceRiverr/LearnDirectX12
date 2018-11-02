@@ -58,6 +58,7 @@ CGraphicContext::CGraphicContext()
 void CGraphicContext::Init()
 {
 	m_pSRVAllocator = new CDescriptorAlloctor(256);
+	m_pUniformBufferAllocator = new CUniformBufferAllocator();
 }
 
 void CGraphicContext::ReleaseUploadBuffers()
@@ -275,4 +276,18 @@ ID3DBlob * CGraphicContext::CompileShader(const std::string& sFileName, const st
 		return nullptr;
 	}
 	return pShaderCode;
+}
+
+CUniformBufferAllocator::CUniformBufferAllocator()
+{
+	
+}
+
+UniformBufferLocation* CUniformBufferAllocator::Allocate(UINT bufferSize)
+{
+	return nullptr;
+}
+
+void CUniformBufferAllocator::Deallocate()
+{
 }

@@ -11,9 +11,9 @@
 
 using namespace DirectX;
 
-struct PBRMaterialShaderBlock
+struct PBRMaterialShaderBlockDef
 {
-	PBRMaterialShaderBlock();
+	PBRMaterialShaderBlockDef();
 
 	XMFLOAT4 BaseColorFactor;
 	XMFLOAT4 EmissiveColorFactor;
@@ -24,10 +24,43 @@ struct PBRMaterialShaderBlock
 	float OcclusionStrength;
 };
 
+struct BufferBlock
+{
+	unsigned char* Data;
+	UINT BindPoint;
+	UINT SignatureSlot;
+};
+
+class CShader
+{
+public:
+	CShader(ID3DBlob* code);
+	~CShader();
+
+	ID3DBlob* GetShaderCode() { return m_pShaderCode; }
+	
+	void Reflect();
+	void SetFloat(std::string& name, float value);
+	
+	const D3D12_SHADER_BUFFER_DESC* FindUniformBufferDesc(const std::string& bufferName) const;
+
+public:
+	std::unordered_map<std::string, D3D12_SHADER_VARIABLE_DESC> m_ShaderValiableMap;
+	std::vector<D3D12_SIGNATURE_PARAMETER_DESC> m_InputParameters; // 可以用来推导InputLayout
+	std::vector<D3D12_SHADER_BUFFER_DESC> m_ConstantBuffers;
+	std::vector<D3D12_SHADER_INPUT_BIND_DESC> m_BoundResources;
+
+private:
+	ID3DBlob * m_pShaderCode;
+};
+
 struct RenderPass
 {
-	ID3DBlob* m_pVSShaderCode;
-	ID3DBlob* m_pPSShaderCode;
+	void Reflect();
+	void MergeParameters();
+
+	std::shared_ptr<CShader> m_pVSShaderCode;
+	std::shared_ptr<CShader> m_pPSShaderCode;
 	ID3D12PipelineState* m_pPSO;
 };
 
@@ -68,6 +101,9 @@ public:
 	void SetShaderPath(const std::string path);
 	void SetRootSignature(ID3D12RootSignature* rootSignature);
 	UINT64 CompileShader(CGraphicContext* pContext, const PBRMaterialMacroInfo& info);
+	
+	bool ExportPreprocessShader(const std::string& inPath, const std::string& outPath, D3D_SHADER_MACRO* pDefines);
+
 	RenderPass* GetShader(UINT64 MatId);
 
 	static UINT64 CalcPBRMaterialID(const PBRMaterialMacroInfo& info);
@@ -87,13 +123,20 @@ public:
 	
 	void InitResource(CGraphicContext* pContext);
 
+	const D3D12_SHADER_VARIABLE_DESC* GetShaderVariableDesc(const std::string& name) const;
+	const D3D12_SHADER_BUFFER_DESC* GetShaderBufferDesc(const std::string& name) const;
+	UINT GetRootSignatureSlot(const std::string & name) const;
+
 	// 如果同一个材质被附着给不同的对象，则应该怎么处理不同的InputLayout，这样处理肯定有问题
 	void AttachToMesh(CStaticMesh* pMesh, CGraphicContext* pContext);
+
+	void Update();
+	void Bind(CGraphicContext* pContext, CRenderObject* pObj);
 
 public:
 	std::string m_Name;
 
-	PBRMaterialShaderBlock m_ShaderBlock;
+	PBRMaterialShaderBlockDef m_ShaderBlock;
 
 	std::string m_sBaseColorMapPath;
 	std::string m_sNormalMapPath;
@@ -110,6 +153,9 @@ public:
 	Texture2D* m_pMetallicRoughnessMap;
 	Texture2D* m_pOcclusionMap;
 
+	// 应该还有一段Buffer块
+	BufferBlock m_MatBlock;
+
 	CPBRRenderEffect* m_pEffect;
 	UINT64 m_MaterialID;
 	
@@ -118,4 +164,99 @@ public:
 	CPBRRenderEffect::PBRMaterialMacroInfo m_MacroInfo;
 };
 
-typedef TBaseConstantBuffer<PBRMaterialShaderBlock> CPBRMaterialConstantBuffer;
+struct VertexAttribute
+{
+	std::string Name;
+	DXGI_FORMAT Format;
+	
+	ID3D12Resource* pVertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW VertexView;
+};
+
+struct IndexAttribute
+{
+	DXGI_FORMAT Format;
+
+	ID3D12Resource* pIndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW IndexView;
+};
+
+struct PBRSubMesh
+{
+	UINT nIndexCount;
+	UINT nStartIndexLocation;
+	INT nBaseVertexLocation;
+};
+
+class CPBRStaticMesh
+{
+public:
+	void BindMesh(CGraphicContext* pContext);
+
+private:
+	INPUT_LAYOUT_TYPE m_DataLayout;
+
+	VertexAttribute m_PositonAttribute;
+	VertexAttribute m_NormalAttribute;
+	VertexAttribute m_UVAttribute;
+	VertexAttribute m_TangentAttribute;
+
+	IndexAttribute m_IndexAttribute;
+	
+	std::vector<PBRSubMesh> m_SubMeshes;
+	std::vector<CPBRMaterial*> m_pMaterials;
+};
+
+struct PBRTransform
+{
+	void UpdateMatrix();
+
+	bool bDirty;
+
+	XMFLOAT3 Position;
+	XMFLOAT4 Rotation;
+	XMFLOAT3 Scale;
+
+	XMMATRIX mWorldMat;
+	XMMATRIX mInvWorldMat;
+};
+
+struct PBRShaderDataBlock
+{
+	PBRShaderDataBlock();
+	void InitData(UINT size);
+	void ReleaseData();
+	void CopyToCPU(UINT offset, UINT size, void* v);
+	void CopyToGPU();
+	
+	UINT8* Data;
+	UINT Size;
+	UINT RootSignatureSlot;
+	UniformBufferLocation* UniformBufferLoc;
+};
+
+class CPBRGeometryNode
+{
+public:
+	CPBRGeometryNode();
+	~CPBRGeometryNode();
+
+	void InitResource(CGraphicContext* pContext);
+
+	void SetPostion(const XMFLOAT3& v);
+	void SetScale(const XMFLOAT3& v);
+
+	void SetMesh(CPBRStaticMesh* pMesh);
+	void SetMaterial(CPBRMaterial* pMat);
+	void Update();
+	void Draw(CGraphicContext* pContext);
+
+private:
+	CPBRStaticMesh* m_pMesh;
+	CPBRMaterial* m_pMaterial;
+	PBRTransform m_Transform;
+
+	PBRShaderDataBlock m_NodeShaderData;
+};
+
+typedef TBaseConstantBuffer<PBRMaterialShaderBlockDef> CPBRMaterialConstantBuffer;

@@ -10,6 +10,16 @@
 #include "GPUResource.h"
 #include <unordered_map>
 
+struct UniformBufferLocation
+{
+	UINT8* pData;
+	UINT size;
+	ID3D12Resource* pResource;
+	ID3D12DescriptorHeap* pBufferHeap;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
+};
+
 class CDescriptorAlloctor
 {
 public:
@@ -25,6 +35,18 @@ private:
 	UINT m_nCurrentHeapOffset;
 	ID3D12DescriptorHeap* m_pCurrentHeap;
 	UINT m_nSRVDescriptorSize;
+};
+
+class CUniformBufferAllocator
+{
+public:
+	CUniformBufferAllocator();
+
+	UniformBufferLocation* Allocate(UINT bufferSize);
+	void Deallocate();
+
+private:
+	std::vector<ID3D12Resource*> m_ResourcePool;
 };
 
 class CGraphicContext
@@ -52,6 +74,7 @@ public:
 	DXGI_FORMAT m_DSVFormat;
 
 	CDescriptorAlloctor* m_pSRVAllocator;
+	CUniformBufferAllocator* m_pUniformBufferAllocator;
 	
 	std::unordered_map<std::string, Texture2D*> m_Textures;
 

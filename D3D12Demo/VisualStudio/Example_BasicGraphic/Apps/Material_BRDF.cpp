@@ -6,7 +6,6 @@
 #include "imgui_impl_dx12.h"
 
 #include "DirectXTex.h"
-#include <d3d12shader.h>
 #include "MeshFactory.h"
 
 CMaterialBRDFApp::CMaterialBRDFApp()
@@ -334,35 +333,7 @@ void CMaterialBRDFApp::BuildPSOs(ID3D12Device* pDevice)
 	m_pPSShaderCode_Light = m_pGraphicContext->CompileShader(m_ShaderRootPath + "light_material.fx", "PSMain", "ps_5_0");
 	m_pVSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "VSMain", "vs_5_0");
 	m_pPSShaderCode_Material = m_pGraphicContext->CompileShader(m_ShaderRootPath + "Mat_DefaultShader.fx", "PSMain", "ps_5_0");
-
-	// TEST Reflection
-	ID3D12ShaderReflection* pReflector = nullptr;
-	D3DReflect(m_pPSShaderCode_Material->GetBufferPointer(), m_pPSShaderCode_Material->GetBufferSize(), IID_ID3D12ShaderReflection, (void**)&pReflector);
-	if (pReflector)
-	{
-		D3D12_SHADER_DESC shaderDesc;
-		pReflector->GetDesc(&shaderDesc);
-
-		for (UINT i = 0; i < shaderDesc.BoundResources; ++i)
-		{
-			D3D12_SHADER_INPUT_BIND_DESC inputBindDesc;
-			pReflector->GetResourceBindingDesc(i, &inputBindDesc);
-			int b = 1;
-		}
-
-		ID3D12ShaderReflectionConstantBuffer* pRefCB = pReflector->GetConstantBufferByIndex(1);
-		D3D12_SHADER_BUFFER_DESC sbDesc;
-		pRefCB->GetDesc(&sbDesc);
-
-		ID3D12ShaderReflectionVariable* pRefVal = pRefCB->GetVariableByIndex(0);
-		D3D12_SHADER_VARIABLE_DESC svDesc;
-		pRefVal->GetDesc(&svDesc);
-		
-		pReflector->Release();
-
-		int a = 1;
-	}
-
+	
 	{
 		ID3D12PipelineState* pOpaquePSO = nullptr;
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};

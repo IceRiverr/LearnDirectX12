@@ -33,6 +33,14 @@ T StringToNumber(const std::string& t)
 	return v;
 }
 
+template<typename T>
+std::string NumberToString(T t)
+{
+	std::stringstream ss;
+	ss << t;
+	return ss.str();
+}
+
 // https://stackoverflow.com/questions/8541301/best-alternative-to-a-typedef-for-a-function-template
 //using String2Float = decltype(StringToNumber<float>(0));
 
