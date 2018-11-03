@@ -35,13 +35,14 @@ private:
 	void BuildMaterials();
 	void BuildStaticMeshes(ID3D12Device* pDevice, ID3D12GraphicsCommandList* cmdList);
 	void BuildScene();
+	void CreatePBRScene();
 	void BuildHeapDescriptors();
 	void InitImgui();
 
 	void UpdateFrameBuffer(float fDeltaTime, float fTotalTime);
 	void UpdateImgui();
-
-	void TESTDrawPBR(CRenderObject* obj);
+	
+	void DrawPBR();
 	void DrawImgui();
 
 	void TEST_AREA();
@@ -78,15 +79,14 @@ private:
 
 	XMFLOAT4 clear_color;
 	CMaterial* m_pBRDFMat;
-
-	//CSkySphere* m_pSkySphere;
+	
 	CSkyBox* m_pSkyBox;
 
 	CGraphicContext* m_pGraphicContext;
 	
 	ID3D12RootSignature* m_pPBRRootSignature;
-	std::unordered_map<std::string, CPBRMaterial*> m_PBRMaterials;
-	CPBRMaterialConstantBuffer m_PBRMaterialBuffer;
 	CPBRRenderEffect* m_pPBREffect;
-	CRenderObject* m_TestPBR;
+	CPBRMaterial* m_pPBRMat;
+	CPBRStaticMesh* m_pPBRMesh;
+	CPBRGeometryNode* m_pPBRNode;
 };

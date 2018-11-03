@@ -12,6 +12,14 @@ CDescriptorAlloctor::CDescriptorAlloctor(UINT nMaxHeapSize)
 	m_pCurrentHeap = nullptr;
 }
 
+CDescriptorAlloctor::~CDescriptorAlloctor()
+{
+	for (int i = 0; i < m_pSRVHeaps.size(); ++i)
+	{
+		m_pSRVHeaps[i]->Release();
+	}
+}
+
 DescriptorAddress CDescriptorAlloctor::Allocate(UINT nDescriptorNum, ID3D12Device* pDevice)
 {
 	if (m_pCurrentHeap == nullptr || m_nCurrentHeapOffset + nDescriptorNum >= m_nMaxHeapSize)
@@ -53,6 +61,17 @@ CGraphicContext::CGraphicContext()
 	m_pDevice = nullptr;
 	m_pCommandList = nullptr;
 	m_pSRVAllocator = nullptr;
+}
+
+CGraphicContext::~CGraphicContext()
+{
+	delete m_pSRVAllocator;
+	delete m_pUniformBufferAllocator;
+
+	for (auto it = m_Textures.begin(); it != m_Textures.end(); ++it)
+	{
+		it->second->pResource->Release();
+	}
 }
 
 void CGraphicContext::Init()
@@ -280,14 +299,81 @@ ID3DBlob * CGraphicContext::CompileShader(const std::string& sFileName, const st
 
 CUniformBufferAllocator::CUniformBufferAllocator()
 {
-	
+	m_nPerPageSize = 1024 * 1024; // 1M
+	m_nCurrentOffset = m_nPerPageSize;
+	m_pCurrentResource = nullptr;
 }
 
-UniformBufferLocation* CUniformBufferAllocator::Allocate(UINT bufferSize)
+CUniformBufferAllocator::~CUniformBufferAllocator()
 {
-	return nullptr;
+	for (int i = 0; i < m_ResourcePool.size(); ++i)
+	{
+		m_ResourcePool[i]->Release();
+	}
+}
+
+UniformBufferLocation* CUniformBufferAllocator::Allocate(UINT bufferSize, CGraphicContext* pContext)
+{
+	UINT nAlignedBufferSize = (bufferSize + 255) & (~255);
+
+	if (nAlignedBufferSize > m_nPerPageSize)
+	{
+		return nullptr;
+	}
+
+	if (m_pCurrentResource == nullptr || m_nCurrentOffset + nAlignedBufferSize > m_nPerPageSize)
+	{
+		m_pCurrentResource = CreateNewPage(pContext->m_pDevice);
+		if (m_pCurrentResource == nullptr)
+		{
+			std::cout << "Create Uniform Buffer Error.\n";
+			return nullptr;
+		}
+
+		m_ResourcePool.push_back(m_pCurrentResource);
+		m_pCurrentResource->Map(0, nullptr, (void**)(&m_pCurrentGPUVA));
+		m_nCurrentOffset = 0;
+	}
+
+	// Descriptor
+	UniformBufferLocation* loc = new UniformBufferLocation();
+	DescriptorAddress address = pContext->m_pSRVAllocator->Allocate(1, pContext->m_pDevice);
+	loc->size = nAlignedBufferSize;
+	loc->pResource = m_pCurrentResource;
+	loc->pData = m_pCurrentGPUVA + m_nCurrentOffset;
+	loc->pBufferHeap = address.pHeap;
+	loc->CPUHandle = address.CpuHandle;
+	loc->GPUHandle = address.GpuHandle;
+
+	// Create Const Buffer View
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+	cbvDesc.BufferLocation = m_pCurrentResource->GetGPUVirtualAddress() + m_nCurrentOffset;
+	cbvDesc.SizeInBytes = nAlignedBufferSize;
+	pContext->m_pDevice->CreateConstantBufferView(&cbvDesc, loc->CPUHandle);
+
+	m_nCurrentOffset += nAlignedBufferSize;
+	return loc;
 }
 
 void CUniformBufferAllocator::Deallocate()
 {
+
+}
+
+ID3D12Resource* CUniformBufferAllocator::CreateNewPage(ID3D12Device* pDevice)
+{
+	if (pDevice)
+	{
+		ID3D12Resource* pPageResource = nullptr;
+		pDevice->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(m_nPerPageSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&pPageResource));
+
+		return pPageResource;
+	}
+	return nullptr;
 }

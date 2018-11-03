@@ -10,6 +10,8 @@
 #include "GPUResource.h"
 #include <unordered_map>
 
+class CGraphicContext;
+
 struct UniformBufferLocation
 {
 	UINT8* pData;
@@ -24,9 +26,9 @@ class CDescriptorAlloctor
 {
 public:
 	CDescriptorAlloctor(UINT nMaxHeapSize);
+	~CDescriptorAlloctor();
 
 	DescriptorAddress Allocate(UINT nDescriptorNum, ID3D12Device* pDevice);
-	
 	const std::vector<ID3D12DescriptorHeap*>& GetHeaps() const;
 
 private:
@@ -41,19 +43,34 @@ class CUniformBufferAllocator
 {
 public:
 	CUniformBufferAllocator();
+	~CUniformBufferAllocator();
 
-	UniformBufferLocation* Allocate(UINT bufferSize);
+	UniformBufferLocation* Allocate(UINT bufferSize, CGraphicContext* pContext);
 	void Deallocate();
+
+	ID3D12Resource* CreateNewPage(ID3D12Device* pDevice);
 
 private:
 	std::vector<ID3D12Resource*> m_ResourcePool;
+	UINT m_nPerPageSize;
+	UINT m_nCurrentOffset;
+	UINT8* m_pCurrentGPUVA;
+	ID3D12Resource* m_pCurrentResource;
+};
+
+class CGrahpicsRootSignature
+{
+public:
+	std::vector<CD3DX12_ROOT_PARAMETER> m_RootParamaters;
+	ID3D12RootSignature* m_pRootSignature;
 };
 
 class CGraphicContext
 {
 public:
 	CGraphicContext();
-
+	~CGraphicContext();
+	
 	void Init();
 	void ReleaseUploadBuffers();
 

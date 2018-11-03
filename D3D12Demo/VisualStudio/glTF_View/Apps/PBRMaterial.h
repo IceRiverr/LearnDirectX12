@@ -11,57 +11,47 @@
 
 using namespace DirectX;
 
-struct PBRMaterialShaderBlockDef
+class CPBRStaticMesh;
+
+struct PBRShaderDataBlock
 {
-	PBRMaterialShaderBlockDef();
+	PBRShaderDataBlock();
+	void InitData(UINT size);
+	void ReleaseData();
+	void CopyToCPU(UINT offset, UINT size, void* v);
+	void CopyToGPU();
 
-	XMFLOAT4 BaseColorFactor;
-	XMFLOAT4 EmissiveColorFactor;
-
-	float MetallicFactor;
-	float RoughnessFactor;
-	float NormalScale;
-	float OcclusionStrength;
+	UINT8* Data;
+	UINT Size;
+	UINT RootSignatureSlot;
+	UniformBufferLocation* UniformBufferLoc;
 };
 
-struct BufferBlock
+struct ShaderParamaterMap
 {
-	unsigned char* Data;
-	UINT BindPoint;
-	UINT SignatureSlot;
+	std::unordered_map<std::string, D3D12_SHADER_VARIABLE_DESC> ShaderValiableMap;
+	std::vector<D3D12_SIGNATURE_PARAMETER_DESC> InputParameters;
+	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> ConstantBufferMap;
+	std::unordered_map<std::string, D3D12_SHADER_INPUT_BIND_DESC> BoundResourceMap;
 };
 
-class CShader
+class CShaderPipeline
 {
 public:
-	CShader(ID3DBlob* code);
-	~CShader();
+	CShaderPipeline();
 
-	ID3DBlob* GetShaderCode() { return m_pShaderCode; }
+	void InitParamMap();
+	void CreatePSO(ID3D12RootSignature* pRootSignature, CGraphicContext* pContext);
 	
-	void Reflect();
-	void SetFloat(std::string& name, float value);
-	
-	const D3D12_SHADER_BUFFER_DESC* FindUniformBufferDesc(const std::string& bufferName) const;
+	ID3DBlob * m_pVSShader;
+	ID3DBlob * m_pPSShader;
+	ID3D12PipelineState* m_pPSO;
 
-public:
-	std::unordered_map<std::string, D3D12_SHADER_VARIABLE_DESC> m_ShaderValiableMap;
-	std::vector<D3D12_SIGNATURE_PARAMETER_DESC> m_InputParameters; // 可以用来推导InputLayout
-	std::vector<D3D12_SHADER_BUFFER_DESC> m_ConstantBuffers;
-	std::vector<D3D12_SHADER_INPUT_BIND_DESC> m_BoundResources;
+	INPUT_LAYOUT_TYPE m_InputLayout;
+	ShaderParamaterMap m_ParamaterMap;
 
 private:
-	ID3DBlob * m_pShaderCode;
-};
-
-struct RenderPass
-{
-	void Reflect();
-	void MergeParameters();
-
-	std::shared_ptr<CShader> m_pVSShaderCode;
-	std::shared_ptr<CShader> m_pPSShaderCode;
-	ID3D12PipelineState* m_pPSO;
+	void ReflectShader(ID3DBlob* pShader, ShaderParamaterMap& ParamMap);
 };
 
 class CPBRRenderEffect
@@ -104,20 +94,33 @@ public:
 	
 	bool ExportPreprocessShader(const std::string& inPath, const std::string& outPath, D3D_SHADER_MACRO* pDefines);
 
-	RenderPass* GetShader(UINT64 MatId);
+	CShaderPipeline* GetShader(UINT64 MatId);
 
 	static UINT64 CalcPBRMaterialID(const PBRMaterialMacroInfo& info);
 	static std::vector<std::string> CalcPBRMaterialMacro(UINT64 MatId);
 	static INPUT_LAYOUT_TYPE CalcInputLayoutType(const PBRMaterialMacroInfo& info);
 
 public:
-	std::unordered_map<UINT64, RenderPass*> m_ShaderMap;
+	std::unordered_map<UINT64, CShaderPipeline*> m_ShaderMap;
 	std::string m_sShaderPath;
 	ID3D12RootSignature* m_pRootSignature;
 };
 
 class CPBRMaterial
 {
+public:
+	struct PBRMaterialParamater
+	{
+		PBRMaterialParamater();
+
+		XMFLOAT4 BaseColorFactor;
+		XMFLOAT4 EmissiveColorFactor;
+
+		float MetallicFactor;
+		float RoughnessFactor;
+		float NormalScale;
+		float OcclusionStrength;
+	};
 public:
 	CPBRMaterial(CPBRRenderEffect* pEffect);
 	
@@ -126,17 +129,16 @@ public:
 	const D3D12_SHADER_VARIABLE_DESC* GetShaderVariableDesc(const std::string& name) const;
 	const D3D12_SHADER_BUFFER_DESC* GetShaderBufferDesc(const std::string& name) const;
 	UINT GetRootSignatureSlot(const std::string & name) const;
+	void AttachToMesh(CPBRStaticMesh* pMesh, CGraphicContext* pContext);
 
-	// 如果同一个材质被附着给不同的对象，则应该怎么处理不同的InputLayout，这样处理肯定有问题
-	void AttachToMesh(CStaticMesh* pMesh, CGraphicContext* pContext);
-
-	void Update();
-	void Bind(CGraphicContext* pContext, CRenderObject* pObj);
+	void UpdateRenderData();
+	void Bind(CGraphicContext* pContext);
 
 public:
 	std::string m_Name;
-
-	PBRMaterialShaderBlockDef m_ShaderBlock;
+	INPUT_LAYOUT_TYPE m_InputLayout;
+	bool m_bMaterialDirty;
+	PBRMaterialParamater m_MaterialParamater;
 
 	std::string m_sBaseColorMapPath;
 	std::string m_sNormalMapPath;
@@ -145,7 +147,7 @@ public:
 	std::string m_sOcclusionMapPath;
 
 public:
-	ConstantBufferAddress m_BufferAddress;
+	PBRShaderDataBlock m_MaterialShaderData;
 
 	Texture2D* m_pBaseColorMap;
 	Texture2D* m_pNormalMap;
@@ -153,15 +155,19 @@ public:
 	Texture2D* m_pMetallicRoughnessMap;
 	Texture2D* m_pOcclusionMap;
 
-	// 应该还有一段Buffer块
-	BufferBlock m_MatBlock;
-
 	CPBRRenderEffect* m_pEffect;
 	UINT64 m_MaterialID;
 	
-	// 放在这里有问题，先保证正确
-	RenderPass* m_pRenderPass;
+	CShaderPipeline* m_pRenderPass;
 	CPBRRenderEffect::PBRMaterialMacroInfo m_MacroInfo;
+};
+
+class CPBRMaterialInstance
+{
+public:
+	CPBRMaterial* m_pMaterial;
+	UINT64 m_MaterialID;
+	CShaderPipeline* m_pRenderPass;
 };
 
 struct VertexAttribute
@@ -191,20 +197,22 @@ struct PBRSubMesh
 class CPBRStaticMesh
 {
 public:
-	void BindMesh(CGraphicContext* pContext);
+	void Create(const MeshData& meshData, CGraphicContext& Context);
+	void SetMaterial(int materialSlot, CPBRMaterial* pMat, CGraphicContext* pContext);
+	void Bind(CGraphicContext* pContext);
+	void BindMesh(CGraphicContext* pContext, INPUT_LAYOUT_TYPE inputLayout);
 
-private:
-	INPUT_LAYOUT_TYPE m_DataLayout;
+public:
+	std::vector<PBRSubMesh> m_SubMeshes;
+	std::vector<CPBRMaterial*> m_pMaterials;
 
+public:
 	VertexAttribute m_PositonAttribute;
 	VertexAttribute m_NormalAttribute;
 	VertexAttribute m_UVAttribute;
 	VertexAttribute m_TangentAttribute;
 
 	IndexAttribute m_IndexAttribute;
-	
-	std::vector<PBRSubMesh> m_SubMeshes;
-	std::vector<CPBRMaterial*> m_pMaterials;
 };
 
 struct PBRTransform
@@ -221,18 +229,10 @@ struct PBRTransform
 	XMMATRIX mInvWorldMat;
 };
 
-struct PBRShaderDataBlock
+struct PBRObjectUniformParamater
 {
-	PBRShaderDataBlock();
-	void InitData(UINT size);
-	void ReleaseData();
-	void CopyToCPU(UINT offset, UINT size, void* v);
-	void CopyToGPU();
-	
-	UINT8* Data;
-	UINT Size;
-	UINT RootSignatureSlot;
-	UniformBufferLocation* UniformBufferLoc;
+	XMFLOAT4X4 mWorldMatrixParam;
+	XMFLOAT4X4 mInvWorldMatrixParam;
 };
 
 class CPBRGeometryNode
@@ -247,16 +247,14 @@ public:
 	void SetScale(const XMFLOAT3& v);
 
 	void SetMesh(CPBRStaticMesh* pMesh);
-	void SetMaterial(CPBRMaterial* pMat);
 	void Update();
+	void UpdateRenderData();
+	void Bind(CGraphicContext* pContext);
 	void Draw(CGraphicContext* pContext);
 
 private:
 	CPBRStaticMesh* m_pMesh;
-	CPBRMaterial* m_pMaterial;
 	PBRTransform m_Transform;
 
 	PBRShaderDataBlock m_NodeShaderData;
 };
-
-typedef TBaseConstantBuffer<PBRMaterialShaderBlockDef> CPBRMaterialConstantBuffer;

@@ -4,98 +4,152 @@
 #include <fstream>
 #include <sstream>
 
-PBRMaterialShaderBlockDef::PBRMaterialShaderBlockDef()
+PBRShaderDataBlock::PBRShaderDataBlock()
 {
-	BaseColorFactor = XMFLOAT4(1.0f,1.0f, 1.0f, 1.0f);
-	EmissiveColorFactor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-
-	MetallicFactor = 1.0f;
-	RoughnessFactor = 1.0f;
-	NormalScale = 1.0f;
-	OcclusionStrength = 1.0f;
+	UniformBufferLoc = nullptr;
+	Data = nullptr;
+	Size = 0;
 }
 
-CPBRMaterial::CPBRMaterial(CPBRRenderEffect* pEffect)
+void PBRShaderDataBlock::InitData(UINT size)
 {
-	m_pBaseColorMap = nullptr;
-	m_pNormalMap = nullptr;
-	m_pEmissiveMap = nullptr;
-	m_pMetallicRoughnessMap = nullptr;
-	m_pOcclusionMap = nullptr;
-
-	m_pEffect = pEffect;
-	m_MaterialID = -1;
-	m_pRenderPass = nullptr;
+	Size = size;
+	Data = new UINT8[size];
+	memset(Data, 0, size);
 }
 
-void CPBRMaterial::InitResource(CGraphicContext * pContext)
+void PBRShaderDataBlock::ReleaseData()
 {
-	m_pBaseColorMap = pContext->CreateTexture2D(m_sBaseColorMapPath);
-	m_pNormalMap = pContext->CreateTexture2D(m_sNormalMapPath);
-	m_pEmissiveMap = pContext->CreateTexture2D(m_sEmissiveMapPath);
-	m_pMetallicRoughnessMap = pContext->CreateTexture2D(m_sMetallicRoughnessMapPath);
-	m_pOcclusionMap = pContext->CreateTexture2D(m_sOcclusionMapPath);
-
-	// 给材质参数分配资源
-	RenderPass* pPass = m_pEffect->GetShader(m_MaterialID);
-	if (pPass)
+	if (Data)
 	{
-		const D3D12_SHADER_BUFFER_DESC * bufferDesc = pPass->m_pPSShaderCode->FindUniformBufferDesc("cbPerMaterial");
-		UniformBufferLocation* BufferLoc = pContext->m_pUniformBufferAllocator->Allocate(bufferDesc->Size);
+		delete[] Data;
 	}
 }
 
-const D3D12_SHADER_VARIABLE_DESC* CPBRMaterial::GetShaderVariableDesc(const std::string & name) const
+void PBRShaderDataBlock::CopyToCPU(UINT offset, UINT size, void * v)
 {
-	return nullptr;
+	memcpy(Data + offset, v, size);
 }
 
-const D3D12_SHADER_BUFFER_DESC* CPBRMaterial::GetShaderBufferDesc(const std::string & name) const
+void PBRShaderDataBlock::CopyToGPU()
 {
-	return nullptr;
-}
-
-UINT CPBRMaterial::GetRootSignatureSlot(const std::string & name) const
-{
-	return 0;
-}
-
-void CPBRMaterial::AttachToMesh(CStaticMesh* pMesh, CGraphicContext * pContext)
-{
-	m_MacroInfo.Clear();
-	if (pMesh->m_pNormalBufferGPU)
-		m_MacroInfo.bHasNormals = true;
-	if (pMesh->m_pTangentBufferGPU)
-		m_MacroInfo.bHasTangents = true;
-	if (pMesh->m_pUVBufferGPU)
-		m_MacroInfo.bHasUVs = true;
-	
-	if(m_pBaseColorMap)
-		m_MacroInfo.bHasBaseColorMap = true;
-	if(m_pNormalMap)
-		m_MacroInfo.bHasNornamMap = true;
-	else
-		m_MacroInfo.bHasTangents = false;
-	if(m_pEmissiveMap)
-		m_MacroInfo.bHasEmissiveMap = true;
-	if(m_pMetallicRoughnessMap)
-		m_MacroInfo.bHasMetalRoughnessMap = true;
-	if(m_pOcclusionMap)
-		m_MacroInfo.bHasOcclusionMap = true;
-	
-	m_MaterialID = m_pEffect->CompileShader(pContext, m_MacroInfo);
-	m_pRenderPass = m_pEffect->GetShader(m_MaterialID);
-}
-
-void CPBRMaterial::Bind(CGraphicContext * pContext, CRenderObject * pObj)
-{
-	if (pContext && pObj)
+	if (UniformBufferLoc && Data && Size)
 	{
-		RenderPass* pPass = m_pEffect->GetShader(m_MaterialID);
-		if (pPass)
+		memcpy(UniformBufferLoc->pData, Data, Size);
+	}
+}
+
+
+CShaderPipeline::CShaderPipeline()
+{
+	m_pVSShader = nullptr;
+	m_pPSShader = nullptr;
+	m_pPSO = nullptr;
+}
+
+void CShaderPipeline::InitParamMap()
+{
+	ShaderParamaterMap VSParamMap;
+	ReflectShader(m_pVSShader, VSParamMap);
+
+	ShaderParamaterMap PSParamMap;
+	ReflectShader(m_pPSShader, PSParamMap);
+
+	// Merge 有时候Name会出现不一致的情况，但是Size还是一致的，需要注意 bug，可能是复制的时候引起的
+	m_ParamaterMap = VSParamMap;
+	{
+		for (auto it = PSParamMap.BoundResourceMap.begin(); it != PSParamMap.BoundResourceMap.end(); ++it)
 		{
-			pContext->m_pCommandList->SetPipelineState(pPass->m_pPSO);
-			pContext->m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pBaseColorMap->GPUHandle);
+			if (m_ParamaterMap.BoundResourceMap.find(it->first) == m_ParamaterMap.BoundResourceMap.end())
+			{
+				m_ParamaterMap.BoundResourceMap.emplace(it->first, it->second);
+			}
+		}
+	}
+	{
+		for (auto it = PSParamMap.ConstantBufferMap.begin(); it != PSParamMap.ConstantBufferMap.end(); ++it)
+		{
+			if (m_ParamaterMap.ConstantBufferMap.find(it->first) == m_ParamaterMap.ConstantBufferMap.end())
+			{
+				m_ParamaterMap.ConstantBufferMap.emplace(it->first, it->second);
+			}
+		}
+	}
+	{
+		for (auto it = PSParamMap.ShaderValiableMap.begin(); it != PSParamMap.ShaderValiableMap.end(); ++it)
+		{
+			if (m_ParamaterMap.ShaderValiableMap.find(it->first) == m_ParamaterMap.ShaderValiableMap.end())
+			{
+				m_ParamaterMap.ShaderValiableMap.emplace(it->first, it->second);
+			}
+		}
+	}
+}
+
+void CShaderPipeline::CreatePSO(ID3D12RootSignature* pRootSignature, CGraphicContext* pContext)
+{
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
+
+	auto InputLayout = GetInputLayout(m_InputLayout);
+	OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
+	OpaquePSODesc.pRootSignature = pRootSignature;
+	OpaquePSODesc.VS = { m_pVSShader->GetBufferPointer(),m_pVSShader->GetBufferSize() };
+	OpaquePSODesc.PS = { m_pPSShader->GetBufferPointer(),m_pPSShader->GetBufferSize() };
+	OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	OpaquePSODesc.SampleMask = UINT_MAX;
+	OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	OpaquePSODesc.NumRenderTargets = 1;
+	OpaquePSODesc.RTVFormats[0] = pContext->m_BackBufferFromat;
+	OpaquePSODesc.SampleDesc.Count = 1;
+	OpaquePSODesc.SampleDesc.Quality = 0;
+	OpaquePSODesc.DSVFormat = pContext->m_DSVFormat;
+	pContext->m_pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&m_pPSO));
+}
+
+void CShaderPipeline::ReflectShader(ID3DBlob* pShader, ShaderParamaterMap& ParamMap)
+{
+	if (pShader)
+	{
+		ID3D12ShaderReflection* pReflector = nullptr;
+		D3DReflect(pShader->GetBufferPointer(), pShader->GetBufferSize(), IID_ID3D12ShaderReflection, (void**)&pReflector);
+		if (pReflector)
+		{
+			D3D12_SHADER_DESC shaderDesc;
+			pReflector->GetDesc(&shaderDesc);
+
+			// For InputLayout
+			for (UINT i = 0; i < shaderDesc.InputParameters; ++i)
+			{
+				D3D12_SIGNATURE_PARAMETER_DESC desc;
+				pReflector->GetInputParameterDesc(i, &desc);
+				ParamMap.InputParameters.push_back(desc);
+			}
+
+			for (UINT i = 0; i < shaderDesc.BoundResources; ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC inputBindDesc;
+				pReflector->GetResourceBindingDesc(i, &inputBindDesc);
+				ParamMap.BoundResourceMap.emplace(inputBindDesc.Name, inputBindDesc);
+			}
+
+			for (UINT i = 0; i < shaderDesc.ConstantBuffers; ++i)
+			{
+				ID3D12ShaderReflectionConstantBuffer* pRefCB = pReflector->GetConstantBufferByIndex(i);
+				D3D12_SHADER_BUFFER_DESC bufferDesc;
+				pRefCB->GetDesc(&bufferDesc);
+				ParamMap.ConstantBufferMap.emplace(bufferDesc.Name, bufferDesc);
+
+				for (UINT val = 0; val < bufferDesc.Variables; ++val)
+				{
+					ID3D12ShaderReflectionVariable* pRefVal = pRefCB->GetVariableByIndex(val);
+					D3D12_SHADER_VARIABLE_DESC variableDesc;
+					pRefVal->GetDesc(&variableDesc);
+					ParamMap.ShaderValiableMap.emplace(variableDesc.Name, variableDesc);
+				}
+			}
+			pReflector->Release();
 		}
 	}
 }
@@ -121,40 +175,20 @@ UINT64 CPBRRenderEffect::CompileShader(CGraphicContext* pContext, const PBRMater
 
 		for (int i = 0; i < MacroDefines.size(); ++i)
 		{
-			Macros.push_back({ MacroDefines[i].c_str(), "1"});
+			Macros.push_back({ MacroDefines[i].c_str(), "1" });
 		}
 		Macros.push_back({ nullptr, nullptr });
 
-		RenderPass* pPass = new RenderPass();
-		ID3DBlob* vsCode = pContext->CompileShader(m_sShaderPath, "VSMain", "vs_5_0", Macros.data());
-		ID3DBlob* psCode = pContext->CompileShader(m_sShaderPath, "PSMain", "ps_5_0", Macros.data());
-		pPass->m_pVSShaderCode = std::make_shared<CShader>(vsCode);
-		pPass->m_pPSShaderCode = std::make_shared<CShader>(psCode);
-		pPass->Reflect(); 
-		pPass->MergeParameters();
+		CShaderPipeline* pPipeline = new CShaderPipeline();
+		pPipeline->m_pVSShader = pContext->CompileShader(m_sShaderPath, "VSMain", "vs_5_1", Macros.data());
+		pPipeline->m_pPSShader = pContext->CompileShader(m_sShaderPath, "PSMain", "ps_5_1", Macros.data());
+		pPipeline->m_InputLayout = CalcInputLayoutType(info);
+		pPipeline->InitParamMap();
+		pPipeline->CreatePSO(m_pRootSignature, pContext);
 
-		ExportPreprocessShader(m_sShaderPath, m_sShaderPath + "_" + NumberToString<UINT64>(MatID) + ".txt", Macros.data());
+		m_ShaderMap.emplace(MatID, pPipeline);
 
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC OpaquePSODesc = {};
-		INPUT_LAYOUT_TYPE IAType = CalcInputLayoutType(info);
-		auto InputLayout = GetInputLayout(IAType);
-		OpaquePSODesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
-		OpaquePSODesc.pRootSignature = m_pRootSignature;
-		OpaquePSODesc.VS = { pPass->m_pVSShaderCode->GetShaderCode()->GetBufferPointer(), pPass->m_pVSShaderCode->GetShaderCode()->GetBufferSize() };
-		OpaquePSODesc.PS = { pPass->m_pPSShaderCode->GetShaderCode()->GetBufferPointer(), pPass->m_pPSShaderCode->GetShaderCode()->GetBufferSize() };
-		OpaquePSODesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		OpaquePSODesc.SampleMask = UINT_MAX;
-		OpaquePSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		OpaquePSODesc.NumRenderTargets = 1;
-		OpaquePSODesc.RTVFormats[0] = pContext->m_BackBufferFromat;
-		OpaquePSODesc.SampleDesc.Count = 1;
-		OpaquePSODesc.SampleDesc.Quality = 0;
-		OpaquePSODesc.DSVFormat = pContext->m_DSVFormat;
-		pContext->m_pDevice->CreateGraphicsPipelineState(&OpaquePSODesc, IID_PPV_ARGS(&pPass->m_pPSO));
-
-		m_ShaderMap.emplace(MatID, pPass);
+		//ExportPreprocessShader(m_sShaderPath, m_sShaderPath + "_" + NumberToString<UINT64>(MatID) + ".txt", Macros.data());
 		return MatID;
 	}
 	return -1;
@@ -201,15 +235,15 @@ bool CPBRRenderEffect::ExportPreprocessShader(const std::string & inPath, const 
 			pCompiledShadeTextCode->Release();
 		}
 	}
-	
+
 	return false;
 }
 
-RenderPass* CPBRRenderEffect::GetShader(UINT64 MatId)
+CShaderPipeline* CPBRRenderEffect::GetShader(UINT64 MatId)
 {
 	if (MatId != -1)
 	{
-		RenderPass* pPass = m_ShaderMap[MatId];
+		CShaderPipeline* pPass = m_ShaderMap[MatId];
 		return pPass;
 	}
 	return nullptr;
@@ -245,7 +279,7 @@ std::vector<std::string> CPBRRenderEffect::CalcPBRMaterialMacro(UINT64 MatId)
 		"HAS_METAL_ROUGHNESS_MAP",
 		"HAS_OCCLUSION_MAP",
 	};
-	
+
 	for (int i = 0; i < PBRMaterialMacroType::MACRO_TYPE_COUNT; ++i)
 	{
 		if (MatId & ((UINT64)1 << i))
@@ -262,7 +296,7 @@ INPUT_LAYOUT_TYPE CPBRRenderEffect::CalcInputLayoutType(const PBRMaterialMacroIn
 		return INPUT_LAYOUT_TYPE::P3N3UV2;
 	if (info.bHasUVs)
 		return INPUT_LAYOUT_TYPE::P3UV2;
-	
+
 	return INPUT_LAYOUT_TYPE::P3;
 }
 
@@ -280,222 +314,191 @@ void CPBRRenderEffect::PBRMaterialMacroInfo::Clear()
 	bHasOcclusionMap = false;
 }
 
-void RenderPass::Reflect()
+CPBRMaterial::PBRMaterialParamater::PBRMaterialParamater()
 {
-	if (m_pVSShaderCode)
-		m_pVSShaderCode->Reflect();
-	if (m_pPSShaderCode)
-		m_pPSShaderCode->Reflect();
+	BaseColorFactor = XMFLOAT4(1.0f,1.0f, 1.0f, 1.0f);
+	EmissiveColorFactor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	MetallicFactor = 1.0f;
+	RoughnessFactor = 1.0f;
+	NormalScale = 1.0f;
+	OcclusionStrength = 1.0f;
 }
 
-void RenderPass::MergeParameters()
+CPBRMaterial::CPBRMaterial(CPBRRenderEffect* pEffect)
 {
+	m_bMaterialDirty = true;
 
+	m_pBaseColorMap = nullptr;
+	m_pNormalMap = nullptr;
+	m_pEmissiveMap = nullptr;
+	m_pMetallicRoughnessMap = nullptr;
+	m_pOcclusionMap = nullptr;
+
+	m_pEffect = pEffect;
+	m_MaterialID = -1;
+	m_pRenderPass = nullptr;
 }
 
-CShader::CShader(ID3DBlob * code)
+void CPBRMaterial::InitResource(CGraphicContext * pContext)
 {
-	m_pShaderCode = code;
+	m_pBaseColorMap = pContext->CreateTexture2D(m_sBaseColorMapPath);
+	m_pNormalMap = pContext->CreateTexture2D(m_sNormalMapPath);
+	m_pEmissiveMap = pContext->CreateTexture2D(m_sEmissiveMapPath);
+	m_pMetallicRoughnessMap = pContext->CreateTexture2D(m_sMetallicRoughnessMapPath);
+	m_pOcclusionMap = pContext->CreateTexture2D(m_sOcclusionMapPath);
 }
 
-CShader::~CShader()
+const D3D12_SHADER_VARIABLE_DESC* CPBRMaterial::GetShaderVariableDesc(const std::string & name) const
 {
-	if (m_pShaderCode)
-		m_pShaderCode->Release();
+	CShaderPipeline* Pipeline = m_pEffect->GetShader(m_MaterialID);
+	auto it = Pipeline->m_ParamaterMap.ShaderValiableMap.find(name);
+	return &(it->second);
 }
 
-void CShader::Reflect()
+const D3D12_SHADER_BUFFER_DESC* CPBRMaterial::GetShaderBufferDesc(const std::string & name) const
 {
-	if (m_pShaderCode)
-	{
-		ID3D12ShaderReflection* pReflector = nullptr;
-		D3DReflect(m_pShaderCode->GetBufferPointer(), m_pShaderCode->GetBufferSize(), IID_ID3D12ShaderReflection, (void**)&pReflector);
-		if (pReflector)
-		{
-			D3D12_SHADER_DESC shaderDesc;
-			pReflector->GetDesc(&shaderDesc);
-
-			// For InputLayout
-			for (UINT i = 0; i < shaderDesc.InputParameters; ++i)
-			{
-				D3D12_SIGNATURE_PARAMETER_DESC desc;
-				pReflector->GetInputParameterDesc(i, &desc);
-				m_InputParameters.push_back(desc);
-			}
-
-			for (UINT i = 0; i < shaderDesc.BoundResources; ++i)
-			{
-				D3D12_SHADER_INPUT_BIND_DESC inputBindDesc;
-				pReflector->GetResourceBindingDesc(i, &inputBindDesc);
-				m_BoundResources.push_back(inputBindDesc);
-			}
-
-			for (UINT i = 0; i < shaderDesc.ConstantBuffers; ++i)
-			{
-				ID3D12ShaderReflectionConstantBuffer* pRefCB = pReflector->GetConstantBufferByIndex(i);
-				D3D12_SHADER_BUFFER_DESC bufferDesc;
-				pRefCB->GetDesc(&bufferDesc);
-				m_ConstantBuffers.push_back(bufferDesc);
-
-				for (UINT val = 0; val < bufferDesc.Variables; ++val)
-				{
-					ID3D12ShaderReflectionVariable* pRefVal = pRefCB->GetVariableByIndex(val);
-					D3D12_SHADER_VARIABLE_DESC variableDesc;
-					pRefVal->GetDesc(&variableDesc);
-					m_ShaderValiableMap.emplace(variableDesc.Name, variableDesc);
-				}
-			}
-
-			pReflector->Release();
-		}
-	}
+	CShaderPipeline* Pipeline = m_pEffect->GetShader(m_MaterialID);
+	auto it = Pipeline->m_ParamaterMap.ConstantBufferMap.find(name);
+	return &(it->second);
 }
 
-void CShader::SetFloat(std::string & name, float value)
+void CPBRMaterial::AttachToMesh(CPBRStaticMesh* pMesh, CGraphicContext * pContext)
 {
-	// 设值是需要考虑字节对齐，比如16位对齐，则数据应该怎么安排，下面的写法可能有点问题
-	unsigned char buffer[32];
-	auto it = m_ShaderValiableMap.find(name);
-	if (it != m_ShaderValiableMap.end())
-	{
-		memcpy(buffer + it->second.StartOffset, &value, sizeof(value));
-	}
-}
-
-const D3D12_SHADER_BUFFER_DESC * CShader::FindUniformBufferDesc(const std::string& bufferName) const
-{
-	for (int i = 0; i < m_ConstantBuffers.size(); ++i)
-	{
-		if(strcmp(m_ConstantBuffers[i].Name, bufferName.c_str()) == 0)
-		{
-			return &m_ConstantBuffers[i];
-		}
-	}
-	return nullptr;
-}
-
-CPBRGeometryNode::CPBRGeometryNode()
-{
-	m_pMesh = nullptr;
-	m_pMaterial = nullptr;
-}
-
-CPBRGeometryNode::~CPBRGeometryNode()
-{
-}
-
-void CPBRGeometryNode::InitResource(CGraphicContext * pContext)
-{
-	if (m_pMaterial)
-	{
-		const D3D12_SHADER_BUFFER_DESC* BufferDesc = m_pMaterial->GetShaderBufferDesc("cbPerObject");
-		m_NodeShaderData.ReleaseData();
-		m_NodeShaderData.InitData(BufferDesc->Size);
-		m_NodeShaderData.UniformBufferLoc = pContext->m_pUniformBufferAllocator->Allocate(m_NodeShaderData.Size);
-		m_NodeShaderData.RootSignatureSlot = m_pMaterial->GetRootSignatureSlot("cbPerObject");
-	}
-}
-
-void CPBRGeometryNode::SetPostion(const XMFLOAT3 & v)
-{
-	m_Transform.Position = v;
-}
-
-void CPBRGeometryNode::SetScale(const XMFLOAT3 & v)
-{
-	m_Transform.Scale = v;
-}
-
-void CPBRGeometryNode::SetMesh(CPBRStaticMesh * pMesh)
-{
-	m_pMesh = m_pMesh;
-}
-
-void CPBRGeometryNode::SetMaterial(CPBRMaterial * pMat)
-{
-	if (pMat)
-	{
-		m_pMaterial = pMat;
-	}
-}
-
-void CPBRGeometryNode::Update()
-{
-	if (m_Transform.bDirty)
-	{
-		m_Transform.UpdateMatrix();
-
-		const D3D12_SHADER_VARIABLE_DESC* WorldMatrixVariableDesc = m_pMaterial->GetShaderVariableDesc("g_mWorldMat");
-		const D3D12_SHADER_VARIABLE_DESC* InvWorldMatrixVariableDesc = m_pMaterial->GetShaderVariableDesc("g_mInvWorldMat");
-
-		XMFLOAT4X4 mWorldMatrixParam;
-		XMStoreFloat4x4(&mWorldMatrixParam, XMMatrixTranspose(m_Transform.mWorldMat));
-		m_NodeShaderData.CopyToCPU(WorldMatrixVariableDesc->StartOffset, WorldMatrixVariableDesc->Size, &mWorldMatrixParam);
-
-		XMFLOAT4X4 mInvWorldMatrixParam;
-		XMStoreFloat4x4(&mInvWorldMatrixParam, XMMatrixTranspose(m_Transform.mInvWorldMat));
-		m_NodeShaderData.CopyToCPU(InvWorldMatrixVariableDesc->StartOffset, InvWorldMatrixVariableDesc->Size, &mInvWorldMatrixParam);
-
-		m_NodeShaderData.CopyToGPU();
-	}
-	m_pMaterial->Update();
-}
-
-void CPBRGeometryNode::Draw(CGraphicContext* pContext)
-{
-	m_pMaterial->Bind(nullptr, nullptr);
-	m_pMesh->BindMesh(pContext);
-
-	pContext->m_pCommandList->SetGraphicsRootDescriptorTable(m_NodeShaderData.RootSignatureSlot, m_NodeShaderData.UniformBufferLoc->GPUHandle);
+	m_MacroInfo.Clear();
+	if (pMesh->m_NormalAttribute.pVertexBuffer)
+		m_MacroInfo.bHasNormals = true;
+	if (pMesh->m_TangentAttribute.pVertexBuffer)
+		m_MacroInfo.bHasTangents = true;
+	if (pMesh->m_UVAttribute.pVertexBuffer)
+		m_MacroInfo.bHasUVs = true;
 	
+	if(m_pBaseColorMap)
+		m_MacroInfo.bHasBaseColorMap = true;
+	if(m_pNormalMap)
+		m_MacroInfo.bHasNornamMap = true;
+	else
+		m_MacroInfo.bHasTangents = false;
+	if(m_pEmissiveMap)
+		m_MacroInfo.bHasEmissiveMap = true;
+	if(m_pMetallicRoughnessMap)
+		m_MacroInfo.bHasMetalRoughnessMap = true;
+	if(m_pOcclusionMap)
+		m_MacroInfo.bHasOcclusionMap = true;
+
+	m_InputLayout = m_pEffect->CalcInputLayoutType(m_MacroInfo);
+	m_MaterialID = m_pEffect->CompileShader(pContext, m_MacroInfo);
+	m_pRenderPass = m_pEffect->GetShader(m_MaterialID);
+
+	// 绑定资源 Material， RootSignature 一定要保存BindSlot，方便通过Reflect信息来自动获取BindSlot信息
+	const static int PerMaterialBindSlot = 2;
+	const D3D12_SHADER_BUFFER_DESC * bufferDesc = GetShaderBufferDesc("cbPerMaterial");
+	m_MaterialShaderData.ReleaseData();
+	m_MaterialShaderData.InitData(bufferDesc->Size);
+	m_MaterialShaderData.UniformBufferLoc = pContext->m_pUniformBufferAllocator->Allocate(bufferDesc->Size, pContext);
+	m_MaterialShaderData.RootSignatureSlot = PerMaterialBindSlot;
 }
 
-PBRShaderDataBlock::PBRShaderDataBlock()
+void CPBRMaterial::UpdateRenderData()
 {
-	UniformBufferLoc = nullptr;
-	Data = nullptr;
-	Size = 0;
-}
-
-void PBRShaderDataBlock::InitData(UINT size)
-{
-	Size = size;
-	Data = new UINT8[size];
-	memset(Data, 0, size);
-}
-
-void PBRShaderDataBlock::ReleaseData()
-{
-	if (Data)
+	if (m_bMaterialDirty)
 	{
-		delete[] Data;
+		m_MaterialShaderData.CopyToCPU(0, sizeof(PBRMaterialParamater), &m_MaterialParamater);
+		m_MaterialShaderData.CopyToGPU();
 	}
 }
 
-void PBRShaderDataBlock::CopyToCPU(UINT offset, UINT size, void * v)
+void CPBRMaterial::Bind(CGraphicContext * pContext)
 {
-	memcpy(Data + offset, v, size);
-}
-
-void PBRShaderDataBlock::CopyToGPU()
-{
-	if (UniformBufferLoc && Data && Size)
+	if (pContext)
 	{
-		memcpy(UniformBufferLoc->pData, Data, Size);
+		CShaderPipeline* pPass = m_pEffect->GetShader(m_MaterialID);
+		if (pPass)
+		{
+			pContext->m_pCommandList->SetPipelineState(pPass->m_pPSO);
+
+			pContext->m_pCommandList->SetGraphicsRootDescriptorTable(m_MaterialShaderData.RootSignatureSlot, m_MaterialShaderData.UniformBufferLoc->GPUHandle);
+
+			if (m_pBaseColorMap)
+				pContext->m_pCommandList->SetGraphicsRootDescriptorTable(4, m_pBaseColorMap->GPUHandle);
+			if (m_pNormalMap)
+				pContext->m_pCommandList->SetGraphicsRootDescriptorTable(5, m_pNormalMap->GPUHandle);
+			if (m_pEmissiveMap)
+				pContext->m_pCommandList->SetGraphicsRootDescriptorTable(6, m_pEmissiveMap->GPUHandle);
+			if (m_pMetallicRoughnessMap)
+				pContext->m_pCommandList->SetGraphicsRootDescriptorTable(7, m_pMetallicRoughnessMap->GPUHandle);
+			if (m_pOcclusionMap)
+				pContext->m_pCommandList->SetGraphicsRootDescriptorTable(8, m_pOcclusionMap->GPUHandle);
+		}
 	}
 }
 
-void PBRTransform::UpdateMatrix()
+
+void CPBRStaticMesh::Create(const MeshData& meshData, CGraphicContext& Context)
 {
-	XMMATRIX mScaleMat = XMMatrixScaling(Scale.x, Scale.y, Scale.z);
-	XMMATRIX mTranslateMat = XMMatrixTranslation(Position.x, Position.y, Position.z);
-	mWorldMat = mScaleMat * mTranslateMat;
-	mInvWorldMat = XMMatrixInverse(&XMMatrixDeterminant(mWorldMat), mWorldMat);
+	if (meshData.Positions.size() > 0)
+	{
+		m_PositonAttribute.pVertexBuffer = Context.CreateDefaultBuffer(&meshData.Positions[0], meshData.Positions.size() * sizeof(XMFLOAT3));
+		m_PositonAttribute.VertexView = Context.CreateVertexBufferView(m_PositonAttribute.pVertexBuffer, (UINT)meshData.Positions.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+	}
+
+	if (meshData.Normals.size() > 0)
+	{
+		m_NormalAttribute.pVertexBuffer = Context.CreateDefaultBuffer(&meshData.Normals[0], meshData.Normals.size() * sizeof(XMFLOAT3));
+		m_NormalAttribute.VertexView = Context.CreateVertexBufferView(m_NormalAttribute.pVertexBuffer, (UINT)meshData.Normals.size() * sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+	}
+
+	if (meshData.Tangents.size() > 0)
+	{
+		m_TangentAttribute.pVertexBuffer = Context.CreateDefaultBuffer(&meshData.Tangents[0], meshData.Tangents.size() * sizeof(XMFLOAT4));
+		m_TangentAttribute.VertexView = Context.CreateVertexBufferView(m_TangentAttribute.pVertexBuffer, (UINT)meshData.Tangents.size() * sizeof(XMFLOAT4), sizeof(XMFLOAT4));
+	}
+
+	if (meshData.UVs.size() > 0)
+	{
+		m_UVAttribute.pVertexBuffer = Context.CreateDefaultBuffer(&meshData.UVs[0], meshData.UVs.size() * sizeof(XMFLOAT2));
+		m_UVAttribute.VertexView = Context.CreateVertexBufferView(m_UVAttribute.pVertexBuffer, (UINT)meshData.UVs.size() * sizeof(XMFLOAT2), sizeof(XMFLOAT2));
+	}
+
+	if (meshData.Indices.size() > 0)
+	{
+		m_IndexAttribute.pIndexBuffer = Context.CreateDefaultBuffer(&meshData.Indices[0], (UINT)meshData.Indices.size() * sizeof(UINT));
+		m_IndexAttribute.IndexView = Context.CreateIndexBufferView(m_IndexAttribute.pIndexBuffer, (UINT)meshData.Indices.size() * sizeof(UINT), DXGI_FORMAT_R32_UINT);
+	}
+
+	PBRSubMesh subMesh = { (UINT)meshData.Indices.size(), 0, 0 };
+	m_SubMeshes.push_back(subMesh);
+	m_pMaterials.resize(m_SubMeshes.size());
 }
 
-void CPBRStaticMesh::BindMesh(CGraphicContext * pContext)
+void CPBRStaticMesh::SetMaterial(int materialSlot, CPBRMaterial* pMat, CGraphicContext* pContext)
 {
-	switch (m_DataLayout)
+	if (materialSlot >= 0 && materialSlot < m_SubMeshes.size())
+	{
+		m_pMaterials[materialSlot] = pMat;
+		pMat->AttachToMesh(this, pContext);
+	}
+}
+
+void CPBRStaticMesh::Bind(CGraphicContext * pContext)
+{
+	for (int i = 0; i < m_pMaterials.size(); ++i)
+	{
+		const PBRSubMesh& SubMesh = m_SubMeshes[i];
+		CPBRMaterial* pMat = m_pMaterials[i];
+
+		if (pMat)
+		{
+			pMat->Bind(pContext);
+			BindMesh(pContext, pMat->m_InputLayout);
+			pContext->m_pCommandList->DrawIndexedInstanced(SubMesh.nIndexCount, 1, SubMesh.nStartIndexLocation, SubMesh.nBaseVertexLocation, 0);
+		}
+	}
+}
+
+void CPBRStaticMesh::BindMesh(CGraphicContext * pContext, INPUT_LAYOUT_TYPE inputLayout)
+{
+	switch (inputLayout)
 	{
 	case P3:
 	{
@@ -531,4 +534,105 @@ void CPBRStaticMesh::BindMesh(CGraphicContext * pContext)
 
 	pContext->m_pCommandList->IASetIndexBuffer(&m_IndexAttribute.IndexView);
 	pContext->m_pCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+
+CPBRGeometryNode::CPBRGeometryNode()
+{
+	m_pMesh = nullptr;
+
+	m_Transform.Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_Transform.Scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	m_Transform.bDirty = true;
+}
+
+CPBRGeometryNode::~CPBRGeometryNode()
+{
+
+}
+
+void CPBRGeometryNode::InitResource(CGraphicContext * pContext)
+{
+	const int PerObjectBindSlot = 1;
+
+	m_NodeShaderData.ReleaseData();
+	m_NodeShaderData.InitData(sizeof(PBRObjectUniformParamater));
+	m_NodeShaderData.UniformBufferLoc = pContext->m_pUniformBufferAllocator->Allocate(m_NodeShaderData.Size, pContext);
+	m_NodeShaderData.RootSignatureSlot = PerObjectBindSlot;
+}
+
+void CPBRGeometryNode::SetPostion(const XMFLOAT3 & v)
+{
+	m_Transform.Position = v;
+	m_Transform.bDirty = true;
+}
+
+void CPBRGeometryNode::SetScale(const XMFLOAT3 & v)
+{
+	m_Transform.Scale = v;
+	m_Transform.bDirty = true;
+}
+
+void CPBRGeometryNode::SetMesh(CPBRStaticMesh * pMesh)
+{
+	m_pMesh = pMesh;
+}
+
+void CPBRGeometryNode::Update()
+{
+	
+}
+
+void CPBRGeometryNode::UpdateRenderData()
+{
+	if (m_Transform.bDirty)
+	{
+		m_Transform.UpdateMatrix();
+
+		/*const D3D12_SHADER_VARIABLE_DESC* WorldMatrixVariableDesc = m_pMaterial->GetShaderVariableDesc("g_mWorldMat");
+		const D3D12_SHADER_VARIABLE_DESC* InvWorldMatrixVariableDesc = m_pMaterial->GetShaderVariableDesc("g_mInvWorldMat");
+
+		XMFLOAT4X4 mWorldMatrixParam;
+		XMStoreFloat4x4(&mWorldMatrixParam, XMMatrixTranspose(m_Transform.mWorldMat));
+		m_NodeShaderData.CopyToCPU(WorldMatrixVariableDesc->StartOffset, WorldMatrixVariableDesc->Size, &mWorldMatrixParam);
+
+		XMFLOAT4X4 mInvWorldMatrixParam;
+		XMStoreFloat4x4(&mInvWorldMatrixParam, XMMatrixTranspose(m_Transform.mInvWorldMat));
+		m_NodeShaderData.CopyToCPU(InvWorldMatrixVariableDesc->StartOffset, InvWorldMatrixVariableDesc->Size, &mInvWorldMatrixParam);
+
+		m_NodeShaderData.CopyToGPU();*/
+
+		PBRObjectUniformParamater UniformParam;
+		XMStoreFloat4x4(&UniformParam.mWorldMatrixParam, XMMatrixTranspose(m_Transform.mWorldMat));
+		XMStoreFloat4x4(&UniformParam.mInvWorldMatrixParam, XMMatrixTranspose(m_Transform.mInvWorldMat));
+		m_NodeShaderData.CopyToCPU(0, sizeof(PBRObjectUniformParamater), &UniformParam);
+		m_NodeShaderData.CopyToGPU();
+	}
+
+	for (int i = 0; i < m_pMesh->m_pMaterials.size(); ++i)
+	{
+		if (m_pMesh->m_pMaterials[i])
+		{
+			m_pMesh->m_pMaterials[i]->UpdateRenderData();
+		}
+	}
+}
+
+void CPBRGeometryNode::Bind(CGraphicContext * pContext)
+{
+	pContext->m_pCommandList->SetGraphicsRootDescriptorTable(m_NodeShaderData.RootSignatureSlot, m_NodeShaderData.UniformBufferLoc->GPUHandle);
+}
+
+void CPBRGeometryNode::Draw(CGraphicContext* pContext)
+{
+	Bind(pContext);
+	m_pMesh->Bind(pContext);
+}
+
+void PBRTransform::UpdateMatrix()
+{
+	XMMATRIX mScaleMat = XMMatrixScaling(Scale.x, Scale.y, Scale.z);
+	XMMATRIX mTranslateMat = XMMatrixTranslation(Position.x, Position.y, Position.z);
+	mWorldMat = mScaleMat * mTranslateMat;
+	mInvWorldMat = XMMatrixInverse(&XMMatrixDeterminant(mWorldMat), mWorldMat);
 }
